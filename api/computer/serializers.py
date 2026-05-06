@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.computer.model import Computer
+from api.computer.models import Computer
 
 class ComputerSerializer(serializers.ModelSerializer):
     class Meta:

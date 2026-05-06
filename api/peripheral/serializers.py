@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.peripheral.model import Peripheral
+from api.peripheral.models import Peripheral
 
 class PeripheralSerializer(serializers.ModelSerializer):
     class Meta:
