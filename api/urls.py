@@ -5,5 +5,7 @@ urlpatterns = [
     path("auth/login/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
 
-    path('user/', include('api.user.urls'))
+    path('users/', include('api.user.urls')),
+
+    path('rooms/', include('api.room.urls'))
 ]
