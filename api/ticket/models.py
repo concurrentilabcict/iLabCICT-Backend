@@ -9,6 +9,8 @@ class Ticket(models.Model):
     title = models.CharField(max_length=100)
     complaint_description = models.TextField()
 
+    issue_image = models.ImageField(upload_to="tickets/", null=True, blank=True)
+
     status = models.CharField(max_length=20, choices=TicketStatus.choices, default=TicketStatus.OPEN)
 
     created_at = models.DateTimeField(auto_now_add=True)
