@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from api.ticket.model import Ticket
+from api.ticket.models import Ticket
 
 class TicketSerializer(serializers.ModelSerializer):
     class Meta:
