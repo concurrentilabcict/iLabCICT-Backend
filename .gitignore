@@ -29,3 +29,6 @@ staticfiles/
 # Migrations (optional — see note below)
 # */migrations/*.py
 # !*/migrations/__init__.py
+
+# custom pattern for generics
+generic_api_view_custom_pattern.py
