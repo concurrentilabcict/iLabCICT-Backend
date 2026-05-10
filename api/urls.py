@@ -9,5 +9,7 @@ urlpatterns = [
 
     path('rooms/', include('api.room.urls')),
 
-    path('tickets/', include('api.ticket.urls'))
+    path('tickets/', include('api.ticket.urls')),
+
+    path('computers/', include('api.computer.urls'))
 ]
