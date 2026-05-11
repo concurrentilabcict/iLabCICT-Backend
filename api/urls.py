@@ -11,5 +11,7 @@ urlpatterns = [
 
     path('tickets/', include('api.ticket.urls')),
 
-    path('computers/', include('api.computer.urls'))
+    path('computers/', include('api.computer.urls')),
+
+    path('repair-logs/', include('api.repair_logs.urls'))
 ]
