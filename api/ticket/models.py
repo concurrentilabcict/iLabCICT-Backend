@@ -18,6 +18,8 @@ class Ticket(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="tickets")
     computer = models.ForeignKey(Computer, on_delete=models.CASCADE, related_name="tickets")
 
+    ticket_code = models.CharField(max_length=20, unique=True)
+
     type = models.CharField(max_length=12, choices=TicketType.choices)
     title = models.CharField(max_length=100)
     complaint_description = models.TextField()
