@@ -1,8 +1,8 @@
-from django.db import models
-from api.ticket.models import Ticket
+from django.db import models, transaction, IntegrityError
 from django.conf import settings
 
-from django.utils import timezone
+from api.ticket.models import Ticket
+from api.common.utils.entity_code import generate_entity_code
 
 class RepairLog(models.Model):
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name="repair_logs")
@@ -16,17 +16,22 @@ class RepairLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        if not self.repair_log_code:
-            current_year = timezone.now().year
+        if self.repair_log_code:
+            return super().save(*args, **kwargs)
+        else:
+            MAX_RETRIES = 5
 
-            last_log = RepairLog.objects.filter(repair_log_code__startswith=f"RL{current_year}").order_by("id").last()
+            for _ in range(MAX_RETRIES):
+                try:
+                    with transaction.atomic():
+                        self.repair_log_code = generate_entity_code(
+                            model=RepairLog,
+                            field_name="repair_log_code",
+                            prefix="RL"
+                        )
+                
+                        return super().save(*args, **kwargs)
+                except IntegrityError:
+                    self.repair_log_code = None
 
-            if last_log:
-                last_number = int(last_log.repair_log_code[-5:])
-                new_number = last_number + 1
-            else:
-                new_number = 1
-
-            self.repair_log_code = f"{current_year}{new_number:05d}"
-        
-        super().save(*args, **kwargs)
+            raise IntegrityError("Failed to generate unique repair log code")

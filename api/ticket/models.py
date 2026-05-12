@@ -1,7 +1,9 @@
-from django.db import models
+from django.db import models, transaction, IntegrityError
 from django.conf import settings
+
 from api.computer.models import Computer
 from api.room.models import Room
+from api.common.utils.entity_code import generate_entity_code
 
 class Ticket(models.Model):
     class TicketStatus(models.TextChoices):
@@ -28,3 +30,25 @@ class Ticket(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.ticket_code:
+            return super().save(*args, **kwargs)
+        else:
+            MAX_RETRIES = 5
+            
+            for _ in range(MAX_RETRIES):
+                try:
+                    with transaction.atomic():
+
+                        self.ticket_code = generate_entity_code(
+                            model=Ticket,
+                            field_name="ticket_code",
+                            prefix="TK",
+                            )
+                        
+                        return super().save(*args, **kwargs)
+                except IntegrityError:
+                    self.ticket_code = None
+
+            raise IntegrityError("Failed to generate unique ticket code")
