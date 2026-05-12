@@ -14,7 +14,9 @@ class Computer(models.Model):
         BROKEN = "broken", "broken"
     
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='computers')
+
     computer_code = models.CharField(max_length=20, unique=True)
+    
     operating_system = models.CharField(max_length=30)
     gpu = models.CharField(max_length=30)
     cpu = models.CharField(max_length=30)
