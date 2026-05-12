@@ -7,7 +7,7 @@ class Room(models.Model):
         DEGRADED = "degraded", "degraded"
         OUT_OF_SERVICE = "out_of_service", "out of service"
 
-    room_name = models.CharField(max_length=20)
+    room_name = models.CharField(max_length=20, unique=True)
     floor_number = models.IntegerField()
     status = models.CharField(max_length=20, choices=RoomStatus.choices, default=RoomStatus.OPERATIONAL)
     created_at = models.DateTimeField(auto_now_add=True)
