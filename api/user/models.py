@@ -33,6 +33,8 @@ class User(AbstractUser):
                             field_name="user_code",
                             prefix="US"
                         )
+
+                        return super().save(*args, **kwargs)
                 except IntegrityError:
                     self.user_code = None
             raise IntegrityError("Failed to generate unique user code")

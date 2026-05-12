@@ -3,11 +3,13 @@ from api.user.models import User
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
+    user_code = serializers.CharField(read_only=True)
 
     class Meta:
         model = User
         fields = [
             "id",
+            "user_code",
             "username",
             "email",
             "password",
