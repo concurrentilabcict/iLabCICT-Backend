@@ -1,5 +1,6 @@
-from django.db import models
+from django.db import models, transaction, IntegrityError
 from api.room.models import Room
+from api.common.utils.entity_code import generate_entity_code
 
 class Computer(models.Model):
     class PeripheralStatus(models.TextChoices):
@@ -33,3 +34,24 @@ class Computer(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if self.computer_code:
+            return super().save(*args, **kwargs)
+        else:
+            MAX_RETRIES = 5
+
+            for _ in range(MAX_RETRIES):
+                try:
+                    with transaction.atomic():
+                        self.computer_code = generate_entity_code(
+                            model=Computer,
+                            field_name="computer_code",
+                            prefix="PC"
+                        )
+
+                        return super().save(*args, **kwargs)
+                except IntegrityError:
+                    self.computer_code = None
+                    
+            raise IntegrityError("Failed to generate unique computer code")
