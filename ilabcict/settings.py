@@ -31,7 +31,14 @@ SECRET_KEY = 'django-insecure-bn7869i)74sk3c-l__8uu3@fte%rj_51hhjz+8yws%&7aqi^*l
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    "ilabcict-backend.onrender.com",
+    "127.0.0.1",
+    "localhost",
+]
+
+# for mobile dev
+CORS_ALLOW_ALL_ORIGINS = True
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -59,10 +66,12 @@ INSTALLED_APPS = [
     'api.apps.ApiConfig',
     'rest_framework',
     "cloudinary",
-    "cloudinary_storage"
+    "cloudinary_storage",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
