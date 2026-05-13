@@ -1,10 +1,12 @@
 from django.urls import path
-from api.user.views import UserListCreateView, UserDetailView
+from api.user.views import UserListCreateView, UserDetailView, UserRoleListView
 
 urlpatterns = [
     # GET all users, CREATE one user
     path('', UserListCreateView.as_view()),
 
     # GET, UPDATE, DELETE one user
-    path('<int:pk>/', UserDetailView.as_view())
+    path('<int:pk>/', UserDetailView.as_view()),
+
+    path('roles/', UserRoleListView.as_view())
 ]
