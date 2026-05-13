@@ -2,10 +2,10 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from api.repair_log.models import RepairLog
 from api.repair_log.serializers import RepairLogSerializer
 
-class RepairLogListCreate(ListCreateAPIView):
+class RepairLogListCreateView(ListCreateAPIView):
     queryset = RepairLog.objects.all()
     serializer_class = RepairLogSerializer
 
-class RepairLogDetail(RetrieveUpdateDestroyAPIView):
+class RepairLogDetailView(RetrieveUpdateDestroyAPIView):
     queryset = RepairLog.objects.all()
     serializer_class = RepairLogSerializer
