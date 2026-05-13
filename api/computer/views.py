@@ -29,3 +29,9 @@ class ActiveComputerWithPeripheralListView(ListAPIView):
     def get_queryset(self):
         filters = self.request.query_params
         return ComputerService.get_all_active_with_peripheral(filters=filters)
+    
+class ActiveComputerNoPeripheralsView(ListAPIView):
+    serializer_class = ComputerSerializer
+
+    def get_queryset(self):
+        return ComputerService.get_all_active_no_peripherals()
