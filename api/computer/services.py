@@ -39,6 +39,7 @@ class ComputerService:
         
         return queryset
     
+    @staticmethod
     def get_all_active_no_peripherals():
         return Computer.objects.filter(
             Q(mouse_status=Computer.PeripheralStatus.NONE) &
