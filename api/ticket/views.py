@@ -15,5 +15,5 @@ class TicketStatusListView(ListAPIView):
     serializer_class = TicketSerializer
 
     def get_queryset(self):
-        status = self.request.query_params("status")
+        status = self.request.query_params.get("status")
         return TicketService.get_all_by_status(status)
