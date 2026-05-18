@@ -11,7 +11,7 @@ class User(AbstractUser):
 
     
     user_code = models.CharField(max_length=20, unique=True)
-    # first and last name are default with django
+    # first_name and last_name are default with django
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.FACULTY)
     profile_image = models.ImageField(upload_to="users/", null=True, blank=True)
