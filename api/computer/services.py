@@ -46,4 +46,5 @@ class ComputerService:
             Q(keyboard_status=Computer.PeripheralStatus.NONE) &
             Q(monitor_status=Computer.PeripheralStatus.NONE) &
             Q(ups_status=Computer.PeripheralStatus.NONE)
-        )
+        )   
+    
