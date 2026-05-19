@@ -17,5 +17,7 @@ urlpatterns = [
 
     path('repair-logs/', include('api.repair_log.urls')),
 
-    path('reports/', include('api.report.urls'))
+    path('reports/', include('api.report.urls')),
+
+    path('maintenance-history', include('api.maintenance_history.urls'))
 ]

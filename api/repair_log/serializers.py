@@ -5,3 +5,4 @@ class RepairLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = RepairLog
         fields = '__all__'
+        read_only_fields = ['repair_log_code']
