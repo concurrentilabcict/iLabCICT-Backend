@@ -46,12 +46,14 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
 
+        profile_image = self.user.profile_image
+
         data["role"] = self.user.role
         data["id"] = self.user.id
         data["first_name"] = self.user.first_name
         data["last_name"] = self.user.last_name
         data["is_authenticated"] = self.user.is_authenticated
         data["is_active"] = self.user.is_active
-        data["profile_image"] = self.user.profile_image.url
+        data["profile_image"] = profile_image.url if profile_image else self.allow_null
 
         return data
