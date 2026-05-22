@@ -2,11 +2,10 @@ from rest_framework import serializers
 from api.repair_log.models import RepairLog
 from api.maintenance_history.models import MaintenanceHistory
 
-
 class RepairLogSerializer(serializers.ModelSerializer):
 
     maintenance_type = serializers.CharField(
-        choices = MaintenanceHistory.MaintenanceTypes,
+        choices = MaintenanceHistory.MaintenanceTypes.choices,
         write_only = True)
 
     class Meta:
