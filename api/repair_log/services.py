@@ -15,7 +15,7 @@ class RepairLogService:
         return queryset
     
     @staticmethod 
-    def record_maintenance_history(ticket_id, notes):
+    def record_maintenance_history(ticket_id, notes, type):
         ticket = Ticket.objects.get(id=ticket_id)
         computer = Computer.objects.get(id=ticket.computer_id)
 
@@ -30,7 +30,7 @@ class RepairLogService:
             technician_id=ticket.assigned_to_id,
             performed_by=full_name,
             maintenance_notes=notes,
-            maintenance_type=None,
+            maintenance_type=type,
             date_performed=ticket.updated_at,
         )
         

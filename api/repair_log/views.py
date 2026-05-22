@@ -9,7 +9,8 @@ class RepairLogListCreateView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         repair_log = serializer.save()
-        RepairLogService.record_maintenance_history(repair_log.ticket_id, repair_log.notes)
+        maintenance_type = self.request.data.get('maintenance_type')
+        RepairLogService.record_maintenance_history(repair_log.ticket_id, repair_log.notes, maintenance_type)
 
 class RepairLogDetailView(RetrieveUpdateDestroyAPIView):
     queryset = RepairLog.objects.all()
