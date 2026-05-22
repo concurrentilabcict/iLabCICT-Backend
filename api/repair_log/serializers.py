@@ -4,7 +4,7 @@ from api.maintenance_history.models import MaintenanceHistory
 
 class RepairLogSerializer(serializers.ModelSerializer):
 
-    maintenance_type = serializers.CharField(
+    maintenance_type = serializers.ChoiceField(
         choices = MaintenanceHistory.MaintenanceTypes.choices,
         write_only = True)
 
