@@ -1,4 +1,5 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from api.user.models import User
 from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer
 from api.user.services import UserService
@@ -15,6 +16,8 @@ class UserListCreateView(ListCreateAPIView):
 class UserDetailView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    parser_classes = [MultiPartParser, FormParser]
 
 class UserRoleListView(ListAPIView):
     serializer_class = UserSerializer
