@@ -3,6 +3,8 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from api.report.models import Report
 from api.report.serializers import ReportSerializer
 from api.report.services import ReportService
+from rest_framework.response import Response
+from api.repair_log.serializers import RepairLogSerializer
 
 
 class ReportListCreateView(ListCreateAPIView):
@@ -10,7 +12,7 @@ class ReportListCreateView(ListCreateAPIView):
     serializer_class = ReportSerializer
 
     def create(self, request, *args, **kwargs):
-        return ReportService.generate_report_content(self, request)
+        return ReportService.generate_report_content(request)
     
 class ReportDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Report.objects.all()
