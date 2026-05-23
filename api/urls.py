@@ -19,5 +19,5 @@ urlpatterns = [
 
     path('reports/', include('api.report.urls')),
 
-    path('maintenance-history', include('api.maintenance_history.urls'))
+    path('maintenance-history/', include('api.maintenance_history.urls'))
 ]
