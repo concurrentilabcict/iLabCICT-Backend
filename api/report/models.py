@@ -12,12 +12,16 @@ class Report(models.Model):
     report_code = models.CharField(max_length=20, unique=True)
 
     title = models.CharField(max_length=100)
-    content = models.TextField()
+    content = models.JSONField(default=dict)
     status = models.CharField(max_length=20, choices=ReportStatus)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
+        
+        if self.pk and Report.objects.filter(pk=self.pk).exists():
+            raise ValueError("Report Entried are immutable and cannot be updated")
+
         if self.report_code:
             return super().save(*args, **kwargs)
         else:
@@ -38,3 +42,5 @@ class Report(models.Model):
                     self.report_code = None
 
             raise IntegrityError("Failed to generate unique report code")
+        
+    
