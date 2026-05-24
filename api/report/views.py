@@ -3,8 +3,6 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from api.report.models import Report
 from api.report.serializers import ReportSerializer
 from api.report.services import ReportService
-from rest_framework.response import Response
-from api.repair_log.serializers import RepairLogSerializer
 
 
 class ReportListCreateView(ListCreateAPIView):
