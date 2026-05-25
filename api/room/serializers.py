@@ -11,3 +11,8 @@ class RoomSerializer(serializers.ModelSerializer):
 
     def get_computer_count(self, obj):
         return obj.computers.count()
+    
+class RoomMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        fields = ['id', 'room_name', 'building_name']
