@@ -69,3 +69,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data["profile_image"] = profile_image.url if profile_image else None
 
         return data
+    
+class UserMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'last_name', 'first_name']

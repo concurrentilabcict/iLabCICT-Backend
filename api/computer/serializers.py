@@ -6,3 +6,9 @@ class ComputerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Computer
         fields = '__all__'
+
+
+class ComputerMinimalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Computer
+        fields = ['id', 'computer_code']
