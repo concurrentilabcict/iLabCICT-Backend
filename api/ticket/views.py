@@ -4,8 +4,16 @@ from api.ticket.serializers import TicketSerializer
 from api.ticket.services import TicketService
 
 class TicketListCreateView(ListCreateAPIView):
-    queryset = Ticket.objects.all()
+    #queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
+
+    def get_queryset(self):
+        return Ticket.objects.select_related(
+            'reported_by',
+            'assigned_to',
+            'room',
+            'computer'
+        )
 
 class TicketDetailView(RetrieveUpdateDestroyAPIView):
     #queryset = Ticket.objects.all()
