@@ -8,9 +8,17 @@ class TicketListCreateView(ListCreateAPIView):
     serializer_class = TicketSerializer
 
 class TicketDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = Ticket.objects.all()
+    #queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
 
+    def get_queryset(self):
+        return Ticket.objects.select_related(
+            'reported_by',
+            'assigned_to',
+            'room',
+            'computer'
+        )
+    
 class TicketStatusListView(ListAPIView):
     serializer_class = TicketSerializer
 

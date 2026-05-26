@@ -172,3 +172,4 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+

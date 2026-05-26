@@ -1,7 +1,6 @@
-from django.db.models import Q
 from api.report.models import Report
 from api.repair_log.models import RepairLog
-from groq import Groq
+import groq
 from django.conf import settings
 from rest_framework.response import Response
 from rest_framework import status
@@ -10,6 +9,8 @@ from django.db.models.functions import TruncDate
 from django.db.models import Count
 from api.report.serializers import ReportSerializer
 from api.user.services import UserService
+from api.common.utils.prompts import load_prompt
+
 class ReportService:
     
     @staticmethod
@@ -30,6 +31,10 @@ class ReportService:
         # if possible pwede siguro matrack kung saang repair log per room? 
 
         repair_logs = ReportService.get_repair_logs_by_week(request.data.get('start_time'), request.data.get('end_time'), request.data.get('assigned_id'))
+        
+        if not repair_logs.exists():
+            return Response({'error': 'No repair logs found'}, status=status.HTTP_404_NOT_FOUND)
+        
         repair_log_count = ReportService.count_repair_log_per_day(repair_logs)
 
         compiled_logs = '\n'.join([
@@ -39,11 +44,14 @@ class ReportService:
 
         summarized_report = ReportService.report_content_summarization(compiled_logs)
 
+        if summarized_report['status'] == 'unsuccessful':
+            return Response({'error': summarized_report['value']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
         assigned_id = request.data.get('assigned_id')
         technician_name = UserService.get_user_full_name(assigned_id)
         title = request.data.get('title')
 
-        formatted_report = ReportService.format_report_response(repair_log_count, summarized_report, technician_name)
+        formatted_report = ReportService.format_report_response(repair_log_count, summarized_report['value'], technician_name)
 
         report = Report.objects.create(
             technician_id = assigned_id,
@@ -91,20 +99,68 @@ class ReportService:
         }
         return formatted    
     
-    
-    def report_content_summarization(content):
-        client = Groq(api_key=settings.GROQ_API_KEY)
-        completion = client.chat.completions.create(
-            model="openai/gpt-oss-120b",
-            messages=[
-                {
-                    "role": "user",
-                    "content": f"summarize these repair logs into a clear report in a short but concise paragraph form:\n\n{content} || if there's no content return this exact message: no repair log content"
-                }
-            ]
-        )
 
-        return completion.choices[0].message.content
+    def report_content_summarization(content: str):
+
+        if not content or not content.strip():
+            return {
+                "value": "No content",
+                "status": "unsuccessful"
+            }
+        
+        groq_models = [
+            "llama-3.3-70b-versatile",       
+            "openai/gpt-oss-120b",           
+            "qwen/qwen3-32b",                
+            "meta-llama/llama-4-scout-17b-16e-instruct",  
+            "llama-3.1-8b-instant",         
+        ]
+
+        summary_prompt = load_prompt('summary-report.md')
+
+        client = groq.Groq(api_key=settings.GROQ_API_KEY)
+
+        for model in groq_models:
+            try:
+                completion = client.chat.completions.create(
+                model=model,
+                messages=[
+                        {
+                            "role": "system",
+                            "content": summary_prompt
+                        },
+                        {
+                            "role": "user",
+                            "content": content
+                        }
+                    ],
+                    temperature = 0.3,
+                    max_completion_tokens=512 
+                )
+
+                return {
+                    "value": completion.choices[0].message.content.strip(),
+                    "status": "successful"
+                    }
+            
+            except groq.RateLimitError:
+                print(f"Rate Limit Exceeded on model: {model}")
+                continue
+            except groq.BadRequestError as e:
+                return {
+                "value": f"Bad Request: {str(e)}",
+                "status": "unsuccessful"
+                }
+
+        return {
+                "value": f"Summary generation failed: Models Exhausted",
+                "status": "unsuccessful"
+                }
+
+       
+        
+
+        
     
     
 
