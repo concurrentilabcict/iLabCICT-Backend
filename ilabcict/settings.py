@@ -173,4 +173,3 @@ STATIC_URL = 'static/'
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
