@@ -1,4 +1,3 @@
-from django.db.models import Q
 from api.report.models import Report
 from api.repair_log.models import RepairLog
 from groq import Groq
@@ -10,6 +9,8 @@ from django.db.models.functions import TruncDate
 from django.db.models import Count
 from api.report.serializers import ReportSerializer
 from api.user.services import UserService
+from api.common.utils.prompts import load_prompt
+
 class ReportService:
     
     @staticmethod
@@ -30,6 +31,10 @@ class ReportService:
         # if possible pwede siguro matrack kung saang repair log per room? 
 
         repair_logs = ReportService.get_repair_logs_by_week(request.data.get('start_time'), request.data.get('end_time'), request.data.get('assigned_id'))
+        
+        if not repair_logs.exists():
+            return Response({'error': 'No repair logs found'}, status=status.HTTP_404_NOT_FOUND)
+        
         repair_log_count = ReportService.count_repair_log_per_day(repair_logs)
 
         compiled_logs = '\n'.join([
@@ -38,6 +43,9 @@ class ReportService:
         ])
 
         summarized_report = ReportService.report_content_summarization(compiled_logs)
+
+        if summarized_report is None:
+            return Response({'error': 'Failed to generate summary'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         assigned_id = request.data.get('assigned_id')
         technician_name = UserService.get_user_full_name(assigned_id)
@@ -91,20 +99,42 @@ class ReportService:
         }
         return formatted    
     
-    
-    def report_content_summarization(content):
-        client = Groq(api_key=settings.GROQ_API_KEY)
-        completion = client.chat.completions.create(
+
+    def report_content_summarization(content: str):
+
+        summary_prompt = load_prompt('summary-report.md')
+
+        if not content or not content.strip():
+            return None
+        
+        try:
+            client = Groq(api_key=settings.GROQ_API_KEY)
+            completion = client.chat.completions.create(
             model="openai/gpt-oss-120b",
             messages=[
-                {
-                    "role": "user",
-                    "content": f"summarize these repair logs into a clear report in a short but concise paragraph form:\n\n{content} || if there's no content return this exact message: no repair log content"
-                }
-            ]
-        )
+                    {
+                        "role": "system",
+                        "content": summary_prompt
+                    },
+                    {
+                        "role": "user",
+                        "content": content
+                    }
+                ],
+                temperature = 0.3,
+                max_completion_tokens=512 
+            )
 
-        return completion.choices[0].message.content
+            return completion.choices[0].message.content.strip()
+        
+        except Exception as e:
+            print(f"Summary generation failed: {str(e)}")
+            return None
+
+       
+        
+
+        
     
     
 
