@@ -173,3 +173,8 @@ STATIC_URL = 'static/'
 
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
+SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+SESSION_AGE = 1200 #20 MINS
+SESSION_SAVE_EVERY_REQUEST = False 
+MAX_HISTORY = 5
+
