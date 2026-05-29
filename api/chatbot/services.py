@@ -7,7 +7,17 @@ import groq
 
 class ChatbotService:
 
+
+    tagalog_profanity = settings.TAGALOG_PROFANITY_WORDS
+
+    custom_words = list({
+        word.strip().lower()
+        for word in tagalog_profanity.split(",")
+        if word.strip()
+    })
+
     profanity.load_censor_words()
+    profanity.add_censor_words(custom_words)
 
     system_prompt = prompts.load_prompt('chat-rules.md')
         
@@ -38,7 +48,7 @@ class ChatbotService:
     
     def clean_input(text):
         if profanity.contains_profanity(text):
-            return None, "Please keep the conversation professional."
+            return "Please keep the conversation professional."
         return None
     
     def is_session_expired(session):

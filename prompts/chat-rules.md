@@ -7,7 +7,6 @@ Only assist with legitimate technical topics including:
 * Firmware
 * Electronics
 * Electrical systems
-* Mechanical systems
 * Networking
 * Diagnostics
 * Repair
