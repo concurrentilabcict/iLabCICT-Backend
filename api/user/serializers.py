@@ -1,9 +1,11 @@
 from rest_framework import serializers
 from api.user.models import User
+from django.contrib.auth import authenticate
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
+    old_password = serializers.CharField(write_only=True)
     password = serializers.CharField(write_only=True)
     user_code = serializers.CharField(read_only=True)
 
@@ -15,6 +17,7 @@ class UserSerializer(serializers.ModelSerializer):
             "username",
             "email",
             "password",
+            "old_password",
             "first_name",
             "last_name",
             "role",
@@ -32,13 +35,25 @@ class UserSerializer(serializers.ModelSerializer):
         return user
     
     def update(self, instance, validated_data):
-        password = validated_data.pop("password", None)
+        
+        old_password = validated_data.pop("old_password", None)
+        new_password = validated_data.pop("password", None)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
 
-        if password:
-            instance.set_password(password)
+        if new_password:
+
+            user = authenticate(username=instance.username, password=old_password)
+
+            if user is None:
+                raise serializers.ValidationError({"old_password": "Incorrect password."})
+            
+            instance.set_password(new_password)
+
+        else:
+             raise serializers.ValidationError({"password": "new password missing."})
+
 
         instance.save()
         return instance
