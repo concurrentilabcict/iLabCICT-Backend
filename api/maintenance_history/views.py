@@ -3,13 +3,12 @@ from rest_framework.generics import ListCreateAPIView, ListAPIView, RetrieveUpda
 from api.maintenance_history.models import MaintenanceHistory
 from api.maintenance_history.serializers import MaintenanceHistorySerializer
 from api.maintenance_history.services import MaintenanceHistoryServices
+
+
 class MaintenanceHistoryListCreateView(ListCreateAPIView):
     queryset = MaintenanceHistory.objects.all()
     serializer_class = MaintenanceHistorySerializer
 
-class MaintenanceHistoryDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = MaintenanceHistory.objects.all()
-    serializer_class = MaintenanceHistorySerializer
 
 class MaintenanceHistoryByComputerCode(ListAPIView):
     serializer_class = MaintenanceHistorySerializer
