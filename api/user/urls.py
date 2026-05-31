@@ -1,5 +1,5 @@
 from django.urls import path
-from api.user.views import UserListCreateView, UserDetailView, UserRoleListView
+from api.user.views import UserListCreateView, UserDetailView, UserRoleListView, UserUpdatePassword
 
 urlpatterns = [
     # GET all users, CREATE one user
@@ -7,6 +7,7 @@ urlpatterns = [
 
     # GET, UPDATE, DELETE one user
     path('<int:pk>/', UserDetailView.as_view()),
+    path('reset-password/<int:pk>/', UserUpdatePassword.as_view()),
 
     path('roles/', UserRoleListView.as_view())
 ]
