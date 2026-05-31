@@ -1,8 +1,10 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, UpdateAPIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from api.user.models import User
-from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer
+from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer, UserUpdatePasswordSerializer
 from api.user.services import UserService
+from rest_framework.response import Response
+from rest_framework import status
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -25,3 +27,18 @@ class UserRoleListView(ListAPIView):
     def get_queryset(self):
         role = self.request.query_params.get("role")
         return UserService.get_all_by_role(role)
+    
+class UserUpdatePassword(UpdateAPIView):
+    serializer_class = UserUpdatePasswordSerializer
+    http_method_names = ['patch']
+    queryset = User.objects.all()
+
+    def patch(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"message": "Password updated successfully."},
+            status=status.HTTP_200_OK
+        )

@@ -5,8 +5,7 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
-    old_password = serializers.CharField(write_only=True)
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)
     user_code = serializers.CharField(read_only=True)
 
     class Meta:
@@ -17,7 +16,6 @@ class UserSerializer(serializers.ModelSerializer):
             "username",
             "email",
             "password",
-            "old_password",
             "first_name",
             "last_name",
             "role",
@@ -35,26 +33,14 @@ class UserSerializer(serializers.ModelSerializer):
         return user
     
     def update(self, instance, validated_data):
-        
-        old_password = validated_data.pop("old_password", None)
-        new_password = validated_data.pop("password", None)
+        password = validated_data.pop("password", None)
+       
+        if password:
+            raise serializers.ValidationError({"message": "Password not authorized to be updated."})
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-
-        if new_password:
-
-            user = authenticate(username=instance.username, password=old_password)
-
-            if user is None:
-                raise serializers.ValidationError({"old_password": "Incorrect password."})
-            
-            instance.set_password(new_password)
-
-        else:
-             raise serializers.ValidationError({"password": "new password missing."})
-
-
+        
         instance.save()
         return instance
     
@@ -89,3 +75,22 @@ class UserMinimalSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'last_name', 'first_name']
+
+class UserUpdatePasswordSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=True)
+    old_password = serializers.CharField(write_only=True, required=True)
+
+    class Meta:
+        model = User
+        fields = ['password', 'old_password']
+
+    def update(self, instance, validated_data):
+        old_password = validated_data.pop("old_password", None)
+        new_password = validated_data.pop("password", None)
+
+        if not instance.check_password(old_password):
+            raise serializers.ValidationError({"message": "Incorrect password."})
+        
+        instance.set_password(new_password)
+        instance.save()
+        return instance
