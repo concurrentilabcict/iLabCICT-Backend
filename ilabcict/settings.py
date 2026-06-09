@@ -56,6 +56,8 @@ SIMPLE_JWT = {
 # Application definition
 
 INSTALLED_APPS = [
+
+    'channels',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -69,6 +71,31 @@ INSTALLED_APPS = [
     "cloudinary_storage",
     "corsheaders",
 ]
+
+ASGI_APPLICATION = 'ilabcict.asgi.application'
+
+#CHANNEL_LAYERS = {
+#    'default': {
+#        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+#    },
+#}
+
+if os.getenv('REDIS_URL'):
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels_redis.core.RedisChannelLayer',
+            'CONFIG': {
+                'hosts': [os.getenv('REDIS_URL')],
+            },
+        }
+    }
+else:
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        },
+    }
+
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
