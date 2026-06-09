@@ -86,6 +86,9 @@ if os.getenv('REDIS_URL'):
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
             'CONFIG': {
                 'hosts': [os.getenv('REDIS_URL')],
+                "socket_connect_timeout": 10,
+                "socket_timeout": 10,
+                "retry_on_timeout": True,
             },
         }
     }
