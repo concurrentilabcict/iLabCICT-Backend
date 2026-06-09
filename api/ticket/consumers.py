@@ -22,6 +22,13 @@ class TicketConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
 
+    async def receive(self, text_data):
+        data = json.loads(text_data)
+
+        if data.get('type') == 'ping':
+            await self.send(text_data=json.dumps({'type': 'pong'}))
+            return
+
     async def ticket_created(self, event):
         await self.send(text_data=json.dumps({
             'event': 'ticket_created',
