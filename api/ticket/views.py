@@ -1,23 +1,19 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from api.ticket.models import Ticket
-from api.ticket.serializers import TicketSerializer
+from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer
 from api.ticket.services import TicketService
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync  
 
 class TicketListCreateView(ListCreateAPIView):
     #queryset = Ticket.objects.all()
-    serializer_class = TicketSerializer
 
-    def get_queryset(self):
-        return Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
-        )
-
-class TicketDetailView(RetrieveUpdateDestroyAPIView):
-    #queryset = Ticket.objects.all()
-    serializer_class = TicketSerializer
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return TicketWriteSerializer
+        
+        return TicketReadSerializer
+    
 
     def get_queryset(self):
         return Ticket.objects.select_related(
@@ -27,8 +23,80 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
             'computer'
         )
     
+    def perform_create(self, serializer):
+        ticket = serializer.save()
+        
+        ticket = Ticket.objects.select_related(
+            'reported_by',
+            'assigned_to',
+            'room',
+            'computer'
+        ).get(pk=ticket.pk)
+
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            'technicians',
+            {
+                'type': 'ticket_created',
+                'ticket': TicketReadSerializer(ticket).data
+            }
+        )
+
+class TicketDetailView(RetrieveUpdateDestroyAPIView):
+    #queryset = Ticket.objects.all()
+
+    def get_serializer_class(self):
+        if self.request.method in ['PATCH', 'PUT']:
+            return TicketWriteSerializer
+        
+        return TicketReadSerializer
+
+    def get_queryset(self):
+        return Ticket.objects.select_related(
+            'reported_by',
+            'assigned_to',
+            'room',
+            'computer'
+        )
+    
+    def perform_update(self, serializer):
+        ticket = serializer.save()
+
+        ticket = Ticket.objects.select_related(
+            'reported_by',
+            'assigned_to',
+            'room',
+            'computer'
+        ).get(pk=ticket.pk)
+
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            'technicians',
+            {
+                'type': 'ticket_updated',
+                'ticket': TicketReadSerializer(ticket).data
+            }
+        )
+
+    def perform_destroy(self, instance):
+        ticket_id = instance.id
+
+        instance.delete()
+
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            'technicians',
+            {
+                'type': 'ticket_deleted',
+                'ticket_id': ticket_id
+            }
+        )
+
 class TicketStatusListView(ListAPIView):
-    serializer_class = TicketSerializer
+    serializer_class = TicketReadSerializer
 
     def get_queryset(self):
         status = self.request.query_params.get("status")
