@@ -8,8 +8,8 @@ from api.common.utils.entity_code import generate_entity_code
 class Ticket(models.Model):
     class TicketStatus(models.TextChoices):
         OPEN = "open", "open"
-        PENDING = "pending", "pending"
-        RESOLVED = "resolved", "resolved"
+        RESOLVED = 'resolved', 'resolved'
+        ONGOING = "ongoing", "ongoing"
         
     class TicketType(models.TextChoices):
         REPORT = "report", "report"
