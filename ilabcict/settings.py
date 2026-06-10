@@ -48,7 +48,7 @@ REST_FRAMEWORK = {
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(hours=2),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
     "AUTH_HEADER_TYPES": ("Bearer", ) 
 }
 
@@ -80,21 +80,22 @@ ASGI_APPLICATION = 'ilabcict.asgi.application'
 #    },
 #}
 
-if os.getenv('REDIS_URL'):
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                'hosts': [os.getenv('REDIS_URL')],
-            },
-        }
-    }
-else:
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels.layers.InMemoryChannelLayer',
-        },
-    }
+# switch to else block when in development environment
+#if os.getenv('REDIS_URL'):
+    #CHANNEL_LAYERS = {
+       # 'default': {
+      #      'BACKEND': 'channels_redis.core.RedisChannelLayer',
+     #       'CONFIG': {
+    #            'hosts': [os.getenv('REDIS_URL')],
+   #         },
+  #      }
+ #   }
+#else:
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 MIDDLEWARE = [
