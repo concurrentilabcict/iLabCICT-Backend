@@ -21,5 +21,7 @@ urlpatterns = [
 
     path('maintenance-history/', include('api.maintenance_history.urls')),
 
-    path('chat/', include('api.chatbot.urls'))
+    path('chat/', include('api.chatbot.urls')),
+
+    path('notifications/', include('api.notification.urls'))
 ]

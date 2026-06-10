@@ -4,6 +4,7 @@ from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer
 from api.ticket.services import TicketService
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
+from api.notification.services import NotificationService
 
 class TicketListCreateView(ListCreateAPIView):
     #queryset = Ticket.objects.all()
@@ -32,6 +33,15 @@ class TicketListCreateView(ListCreateAPIView):
             'room',
             'computer'
         ).get(pk=ticket.pk)
+
+        NotificationService.create_new_ticket_notification(
+            receiver_id=ticket.assigned_to,
+            title='New ticket Created!',
+            content={
+                'header': ticket.title,
+                'body': ticket.complaint_description
+            }
+        )
 
         channel_layer = get_channel_layer()
 

@@ -81,21 +81,21 @@ ASGI_APPLICATION = 'ilabcict.asgi.application'
 #}
 
 # switch to else block when in development environment
-if os.getenv('REDIS_URL'):
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels_redis.core.RedisChannelLayer',
-            'CONFIG': {
-                'hosts': [os.getenv('REDIS_URL')],
-            },
-        }
-    }
-else:
-    CHANNEL_LAYERS = {
-        'default': {
-            'BACKEND': 'channels.layers.InMemoryChannelLayer',
-        },
-    }
+#if os.getenv('REDIS_URL'):
+    #CHANNEL_LAYERS = {
+       # 'default': {
+      #      'BACKEND': 'channels_redis.core.RedisChannelLayer',
+     #       'CONFIG': {
+    #            'hosts': [os.getenv('REDIS_URL')],
+   #         },
+  #      }
+ #   }
+#else:
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 
 MIDDLEWARE = [
