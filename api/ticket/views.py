@@ -105,6 +105,8 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
             }
         )
 
+    http_method_names = ['patch', 'delete']
+
 class TicketStatusListView(ListAPIView):
     serializer_class = TicketReadSerializer
 

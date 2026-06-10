@@ -81,7 +81,10 @@ ASGI_APPLICATION = 'ilabcict.asgi.application'
 #}
 
 # switch to else block when in development environment
-if os.getenv('REDIS_URL'):
+
+ENV = os.getenv('ENV','development')
+
+if os.getenv('REDIS_URL') and ENV == "production":
     CHANNEL_LAYERS = {
         'default': {
             'BACKEND': 'channels_redis.core.RedisChannelLayer',
