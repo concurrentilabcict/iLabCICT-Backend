@@ -36,10 +36,11 @@ class TicketListCreateView(ListCreateAPIView):
 
         NotificationService.create_new_ticket_notification(
             receiver_id=ticket.assigned_to,
-            title='New ticket Created!',
+            title='New Ticket Created!',
             content={
                 'header': ticket.title,
-                'body': ticket.complaint_description
+                'body': ticket.complaint_description,
+                'ticket-status': ticket.status
             }
         )
 
@@ -81,6 +82,16 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
         ).get(pk=ticket.pk)
 
         channel_layer = get_channel_layer()
+
+        NotificationService.create_new_ticket_notification(
+            receiver_id=ticket.reported_by,
+            title='Ticket Status Updated!',
+            content={
+                'header': ticket.title,
+                'body': ticket.complaint_description,
+                'ticket-status': ticket.status
+            }
+        )
 
         async_to_sync(channel_layer.group_send)(
             'technicians',

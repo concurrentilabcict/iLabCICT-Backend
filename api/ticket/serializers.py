@@ -39,4 +39,4 @@ class TicketWriteSerializer(serializers.ModelSerializer):
                     'message': f"Only 'status' field can be updated"
                 })
             
-            return attrs
+        return attrs
