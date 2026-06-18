@@ -5,7 +5,7 @@ from api.maintenance_history.serializers import MaintenanceHistorySerializer
 from api.maintenance_history.services import MaintenanceHistoryServices
 
 
-class MaintenanceHistoryListCreateView(ListAPIView):
+class MaintenanceHistoryListView(ListAPIView):
     queryset = MaintenanceHistory.objects.all()
     serializer_class = MaintenanceHistorySerializer
 
