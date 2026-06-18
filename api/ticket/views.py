@@ -7,7 +7,6 @@ from asgiref.sync import async_to_sync
 from api.notification.services import NotificationService
 
 class TicketListCreateView(ListCreateAPIView):
-    #queryset = Ticket.objects.all()
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -55,10 +54,9 @@ class TicketListCreateView(ListCreateAPIView):
         )
 
 class TicketDetailView(RetrieveUpdateDestroyAPIView):
-    #queryset = Ticket.objects.all()
 
     def get_serializer_class(self):
-        if self.request.method in ['PATCH', 'PUT']:
+        if self.request.method == 'PATCH':
             return TicketWriteSerializer
         
         return TicketReadSerializer

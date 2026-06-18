@@ -1,9 +1,9 @@
 from django.urls import path
-from api.maintenance_history.views import MaintenanceHistoryListCreateView, MaintenanceHistoryByComputerCode
+from api.maintenance_history.views import MaintenanceHistoryListView, MaintenanceHistoryByComputerCode
 
 urlpatterns = [
-    path('', MaintenanceHistoryListCreateView.as_view()),
-    path('<int:pk>/', MaintenanceHistoryListCreateView.as_view()),
+    path('', MaintenanceHistoryListView.as_view()),
+    path('<int:pk>/', MaintenanceHistoryListView.as_view()),
 
     path('computer/', MaintenanceHistoryByComputerCode.as_view()),
 ]
