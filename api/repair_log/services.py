@@ -1,19 +1,12 @@
 from api.repair_log.models import RepairLog
-from api.ticket.models import Ticket
 from api.maintenance_history.models import MaintenanceHistory
 from api.notification.services import NotificationService
-from api.computer.models import Computer
-from api.user.models import User
 
 class RepairLogService:
 
     @staticmethod
     def get_all_by_technician(technician_id=None):
-        queryset = RepairLog.objects.all()
-
-        if technician_id:
-            queryset = queryset.filter(technician=technician_id)
-
+        queryset = RepairLog.objects.filter(technician=technician_id)
         return queryset
     
     @staticmethod 
@@ -46,5 +39,3 @@ class RepairLogService:
                 'ticket-status': ticket.status 
             }   
             )
-
-
