@@ -1,8 +1,10 @@
 from api.repair_log.models import RepairLog
 from api.ticket.models import Ticket
 from api.maintenance_history.models import MaintenanceHistory
+from api.notification.services import NotificationService
 from api.computer.models import Computer
 from api.user.models import User
+
 class RepairLogService:
 
     @staticmethod
@@ -15,23 +17,34 @@ class RepairLogService:
         return queryset
     
     @staticmethod 
-    def record_maintenance_history(ticket_id, notes, type):
-        ticket = Ticket.objects.get(id=ticket_id)
-        computer = Computer.objects.get(id=ticket.computer_id)
-
-        technician = User.objects.get(id=ticket_id.assigned_to_id)
+    def record_maintenance_history(ticket, notes, type, technician, computer):
         full_name = technician.first_name + " " + technician.last_name 
-        ticket.status = 'resolved'
-        ticket.save()
+        RepairLogService.update_ticket_to_resolved(ticket)
 
         MaintenanceHistory.objects.create(
             computer=computer,
             computer_id=computer.id,
-            technician_id=ticket.assigned_to_id,
+            technician_id=technician.id,
             performed_by=full_name,
             maintenance_notes=notes,
             maintenance_type=type,
             date_performed=ticket.updated_at,
         )
+
+    
+    def update_ticket_to_resolved(ticket):
         
+        ticket.status = 'resolved'
+        ticket.save()
+
+        NotificationService.create_new_ticket_notification(
+            receiver_id=ticket.reported_by,
+            title='Ticket has been resolved!',
+            content={
+                'header':ticket.title,
+                'body': ticket.complaint_description,
+                'ticket-status': ticket.status 
+            }   
+            )
+
 

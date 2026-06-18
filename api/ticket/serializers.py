@@ -38,5 +38,21 @@ class TicketWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError({
                     'message': f"Only 'status' field can be updated"
                 })
-            
+
+            new_status = attrs.get('status')
+            current_status = self.instance.status
+
+            if current_status == 'resolved':
+                raise serializers.ValidationError({
+                    'message': f"Completed Tickets cannot be modified"
+                })
+            elif current_status == 'ongoing' and new_status == 'open':
+                raise serializers.ValidationError({
+                    'message': f"Ongoing tickets cannot be reverted to Open."
+                })
+            elif new_status == 'resolved':
+                raise serializers.ValidationError({
+                    'message': f"Tickets cannot be completed manually"
+                })
+
         return attrs
