@@ -1,5 +1,5 @@
 
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import ListAPIView, ListAPIView, RetrieveAPIView
 from api.notification.models import Notification
 from api.notification.serializers import NotificationSerializer
 from api.notification.services import NotificationService
@@ -11,8 +11,7 @@ class NotificationListView(ListAPIView):
         user = self.request.query_params.get("user-id")
         return NotificationService.get_all_notification_per_user(user_id=user)
 
-class NotificationDetailView(RetrieveUpdateDestroyAPIView):
+class NotificationDetailView(RetrieveAPIView):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
-
-    http_method_names = ['patch', 'delete']
+   

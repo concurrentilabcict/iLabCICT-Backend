@@ -1,26 +1,21 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import ListCreateAPIView, ListAPIView, RetrieveAPIView
 from api.repair_log.models import RepairLog
 from api.repair_log.serializers import RepairLogReadSerializer, RepairLogWriteSerializer
 from api.repair_log.services import RepairLogService
 
 class RepairLogListCreateView(ListCreateAPIView):
     queryset = RepairLog.objects.all()
-    
+
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return RepairLogWriteSerializer
         
         return RepairLogReadSerializer
-
-class RepairLogDetailView(RetrieveUpdateDestroyAPIView):
+    
+class RepairLogDetailView(RetrieveAPIView):
     queryset = RepairLog.objects.all()
-    def get_serializer_class(self):
-        if self.request.method == 'PATCH':
-            return RepairLogWriteSerializer
-        
-        return RepairLogReadSerializer
-
-
+    serializer_class = RepairLogReadSerializer
+    
 class RepairLogByTechnicianListView(ListAPIView):
     serializer_class = RepairLogReadSerializer
 

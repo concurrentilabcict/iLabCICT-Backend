@@ -1,5 +1,5 @@
 
-from rest_framework.generics import ListAPIView 
+from rest_framework.generics import ListAPIView,RetrieveAPIView
 from api.maintenance_history.models import MaintenanceHistory
 from api.maintenance_history.serializers import MaintenanceHistorySerializer
 from api.maintenance_history.services import MaintenanceHistoryServices
@@ -9,6 +9,9 @@ class MaintenanceHistoryListView(ListAPIView):
     queryset = MaintenanceHistory.objects.all()
     serializer_class = MaintenanceHistorySerializer
 
+class MaintenanceHistoryDetailView(RetrieveAPIView):
+    queryset = MaintenanceHistory.objects.all()
+    serializer_class = MaintenanceHistorySerializer
 
 class MaintenanceHistoryByComputerCode(ListAPIView):
     serializer_class = MaintenanceHistorySerializer

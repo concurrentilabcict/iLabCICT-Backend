@@ -11,32 +11,51 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
         choices = MaintenanceHistory.MaintenanceTypes.choices,
         write_only = True)
     
-    
     class Meta:
         model = RepairLog
         fields = '__all__'
         read_only_fields = ['repair_log_code','technician']
 
-    def create(self, validated_data):
-        #need to optimize further
-        maintenance_type = validated_data.pop('maintenance_type')
-        ticket = validated_data['ticket']
+    def validate(self, attrs):
+
+        view = self.context.get("view")
+
+        if view and view.kwargs.get("pk"):
+            raise serializers.ValidationError({
+                "message": f"Repair logs cannot be created through this endpoint"
+            })
+        
+        ticket = attrs.get("ticket")
 
         if ticket.type == 'request':
             raise serializers.ValidationError({
                 'message': f"Request Tickets are not eligible for repair logging"
             })
-        elif ticket.status == 'resolved':
+        
+        if ticket.status == 'resolved':
             raise serializers.ValidationError({
                 'message': f"Ticket has been completed already" 
             })
-        elif ticket.status == 'open':
+        
+        if ticket.status == 'open':
             raise serializers.ValidationError({
                 'message': f"Ticket cannot be completed"
             })
+        
+        if RepairLog.objects.filter(ticket=ticket).exists():
+            raise serializers.ValidationError({
+                'message': f"Ticket already has a repair log"
+            })
 
-        technician_id = ticket.assigned_to_id
-        technician = User.objects.get(id=technician_id)
+        return attrs
+    
+    
+    def create(self, validated_data):
+        #need to optimize further
+        maintenance_type = validated_data.pop('maintenance_type')
+        ticket = validated_data['ticket']
+
+        technician = ticket.assigned_to
         validated_data['technician'] = technician
         repair_log = RepairLog.objects.create(**validated_data)
         
