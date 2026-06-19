@@ -28,14 +28,12 @@ class RepairLogService:
     def update_ticket_to_resolved(ticket):
         
         ticket.status = 'resolved'
-        ticket.save()
 
         NotificationService.create_new_ticket_notification(
             receiver_id=ticket.reported_by,
             title='Ticket has been resolved!',
-            content={
-                'header':ticket.title,
-                'body': ticket.complaint_description,
-                'ticket-status': ticket.status 
-            }   
+            header=ticket.title,
+            type=ticket.type 
             )
+        
+        ticket.save()
