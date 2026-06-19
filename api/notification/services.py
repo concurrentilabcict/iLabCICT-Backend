@@ -9,11 +9,12 @@ class NotificationService():
         return queryset
     
     @staticmethod
-    def create_new_ticket_notification(receiver_id, title, content):
+    def create_new_ticket_notification(receiver_id, title, header, type):
         Notification.objects.create(
             receiver = receiver_id,
             title = title,
-            content = content,
+            header = header,
+            ticket_type = type,
             status = 'unread'
         )
     
