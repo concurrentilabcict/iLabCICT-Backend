@@ -1,5 +1,5 @@
 from django.urls import path
-from api.repair_log.views import RepairLogListCreateView, RepairLogDetailView, RepairLogByTechnicianListView
+from api.repair_log.views import RepairLogListCreateView, RepairLogByTechnicianListView, RepairLogDetailView
 
 urlpatterns = [
     path('', RepairLogListCreateView.as_view()),
