@@ -58,8 +58,9 @@ class TicketWriteSerializer(serializers.ModelSerializer):
         return attrs
     
 class MinimalTicketSerializer(serializers.ModelSerializer):
+
+    reported_by = UserMinimalSerializer(read_only=True)
+    
     class Meta:
         model = Ticket
-        fields = ['id', 'type']
-    
-
+        fields = ['id', 'type', 'reported_by']

@@ -4,7 +4,6 @@ from api.maintenance_history.models import MaintenanceHistory
 from api.user.models import User
 from api.repair_log.services import RepairLogService
 from api.ticket.serializers import MinimalTicketSerializer
-from api.user.serializers import UserMinimalSerializer
 
 class RepairLogWriteSerializer(serializers.ModelSerializer):
 
@@ -71,7 +70,6 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
 
 class RepairLogReadSerializer(serializers.ModelSerializer):
     ticket = MinimalTicketSerializer(read_only=True)
-    technician = UserMinimalSerializer(read_only=True)
 
     class Meta:
         model = RepairLog
