@@ -3,11 +3,14 @@ from api.repair_log.models import RepairLog
 from api.maintenance_history.models import MaintenanceHistory
 from api.user.models import User
 from api.repair_log.services import RepairLogService
+from api.ticket.serializers import MinimalTicketSerializer
 class RepairLogSerializer(serializers.ModelSerializer):
 
     maintenance_type = serializers.ChoiceField(
         choices = MaintenanceHistory.MaintenanceTypes.choices,
         write_only = True)
+    
+    ticket = MinimalTicketSerializer(read_only = True)
     
     class Meta:
         model = RepairLog

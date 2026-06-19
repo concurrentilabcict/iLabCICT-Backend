@@ -56,3 +56,10 @@ class TicketWriteSerializer(serializers.ModelSerializer):
                 })
 
         return attrs
+    
+class MinimalTicketSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Ticket
+        fields = ['id', 'type']
+    
+
