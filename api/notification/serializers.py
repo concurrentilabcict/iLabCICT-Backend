@@ -24,3 +24,18 @@ class NotificationSerializer(serializers.ModelSerializer):
                 })
 
         return attrs
+    
+class NotificationTicketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+class NotificationReportSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Notification
+        fields = '__all__'
+
+
+    
