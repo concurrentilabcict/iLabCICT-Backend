@@ -32,8 +32,7 @@ class RepairLogService:
         NotificationService.create_new_ticket_notification(
             receiver_id=ticket.reported_by,
             title='Ticket has been resolved!',
-            header=ticket.title,
-            type=ticket.type 
+            ticket_id=ticket.id
             )
         
         ticket.save()
