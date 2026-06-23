@@ -1,7 +1,7 @@
 
 from rest_framework import serializers
 from api.notification.models import Notification
-
+from api.ticket.serializers import NotificationTicketSerializer
 class NotificationSerializer(serializers.ModelSerializer):
     
     class Meta: 
@@ -24,18 +24,17 @@ class NotificationSerializer(serializers.ModelSerializer):
                 })
 
         return attrs
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+
+        if instance.type == 'ticket':
+            data['ticket'] = NotificationTicketSerializer(instance.ticket).data
+            data.pop('report', None)
+        
+        return data
     
-class NotificationTicketSerializer(serializers.ModelSerializer):
 
-    class Meta:
-        model = Notification
-        fields = '__all__'
-
-class NotificationReportSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = Notification
-        fields = '__all__'
 
 
     
