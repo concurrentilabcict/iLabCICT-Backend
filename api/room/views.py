@@ -17,3 +17,17 @@ class RoomStatusListView(ListAPIView):
     def get_queryset(self):
         status = self.request.query_params.get("status")
         return RoomService.get_all_by_status(status)
+
+class RoomPerBuildingListView(ListAPIView):
+    serializer_class = RoomSerializer
+
+    def get_queryset(self):
+        building = self.request.query_params.get('building_name')
+        return RoomService.get_all_by_building(building)
+
+class RoomPerNameListView(ListAPIView):
+    serializer_class = RoomSerializer
+
+    def get_queryset(self):
+        room = self.request.query_params.get('room_name')
+        return RoomService.get_all_by_room_name(room)
