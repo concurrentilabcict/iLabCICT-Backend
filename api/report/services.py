@@ -10,6 +10,7 @@ from django.db.models import Count
 from api.report.serializers import ReportSerializer
 from api.user.services import UserService
 from api.common.utils.prompts import load_prompt
+from api.notification.services import NotificationService
 
 class ReportService:
     
@@ -59,6 +60,12 @@ class ReportService:
             content = formatted_report,
             status = 'unread'
         )
+
+        NotificationService.create_new_report_notification(
+            None,
+            'New Report Created!',
+            report.id
+        )#should be admin but for now null
 
         serializer = ReportSerializer(report)
         return Response(serializer.data, status=status.HTTP_201_CREATED)

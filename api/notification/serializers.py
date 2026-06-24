@@ -2,6 +2,7 @@
 from rest_framework import serializers
 from api.notification.models import Notification
 from api.ticket.serializers import NotificationTicketSerializer
+from api.report.serializers import NotificationReportSerializer
 class NotificationSerializer(serializers.ModelSerializer):
     
     class Meta: 
@@ -31,7 +32,10 @@ class NotificationSerializer(serializers.ModelSerializer):
         if instance.type == 'ticket':
             data['ticket'] = NotificationTicketSerializer(instance.ticket).data
             data.pop('report', None)
-        
+        elif instance.type == 'report':
+            data['report'] = NotificationReportSerializer(instance.report).data
+            data.pop('ticket', None)
+                    
         return data
     
 
