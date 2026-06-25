@@ -9,11 +9,11 @@ class RoomListCreateView(ListCreateAPIView):
     def get_queryset(self):
         return RoomService.get_all(
             status=self.request.query_params.get('status'),
-            building=self.request.query_params.get('building_name'),
-            room=self.request.query_params.get('room_name')
+            building=self.request.query_params.get('building-name'),
+            room=self.request.query_params.get('room-name')
         )
     
-    
+
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Room.objects.all()
     serializer_class = RoomSerializer
