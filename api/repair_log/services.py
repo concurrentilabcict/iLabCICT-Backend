@@ -3,10 +3,20 @@ from api.maintenance_history.models import MaintenanceHistory
 from api.notification.services import NotificationService
 
 class RepairLogService:
-
+    
     @staticmethod
-    def get_all_by_technician(technician_id=None):
-        queryset = RepairLog.objects.filter(technician=technician_id)
+    def get_all(
+        technician_id=None,
+        date=None):
+        
+        queryset = RepairLog.objects.all()
+
+        if technician_id is not None:
+            queryset = queryset.filter(technician_id=technician_id)
+        
+        if date is not None:
+            queryset = queryset.filter(created_at__date=date)
+
         return queryset
     
     @staticmethod 
