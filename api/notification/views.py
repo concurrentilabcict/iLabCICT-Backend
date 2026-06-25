@@ -8,8 +8,12 @@ class NotificationListView(ListAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        user = self.request.query_params.get("user-id")
-        return NotificationService.get_all_notification_per_user(user_id=user)
+        return NotificationService.get_all(
+            user_id=self.request.query_params.get('user-id'),
+            type=self.request.query_params.get('type'),
+            status=self.request.query_params.get('status'),
+            date=self.request.query_params.get('date')
+        )
 
 class NotificationDetailView(RetrieveAPIView):
     queryset = Notification.objects.all()
