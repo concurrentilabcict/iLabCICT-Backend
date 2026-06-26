@@ -11,6 +11,8 @@ from api.report.serializers import ReportSerializer
 from api.user.services import UserService
 from api.common.utils.prompts import load_prompt
 from api.notification.services import NotificationService
+from rest_framework.exceptions import ValidationError
+from api.common.utils.date_checker import is_invalid_date_format
 
 class ReportService:
     
@@ -19,6 +21,12 @@ class ReportService:
         technician_id=None,
         date=None,
         status=None):
+
+        ReportService.validate_filters(
+            technician_id=technician_id,
+            date=date,
+            status=status
+        )
         
         queryset = Report.objects.all()
 
@@ -32,6 +40,25 @@ class ReportService:
             queryset = queryset.filter(status=status)
         
         return queryset
+    
+    @staticmethod
+    def validate_filters(technician_id,date,status):
+        allowed_report_statuses = Report.ReportStatus.values
+
+        if status and status not in allowed_report_statuses:
+            raise ValidationError({
+                'message': f'Invalid report status'
+            })
+        
+        if not isinstance(technician_id, int):
+            raise ValidationError({
+                'message': f'Invalid technician-id'
+            })
+        
+        if is_invalid_date_format(date):
+            raise ValidationError({
+                'message': f'Date format must be in YYYY-MM-DD'
+            })
     
     @staticmethod
     def generate_report_content(request):
