@@ -4,8 +4,27 @@ from api.notification.models import Notification
 class NotificationService():
 
     @staticmethod
-    def get_all_notification_per_user(user_id=None):
-        queryset = Notification.objects.filter(receiver_id=user_id)
+    def get_all(user_id=None,
+                type=None,
+                status=None,
+                date=None):
+        
+        queryset = Notification.objects.all()
+
+        if user_id is not None:
+            queryset = queryset.filter(receiver_id=user_id)
+
+        if type is not None: 
+            queryset = queryset.filter(type=type)
+        
+        if status is not None:
+            queryset = queryset.filter(status=status)
+
+        if date is not None:
+            queryset = queryset.filter(created_at__date=date)
+
+        if user_id is None:
+            queryset = []
         return queryset
     
     @staticmethod

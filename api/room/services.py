@@ -3,29 +3,19 @@ from api.room.models import Room
 class RoomService:
 
     @staticmethod
-    def get_all_by_status(status=None):
+    def get_all(status=None,
+                building=None,
+                room=None):
+        
         queryset = Room.objects.all()
 
-        if status:
+        if status is not None:
             queryset = queryset.filter(status=status)
-
-        return queryset
-    
-    @staticmethod
-    def get_all_by_building(building=None):
-        queryset = Room.objects.all()
-
-        if building:
+        
+        if building is not None: 
             queryset = queryset.filter(building_name=building)
         
-        return queryset
-    
-    @staticmethod
-    def get_all_by_room_name(room=None):
-        queryset = Room.objects.all()
-
-        if room:
+        if room is not None:
             queryset = queryset.filter(room_name=room)
-        
+
         return queryset
-        

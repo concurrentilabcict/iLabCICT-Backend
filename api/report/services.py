@@ -15,21 +15,26 @@ from api.notification.services import NotificationService
 class ReportService:
     
     @staticmethod
-    def get_all_by_technician(technician_id=None):
+    def get_all(
+        technician_id=None,
+        date=None,
+        status=None):
+        
         queryset = Report.objects.all()
 
-        if technician_id:
-            queryset = queryset.filter(technician=technician_id)
+        if technician_id is not None:
+            queryset = queryset.filter(technician_id=technician_id)
 
+        if date is not None:
+            queryset = queryset.filter(created_at__date=date)
+        
+        if status is not None:
+            queryset = queryset.filter(status=status)
+        
         return queryset
     
     @staticmethod
     def generate_report_content(request):
-        #steps
-        # 1 gather all the relative repair logs within the week
-        # 2 summarize all repair log counts
-        # 3 ai analysis 
-        # if possible pwede siguro matrack kung saang repair log per room? 
 
         repair_logs = ReportService.get_repair_logs_by_week(request.data.get('start_time'), request.data.get('end_time'), request.data.get('assigned_id'))
         

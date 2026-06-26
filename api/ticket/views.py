@@ -1,10 +1,7 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from api.ticket.models import Ticket
 from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer
 from api.ticket.services import TicketService
-from channels.layers import get_channel_layer
-from asgiref.sync import async_to_sync  
-from api.notification.services import NotificationService
 
 class TicketListCreateView(ListCreateAPIView):
 
@@ -14,40 +11,16 @@ class TicketListCreateView(ListCreateAPIView):
         
         return TicketReadSerializer
     
-
     def get_queryset(self):
-        return Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
+        return TicketService.get_all(
+            status=self.request.query_params.get('status'),
+            technician=self.request.query_params.get('technician-id'),
+            type=self.request.query_params.get('type'),
+            date=self.request.query_params.get('date')
         )
     
     def perform_create(self, serializer):
-        ticket = serializer.save()
-        
-        ticket = Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
-        ).get(pk=ticket.pk)
-
-        NotificationService.create_new_ticket_notification(
-            receiver_id=ticket.assigned_to,
-            title='New Ticket Created!',
-            ticket_id=ticket.id
-        )
-
-        channel_layer = get_channel_layer()
-
-        async_to_sync(channel_layer.group_send)(
-            'technicians',
-            {
-                'type': 'ticket_created',
-                'ticket': TicketReadSerializer(ticket).data
-            }
-        )
+        TicketService.create_ticket(serializer)
 
 class TicketDetailView(RetrieveUpdateDestroyAPIView):
 
@@ -66,51 +39,11 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
         )
     
     def perform_update(self, serializer):
-        ticket = serializer.save()
-
-        ticket = Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
-        ).get(pk=ticket.pk)
-
-        channel_layer = get_channel_layer()
-
-        NotificationService.create_new_ticket_notification(
-            receiver_id=ticket.reported_by,
-            title='Ticket Status Updated!',
-            ticket_id=ticket.id
-        )
-
-        async_to_sync(channel_layer.group_send)(
-            'technicians',
-            {
-                'type': 'ticket_updated',
-                'ticket': TicketReadSerializer(ticket).data
-            }
-        )
+        TicketService.update_ticket(serializer)
 
     def perform_destroy(self, instance):
-        ticket_id = instance.id
-
-        instance.delete()
-
-        channel_layer = get_channel_layer()
-
-        async_to_sync(channel_layer.group_send)(
-            'technicians',
-            {
-                'type': 'ticket_deleted',
-                'ticket_id': ticket_id
-            }
-        )
+        TicketService.delete_ticket(instance)
 
     http_method_names = ['patch', 'delete', 'get']
 
-class TicketStatusListView(ListAPIView):
-    serializer_class = TicketReadSerializer
 
-    def get_queryset(self):
-        status = self.request.query_params.get("status")
-        return TicketService.get_all_by_status(status)
