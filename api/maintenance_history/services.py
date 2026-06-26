@@ -54,7 +54,7 @@ class MaintenanceHistoryServices:
         
         if is_invalid_date_format(date):
             raise ValidationError({
-                'message': f'Date format must be YYYY-MM-DD'
+                'message': f'Date format must be in YYYY-MM-DD'
             })
         
         
