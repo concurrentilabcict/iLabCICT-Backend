@@ -1,8 +1,91 @@
 from django.db.models import Q
 from api.computer.models import Computer
+from rest_framework.exceptions import ValidationError
 
 class ComputerService:
 
+    #new method
+    @staticmethod
+    def get_all(filters):
+        queryset = Computer.objects.all()
+
+        ComputerService.validate_filters(filters)
+
+        queryset = ComputerService.filter_active(queryset, filters)
+        queryset = ComputerService.filter_all_peripherals(queryset, filters)
+        queryset = ComputerService.filter_peripheral_status(queryset, filters)
+        
+        return queryset
+    
+
+    @staticmethod
+    def filter_active(queryset, filters):
+        if filters.get('active') == 'true':
+            queryset = queryset.filter(computer_status=Computer.ComputerStatus.ACTIVE)
+        
+        return queryset
+    
+    @staticmethod
+    def filter_all_peripherals(queryset, filters):
+        all_peripheral_status = filters.get('peripherals')
+        
+        if all_peripheral_status == 'none':
+            queryset = queryset.filter(
+                mouse_status=Computer.PeripheralStatus.NONE,
+                keyboard_status=Computer.PeripheralStatus.NONE,
+                monitor_status=Computer.PeripheralStatus.NONE,
+                ups_status=Computer.PeripheralStatus.NONE
+            )
+
+        elif all_peripheral_status == 'all':
+            queryset = queryset.filter(
+                mouse_status=Computer.PeripheralStatus.ACTIVE,
+                keyboard_status=Computer.PeripheralStatus.ACTIVE,
+                monitor_status=Computer.PeripheralStatus.ACTIVE,
+                ups_status=Computer.PeripheralStatus.ACTIVE
+            )
+
+        return queryset
+    
+    @staticmethod
+    def filter_peripheral_status(queryset, filters):
+        peripheral = filters.get('peripheral-type')
+        status = filters.get('status')
+
+        if peripheral and status:
+            queryset = queryset.filter(
+                **{f"{peripheral}_status": status}
+            )
+
+        return queryset
+
+
+    @staticmethod
+    def validate_filters(filters):
+        allowed_peripheral_types=[
+            'keyboard',
+            'ups',
+            'monitor',
+            'mouse'
+        ]
+
+        allowed_statuses = Computer.ComputerStatus.values
+
+        peripheral = filters.get('peripheral-type')
+        status = filters.get('status')
+
+        if peripheral and peripheral not in allowed_peripheral_types:
+            raise ValidationError({
+                'message': f'Invalid peripheral type'
+            })
+        
+        if status and status not in allowed_statuses:
+            raise ValidationError({
+                'message': f'Invalid peripheral status'
+            })
+
+
+#---------------------------------------------old method-----------------------------------------------------------
     @staticmethod
     def get_all_active():
         return Computer.objects.filter(computer_status=Computer.ComputerStatus.ACTIVE)
