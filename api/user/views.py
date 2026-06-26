@@ -1,4 +1,4 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, UpdateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, UpdateAPIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from api.user.models import User
 from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer, UserUpdatePasswordSerializer
@@ -12,8 +12,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
 
 class UserListCreateView(ListCreateAPIView):
-    queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def get_queryset(self):
+        return UserService.get_all(
+            role=self.request.query_params.get('role'),
+            is_active=self.request.query_params.get('is-active')
+        )
 
 class UserDetailView(RetrieveUpdateDestroyAPIView):
     queryset = User.objects.all()
@@ -21,12 +26,6 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
-class UserRoleListView(ListAPIView):
-    serializer_class = UserSerializer
-
-    def get_queryset(self):
-        role = self.request.query_params.get("role")
-        return UserService.get_all_by_role(role)
     
 class UserUpdatePassword(UpdateAPIView):
     serializer_class = UserUpdatePasswordSerializer
