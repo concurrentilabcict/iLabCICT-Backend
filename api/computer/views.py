@@ -4,13 +4,17 @@ from api.computer.serializers import ComputerSerializer
 from api.computer.services import ComputerService
 
 class ComputerListCreateView(ListCreateAPIView):
-    queryset = Computer.objects.all()
     serializer_class = ComputerSerializer
+
+    #new
+    def get_queryset(self):
+        return ComputerService.get_all(filters=self.request.query_params)
 
 class ComputerDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Computer.objects.all()
     serializer_class = ComputerSerializer
 
+#old one
 class ActiveComputerListView(ListAPIView):
     serializer_class = ComputerSerializer
 

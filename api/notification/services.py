@@ -25,6 +25,7 @@ class NotificationService():
 
         if user_id is None:
             queryset = []
+            
         return queryset
     
     @staticmethod
