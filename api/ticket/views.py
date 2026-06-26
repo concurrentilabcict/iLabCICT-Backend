@@ -14,7 +14,7 @@ class TicketListCreateView(ListCreateAPIView):
     def get_queryset(self):
         return TicketService.get_all(
             status=self.request.query_params.get('status'),
-            technician=self.request.query_params.get('technician-id'),
+            technician_id=self.request.query_params.get('technician-id'),
             type=self.request.query_params.get('type'),
             date=self.request.query_params.get('date')
         )
