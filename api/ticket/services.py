@@ -4,14 +4,24 @@ from asgiref.sync import async_to_sync
 from api.notification.services import NotificationService
 from api.ticket.serializers import TicketReadSerializer
 from django.db import transaction
+from api.common.utils.date_checker import is_invalid_date_format
+from rest_framework.exceptions import ValidationError
+
 class TicketService:
 
     @staticmethod
     def get_all(status=None, 
-                technician=None, 
+                technician_id=None, 
                 date=None, 
                 type=None):
         
+        TicketService.validate_filters(
+            status=status,
+            technician_id=technician_id,
+            date=date,
+            type=type
+        )
+
         queryset = Ticket.objects.select_related(
             'reported_by',
             'assigned_to',
@@ -22,8 +32,8 @@ class TicketService:
         if status is not None:
             queryset = queryset.filter(status=status)
         
-        if technician is not None:
-            queryset = queryset.filter(assigned_to_id=technician)
+        if technician_id is not None:
+            queryset = queryset.filter(assigned_to_id=technician_id)
         
         if date is not None:
             queryset = queryset.filter(created_at__date=date)
@@ -32,6 +42,32 @@ class TicketService:
             queryset = queryset.filter(type=type)
         
         return queryset
+    
+    @staticmethod
+    def validate_filters(status,technician_id,date,type):
+        allowed_ticket_statuses = Ticket.TicketStatus.values
+        allowed_ticket_types = Ticket.TicketType.values
+
+        if status and status not in allowed_ticket_statuses:
+            raise ValidationError({
+                'message': f'Invalid ticket status'
+            })
+        
+        if type and type not in allowed_ticket_types:
+            raise ValidationError({
+                'message': f'Invalid ticket type'
+            })
+        
+        if not isinstance(technician_id, int):
+            raise ValidationError({
+                'message': f'Invalid technician-id'
+            })
+        
+        if is_invalid_date_format(date):
+            raise ValidationError({
+                'message': f'Date format must be in YYYY-MM-DD'
+            })
+
     
     @staticmethod
     @transaction.atomic
