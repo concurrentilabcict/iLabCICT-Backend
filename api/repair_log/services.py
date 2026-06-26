@@ -1,6 +1,9 @@
 from api.repair_log.models import RepairLog
 from api.maintenance_history.models import MaintenanceHistory
 from api.notification.services import NotificationService
+from rest_framework.exceptions import ValidationError
+from api.ticket.models import Ticket
+from api.common.utils.date_checker import is_invalid_date_format
 
 class RepairLogService:
     
@@ -8,7 +11,12 @@ class RepairLogService:
     def get_all(
         technician_id=None,
         date=None):
-        
+
+        RepairLogService.validate_filters(
+            technician_id=technician_id,
+            date=date
+            )
+
         queryset = RepairLog.objects.all()
 
         if technician_id is not None:
@@ -18,6 +26,19 @@ class RepairLogService:
             queryset = queryset.filter(created_at__date=date)
 
         return queryset
+    
+    @staticmethod
+    def validate_filters(technician_id,date):
+        
+        if not isinstance(technician_id, int):
+            raise ValidationError({
+                'message': f'Invalid technician-id'
+            })
+        
+        if is_invalid_date_format(date):
+            raise ValidationError({
+                'message': f'Date format must be in YYYY-MM-DD'
+            })
     
     @staticmethod 
     def record_maintenance_history(ticket, notes, type, technician, computer):
@@ -37,7 +58,7 @@ class RepairLogService:
     
     def update_ticket_to_resolved(ticket):
         
-        ticket.status = 'resolved'
+        ticket.status = Ticket.TicketStatus.RESOLVED
 
         NotificationService.create_new_ticket_notification(
             receiver_id=ticket.reported_by,
