@@ -19,6 +19,12 @@ class UserService:
         queryset = User.objects.all()
 
         if is_active is not None:
+        
+            if is_active == 'true':
+                is_active = True
+            elif is_active == 'false':
+                is_active = False
+
             queryset = queryset.filter(is_active=is_active)
 
         if role is not None:
@@ -35,7 +41,7 @@ class UserService:
                 'message': f'Invalid user role'
             })
         
-        if is_active is not True or is_active is not False:
+        if is_active not in ('true', 'false', None):
             raise ValidationError({
                 'message': f'is-active must only be True or False'
             })

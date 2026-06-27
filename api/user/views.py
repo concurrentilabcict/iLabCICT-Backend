@@ -5,6 +5,9 @@ from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer
 from api.user.services import UserService
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from api.permissions import IsAdmin, IsOwner
+from rest_framework.exceptions import PermissionDenied
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -13,6 +16,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class UserListCreateView(ListCreateAPIView):
     serializer_class = UserSerializer
+
+    permission_classes = [IsAuthenticated, IsAdmin]
 
     def get_queryset(self):
         return UserService.get_all(
@@ -25,6 +30,15 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
 
     parser_classes = [JSONParser, MultiPartParser, FormParser]
+
+    permission_classes = [IsAuthenticated, IsAdmin | IsOwner]
+
+    def destroy(self, request, *args, **kwargs):
+
+        if request.user.role != User.UserRole.ADMIN:
+            raise PermissionDenied('Only administrators can delete users.')
+        
+        return super().destroy(request, *args, **kwargs)
 
     
 class UserUpdatePassword(UpdateAPIView):
