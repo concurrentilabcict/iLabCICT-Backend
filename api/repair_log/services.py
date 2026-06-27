@@ -4,11 +4,13 @@ from api.notification.services import NotificationService
 from rest_framework.exceptions import ValidationError
 from api.ticket.models import Ticket
 from api.common.utils.date_checker import is_invalid_date_format
+from api.user.models import User
 
 class RepairLogService:
     
     @staticmethod
     def get_all(
+        user,
         technician_id=None,
         date=None):
 
@@ -19,7 +21,10 @@ class RepairLogService:
 
         queryset = RepairLog.objects.all()
 
-        if technician_id is not None:
+        if user.role == User.UserRole.TECHNICIAN:
+            queryset = queryset.filter(technician_id=user.id)
+
+        if technician_id and User.UserRole.ADMIN:
             queryset = queryset.filter(technician_id=technician_id)
         
         if date is not None:
@@ -30,12 +35,15 @@ class RepairLogService:
     @staticmethod
     def validate_filters(technician_id,date):
         
-        if not isinstance(technician_id, int):
-            raise ValidationError({
-                'message': f'Invalid technician-id'
-            })
+        if technician_id is not None:
+            try:
+                technician_id = int(technician_id)
+            except (TypeError, ValueError):
+                raise ValidationError({
+                    "technician-id": "Invalid technician-id."
+                })
         
-        if is_invalid_date_format(date):
+        if is_invalid_date_format(date) and date is not None:
             raise ValidationError({
                 'message': f'Date format must be in YYYY-MM-DD'
             })

@@ -35,11 +35,13 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
         if self.request.method == 'PATCH':
-            return [IsAuthenticated(), IsAdmin() | IsTechnician()]
+            return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
         elif self.request.method == 'DELETE':
             return [IsAuthenticated(), IsAdmin()]
 
         return [IsAuthenticated(), IsStaff()]
+    
+    
     
     def get_serializer_class(self):
         if self.request.method == 'PATCH':

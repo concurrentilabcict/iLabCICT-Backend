@@ -30,6 +30,6 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
         if self.request.method == 'DELETE':
             return [IsAuthenticated(), IsAdmin()]
         elif self.request.method in ('PATCH', 'PUT'):       
-            return [IsAuthenticated(), IsAdmin() | IsTechnician()]
+            return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
         
         return [IsAuthenticated(), IsStaff()]
