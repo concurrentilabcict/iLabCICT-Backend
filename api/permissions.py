@@ -5,11 +5,20 @@ class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         return request.user.role == 'admin'
     
-class IsOwner(BasePermission):
+class IsProfileOwner(BasePermission):
 
     def has_object_permission(self, request, view, obj):
-        return obj.id == request.user.id
+
+        if obj.id is not None:
+            return obj.id == request.user.id
+        
+class IsNotificationOwner(BasePermission):
+    def has_object_permission(self, request, view, obj):
+
+        if obj.receiver_id is not None:
+            return obj.receiver_id == request.user.id
     
+
 class IsStaff(BasePermission):
 
     def has_permission(self, request, view):

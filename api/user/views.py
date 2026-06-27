@@ -6,7 +6,7 @@ from api.user.services import UserService
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from api.permissions import IsAdmin, IsOwner
+from api.permissions import IsAdmin, IsProfileOwner
 from rest_framework.exceptions import PermissionDenied
 
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -31,13 +31,11 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
-    permission_classes = [IsAuthenticated, IsAdmin | IsOwner]
-
     def get_permissions(self):
         if self.request.method == 'DELETE':
             return [IsAuthenticated(), IsAdmin()]
         
-        return [IsAuthenticated(), IsAdmin() | IsOwner()]
+        return [IsAuthenticated(), (IsAdmin | IsProfileOwner)()]
 
     
 class UserUpdatePassword(UpdateAPIView):
