@@ -2,7 +2,7 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from api.ticket.models import Ticket
 from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer
 from api.ticket.services import TicketService
-from api.permissions import IsAdmin, IsTechnician, IsFaculty, IsTicketAccess
+from api.permissions import IsAdmin, IsTechnician, IsFaculty, IsStaff
 from rest_framework.permissions import IsAuthenticated
 
 class TicketListCreateView(ListCreateAPIView):
@@ -11,7 +11,7 @@ class TicketListCreateView(ListCreateAPIView):
         if self.request.method == 'POST':
             return [IsAuthenticated(), IsFaculty()]
             
-        return [IsAuthenticated(), IsTicketAccess()]
+        return [IsAuthenticated(), IsStaff()]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -39,7 +39,7 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
         elif self.request.method == 'DELETE':
             return [IsAuthenticated(), IsAdmin()]
 
-        return [IsAuthenticated(), IsTicketAccess()]
+        return [IsAuthenticated(), IsStaff()]
     
     def get_serializer_class(self):
         if self.request.method == 'PATCH':
