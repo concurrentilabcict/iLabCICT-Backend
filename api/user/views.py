@@ -33,12 +33,11 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
     permission_classes = [IsAuthenticated, IsAdmin | IsOwner]
 
-    def destroy(self, request, *args, **kwargs):
-
-        if request.user.role != User.UserRole.ADMIN:
-            raise PermissionDenied('Only administrators can delete users.')
+    def get_permissions(self):
+        if self.request.method == 'DELETE':
+            return [IsAuthenticated(), IsAdmin()]
         
-        return super().destroy(request, *args, **kwargs)
+        return [IsAuthenticated(), IsAdmin() | IsOwner()]
 
     
 class UserUpdatePassword(UpdateAPIView):
