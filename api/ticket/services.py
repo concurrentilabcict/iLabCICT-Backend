@@ -6,11 +6,13 @@ from api.ticket.serializers import TicketReadSerializer
 from django.db import transaction
 from api.common.utils.date_checker import is_invalid_date_format
 from rest_framework.exceptions import ValidationError
+from api.user.models import User
 
 class TicketService:
 
     @staticmethod
-    def get_all(status=None, 
+    def get_all(user,
+                status=None, 
                 technician_id=None, 
                 date=None, 
                 type=None):
@@ -29,11 +31,17 @@ class TicketService:
             'computer'
             )
         
+        if user.role == User.UserRole.TECHNICIAN:
+            queryset = queryset.filter(assigned_to_id=user.id)
+        
+        elif user.role == User.UserRole.FACULTY:
+            queryset = queryset.filter(assigned_to_id=user.id)
+
+        elif user.role == "admin" and technician_id:
+            queryset = queryset.filter(assigned_to_id=technician_id)
+
         if status is not None:
             queryset = queryset.filter(status=status)
-        
-        if technician_id is not None:
-            queryset = queryset.filter(assigned_to_id=technician_id)
         
         if date is not None:
             queryset = queryset.filter(created_at__date=date)
@@ -58,12 +66,15 @@ class TicketService:
                 'message': f'Invalid ticket type'
             })
         
-        if not isinstance(technician_id, int):
-            raise ValidationError({
-                'message': f'Invalid technician-id'
-            })
+        if technician_id is not None:
+            try:
+                technician_id = int(technician_id)
+            except (TypeError, ValueError):
+                raise ValidationError({
+                    "technician-id": "Invalid technician-id."
+                })
         
-        if is_invalid_date_format(date):
+        if is_invalid_date_format(date) and date is not None:
             raise ValidationError({
                 'message': f'Date format must be in YYYY-MM-DD'
             })

@@ -37,22 +37,28 @@ class MaintenanceHistoryServices:
     def validate_filters(type,computer_id,technician_id,date):
         allowed_maintenance_types = MaintenanceHistory.MaintenanceTypes.values
 
+        if computer_id is not None:
+            try:
+                computer_id = int(computer_id)
+            except (TypeError, ValueError):
+                raise ValidationError({
+                    "message": "Invalid computer-id."
+                })
+            
+        if  technician_id is not None:
+            try:
+                technician_id = int(technician_id)
+            except (TypeError, ValueError):
+                raise ValidationError({
+                    "message": "Invalid technician-id."
+                })
+
         if type and type not in allowed_maintenance_types:
             raise ValidationError({
                 'message': f'Invalid maintenance type'
             })
         
-        if not isinstance(computer_id, int):
-            raise ValidationError({
-                'message': f'Invalid computer-id'
-            })
-        
-        if not isinstance(technician_id, int):
-            raise ValidationError({
-                'message': f'Invalid technician-id'
-            })
-        
-        if is_invalid_date_format(date):
+        if is_invalid_date_format(date) and date is not None:
             raise ValidationError({
                 'message': f'Date format must be in YYYY-MM-DD'
             })

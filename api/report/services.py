@@ -50,12 +50,15 @@ class ReportService:
                 'message': f'Invalid report status'
             })
         
-        if not isinstance(technician_id, int):
-            raise ValidationError({
-                'message': f'Invalid technician-id'
-            })
+        if technician_id is not None:
+            try:
+                technician_id = int(technician_id)
+            except (TypeError, ValueError):
+                raise ValidationError({
+                    "message": "Invalid technician-id."
+                })
         
-        if is_invalid_date_format(date):
+        if is_invalid_date_format(date) and date is not None:
             raise ValidationError({
                 'message': f'Date format must be in YYYY-MM-DD'
             })

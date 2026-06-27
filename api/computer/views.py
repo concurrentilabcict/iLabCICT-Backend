@@ -2,10 +2,17 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from api.computer.models import Computer
 from api.computer.serializers import ComputerSerializer
 from api.computer.services import ComputerService
+from api.permissions import IsAdmin, IsTechnician, IsStaff
+from rest_framework.permissions import IsAuthenticated
 
 class ComputerListCreateView(ListCreateAPIView):
     serializer_class = ComputerSerializer
 
+    def get_permissions(self):
+        if self.request.method == 'POST':
+            return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
+        
+        return [IsAuthenticated(), IsStaff()]
     #new
     def get_queryset(self):
         return ComputerService.get_all(filters=self.request.query_params)
@@ -13,6 +20,14 @@ class ComputerListCreateView(ListCreateAPIView):
 class ComputerDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Computer.objects.all()
     serializer_class = ComputerSerializer
+
+    def get_permissions(self):
+        if self.request.method == 'DELETE':
+            return [IsAuthenticated(), IsAdmin()]
+        elif self.request.method in ('POST', 'PUT'):
+            return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
+        
+        return [IsAuthenticated(), IsStaff()]
 
 #old one
 class ActiveComputerListView(ListAPIView):
