@@ -5,7 +5,6 @@ from api.room.services import RoomService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician, IsFaculty, IsStaff
 
-
 class RoomListCreateView(ListCreateAPIView):
     serializer_class = RoomSerializer
 
