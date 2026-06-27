@@ -3,10 +3,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from api.chatbot.services import ChatbotService
-
+from api.permissions import IsTechnician
+from rest_framework.permissions import IsAuthenticated
 
 class ChatView(APIView):
 
+    permission_classes = [IsAuthenticated, IsTechnician]
     def post(self, request):
 
         user_message = request.data.get('message','').strip()
@@ -22,6 +24,7 @@ class ChatView(APIView):
     
 class ChatResetView(APIView):
 
+    permission_classes = [IsAuthenticated, IsTechnician]
     def post(self, request):
         request.session.flush()
         return Response(
