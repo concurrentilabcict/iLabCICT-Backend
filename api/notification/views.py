@@ -1,5 +1,5 @@
 
-from rest_framework.generics import ListAPIView, ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, ListAPIView, RetrieveUpdateAPIView
 from api.notification.models import Notification
 from api.notification.serializers import NotificationSerializer
 from api.notification.services import NotificationService
@@ -19,7 +19,7 @@ class NotificationListView(ListAPIView):
             date=self.request.query_params.get('date')
         )
 
-class NotificationDetailView(RetrieveAPIView):
+class NotificationDetailView(RetrieveUpdateAPIView):
     queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
 
