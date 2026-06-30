@@ -11,7 +11,7 @@ from api.report.serializers import ReportSerializer
 from api.user.services import UserService
 from api.common.utils.prompts import load_prompt
 from api.notification.services import NotificationService
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import ValidationError, NotFound, APIException
 from api.common.utils.date_checker import is_invalid_date_format
 
 class ReportService:
@@ -46,22 +46,16 @@ class ReportService:
         allowed_report_statuses = Report.ReportStatus.values
 
         if status and status not in allowed_report_statuses:
-            raise ValidationError({
-                'message': f'Invalid report status'
-            })
+            raise ValidationError('Invalid report status.')
         
         if technician_id is not None:
             try:
                 technician_id = int(technician_id)
             except (TypeError, ValueError):
-                raise ValidationError({
-                    "message": "Invalid technician-id."
-                })
+                raise ValidationError('Invalid technician-id.')
         
         if is_invalid_date_format(date) and date is not None:
-            raise ValidationError({
-                'message': f'Date format must be in YYYY-MM-DD'
-            })
+            raise ValidationError('Date format must be in YYYY-MM-DD.')
     
     @staticmethod
     def generate_report_content(request):
@@ -69,7 +63,7 @@ class ReportService:
         repair_logs = ReportService.get_repair_logs_by_week(request.data.get('start_time'), request.data.get('end_time'), request.data.get('assigned_id'))
         
         if not repair_logs.exists():
-            return Response({'error': 'No repair logs found'}, status=status.HTTP_404_NOT_FOUND)
+           raise NotFound('No repair logs found.')
         
         repair_log_count = ReportService.count_repair_log_per_day(repair_logs)
 
@@ -81,7 +75,7 @@ class ReportService:
         summarized_report = ReportService.report_content_summarization(compiled_logs)
 
         if summarized_report['status'] == 'unsuccessful':
-            return Response({'error': summarized_report['value']}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            raise APIException(summarized_report['value'])
 
         assigned_id = request.data.get('assigned_id')
         technician_name = UserService.get_user_full_name(assigned_id)
@@ -93,7 +87,7 @@ class ReportService:
             technician_id = assigned_id,
             title = title,
             content = formatted_report,
-            status = 'unread'
+            status = Report.ReportStatus.UNREAD
         )
 
         NotificationService.create_new_report_notification(
