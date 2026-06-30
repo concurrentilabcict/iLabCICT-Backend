@@ -75,14 +75,10 @@ class ComputerService:
         status = filters.get('status')
 
         if peripheral and peripheral not in allowed_peripheral_types:
-            raise ValidationError({
-                'message': f'Invalid peripheral type'
-            })
+            raise ValidationError('Invalid peripheral type')
         
         if status and status not in allowed_statuses:
-            raise ValidationError({
-                'message': f'Invalid peripheral status'
-            })
+            raise ValidationError('Invalid peripheral status')
 
 
 #---------------------------------------------old method-----------------------------------------------------------

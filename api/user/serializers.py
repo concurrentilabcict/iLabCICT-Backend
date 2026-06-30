@@ -36,7 +36,7 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password", None)
        
         if password:
-            raise serializers.ValidationError({"message": "Password not authorized to be updated."})
+            raise serializers.ValidationError('Password not authorized to be updated.')
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
@@ -89,7 +89,7 @@ class UserUpdatePasswordSerializer(serializers.ModelSerializer):
         new_password = validated_data.pop("password", None)
 
         if not instance.check_password(old_password):
-            raise serializers.ValidationError({"message": "Incorrect password."})
+            raise serializers.ValidationError('Incorrect password.')
         
         instance.set_password(new_password)
         instance.save()

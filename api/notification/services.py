@@ -46,24 +46,16 @@ class NotificationService():
             try:
                 user_id = int(user_id)
             except (TypeError, ValueError):
-                raise ValidationError({
-                    "message": "Invalid user-id."
-                })
+                raise ValidationError('Invalid user-id.')
         
         if type and type not in allowed_notification_type:
-            raise ValidationError({
-                'message': f'Invalid notification type' 
-            })
+            raise ValidationError('Invalid notification type')
         
         if status and status not in allowed_notification_status:
-            raise ValidationError({
-                'message': f'Invalid notification status'
-            })
+            raise ValidationError('Invalid notification status')
         
         if is_invalid_date_format(date) and date is not None:
-            raise ValidationError({
-                'message': f'Date format must be in YYYY-MM-DD'
-            })
+            raise ValidationError('Date format must be in YYYY-MM-DD')
 
 
     

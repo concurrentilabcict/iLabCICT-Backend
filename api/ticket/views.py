@@ -42,7 +42,6 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), IsStaff()]
     
     
-    
     def get_serializer_class(self):
         if self.request.method == 'PATCH':
             return TicketWriteSerializer

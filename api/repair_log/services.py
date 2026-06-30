@@ -39,14 +39,10 @@ class RepairLogService:
             try:
                 technician_id = int(technician_id)
             except (TypeError, ValueError):
-                raise ValidationError({
-                    "technician-id": "Invalid technician-id."
-                })
+                raise ValidationError('Invalid technician-id.')
         
         if is_invalid_date_format(date) and date is not None:
-            raise ValidationError({
-                'message': f'Date format must be in YYYY-MM-DD'
-            })
+            raise ValidationError('Date format must be in YYYY-MM-DD')
     
     @staticmethod 
     def record_maintenance_history(ticket, notes, type, technician, computer):

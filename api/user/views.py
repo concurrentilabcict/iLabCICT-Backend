@@ -49,6 +49,6 @@ class UserUpdatePassword(UpdateAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
-            {"message": "Password updated successfully."},
+            {"detail": "Password updated successfully."},
             status=status.HTTP_200_OK
         )

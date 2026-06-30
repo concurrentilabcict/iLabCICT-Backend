@@ -4,7 +4,6 @@ from api.computer.serializers import ComputerMinimalSerializer
 from api.room.serializers import RoomMinimalSerializer
 from api.user.serializers import UserMinimalSerializer
 
-
 class TicketReadSerializer(serializers.ModelSerializer):
     ticket_code = serializers.CharField(read_only=True)
 
@@ -35,25 +34,17 @@ class TicketWriteSerializer(serializers.ModelSerializer):
         if request and request.method == 'PATCH':
             invalid_fields = set(attrs.keys()) - {'status'}
             if invalid_fields:
-                raise serializers.ValidationError({
-                    'message': f"Only 'status' field can be updated"
-                })
+                raise serializers.ValidationError("Only 'status' field can be updated")
 
             new_status = attrs.get('status')
             current_status = self.instance.status
 
-            if current_status == 'resolved':
-                raise serializers.ValidationError({
-                    'message': f"Completed Tickets cannot be modified"
-                })
-            elif current_status == 'ongoing' and new_status == 'open':
-                raise serializers.ValidationError({
-                    'message': f"Ongoing tickets cannot be reverted to Open."
-                })
-            elif new_status == 'resolved':
-                raise serializers.ValidationError({
-                    'message': f"Tickets cannot be completed manually"
-                })
+            if current_status == Ticket.TicketStatus.RESOLVED:
+                raise serializers.ValidationError('Completed Tickets cannot be modified')
+            elif current_status == Ticket.TicketStatus.ONGOING and new_status == Ticket.TicketStatus.OPEN:
+                raise serializers.ValidationError('Ongoing tickets cannot be reverted to Open.')
+            elif new_status == Ticket.TicketStatus.RESOLVED:
+                raise serializers.ValidationError('Tickets cannot be completed manually')
 
         return attrs
     

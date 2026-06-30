@@ -41,26 +41,18 @@ class MaintenanceHistoryServices:
             try:
                 computer_id = int(computer_id)
             except (TypeError, ValueError):
-                raise ValidationError({
-                    "message": "Invalid computer-id."
-                })
+                raise ValidationError('Invalid computer-id.')
             
         if  technician_id is not None:
             try:
                 technician_id = int(technician_id)
             except (TypeError, ValueError):
-                raise ValidationError({
-                    "message": "Invalid technician-id."
-                })
+                raise ValidationError('Invalid technician-id.')
 
         if type and type not in allowed_maintenance_types:
-            raise ValidationError({
-                'message': f'Invalid maintenance type'
-            })
+            raise ValidationError('Invalid maintenance type')
         
         if is_invalid_date_format(date) and date is not None:
-            raise ValidationError({
-                'message': f'Date format must be in YYYY-MM-DD'
-            })
+            raise ValidationError('Date format must be in YYYY-MM-DD')
         
         
