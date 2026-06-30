@@ -33,19 +33,13 @@ class RoomService:
         allowed_building_names = Room.BuildingName.values
 
         if status and status not in allowed_room_statuses:
-            raise ValidationError({
-                'message': f'Invalid room status'
-            })
+            raise ValidationError('Invalid room status')
         
         if building and building not in allowed_building_names:
-            raise ValidationError({
-                'message': f'Invalid building name'
-            })
+            raise ValidationError('Invalid building name')
         
         if isinstance(room, bool):
-            raise ValidationError({
-                'message': f'Invalid room name'
-            })
+            raise ValidationError('Invalid room name')
         
 
         
