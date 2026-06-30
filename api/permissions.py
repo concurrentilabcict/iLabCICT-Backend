@@ -28,10 +28,10 @@ class IsStaff(BasePermission):
         if request.user.role == User.UserRole.ADMIN:
             return True
 
-        if request.user.role == User.UserRole.TECHNICIAN:
+        if request.user.role == User.UserRole.TECHNICIAN and obj.assigned_to_id is not None:
             return obj.assigned_to_id == request.user.id
 
-        if request.user.role == User.UserRole.FACULTY:
+        if request.user.role == User.UserRole.FACULTY and obj.reported_by_id is not None:
             return obj.reported_by_id == request.user.id
 
         return False

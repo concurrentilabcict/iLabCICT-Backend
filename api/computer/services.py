@@ -7,17 +7,24 @@ class ComputerService:
     #new method
     @staticmethod
     def get_all(filters):
-        queryset = Computer.objects.all()
+        queryset = Computer.objects.select_related('room')
 
         ComputerService.validate_filters(filters)
 
+        queryset = ComputerService.filter_per_computer_code(queryset, filters)
         queryset = ComputerService.filter_active(queryset, filters)
         queryset = ComputerService.filter_all_peripherals(queryset, filters)
         queryset = ComputerService.filter_peripheral_status(queryset, filters)
         
         return queryset
     
+    def filter_per_computer_code(queryset, filters):
+        computer_code = filters.get('computer-code')
+        if filters.get('computer-code') is not None:
+            queryset = queryset.filter(computer_code=computer_code)
 
+        return queryset
+    
     @staticmethod
     def filter_active(queryset, filters):
         if filters.get('active') == 'true':
