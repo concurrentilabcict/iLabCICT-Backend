@@ -4,6 +4,7 @@ from api.maintenance_history.models import MaintenanceHistory
 from api.user.models import User
 from api.repair_log.services import RepairLogService
 from api.ticket.serializers import MinimalTicketSerializer
+from api.ticket.models import Ticket
 
 class RepairLogWriteSerializer(serializers.ModelSerializer):
 
@@ -21,31 +22,21 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
         view = self.context.get("view")
 
         if view and view.kwargs.get("pk"):
-            raise serializers.ValidationError({
-                "message": f"Repair logs cannot be created through this endpoint"
-            })
+            raise serializers.ValidationError('Repair logs cannot be created through this endpoint')
         
         ticket = attrs.get("ticket")
 
-        if ticket.type == 'request':
-            raise serializers.ValidationError({
-                'message': f"Request Tickets are not eligible for repair logging"
-            })
+        if ticket.type == Ticket.TicketType.REQUEST:
+            raise serializers.ValidationError('Request Tickets are not eligible for repair logging')
         
-        if ticket.status == 'resolved':
-            raise serializers.ValidationError({
-                'message': f"Ticket has been completed already" 
-            })
+        if ticket.status == Ticket.TicketStatus.RESOLVED:
+            raise serializers.ValidationError('Ticket has been completed already')
         
-        if ticket.status == 'open':
-            raise serializers.ValidationError({
-                'message': f"Ticket cannot be completed"
-            })
+        if ticket.status == Ticket.TicketStatus.OPEN:
+            raise serializers.ValidationError('Ticket cannot be completed')
         
         if RepairLog.objects.filter(ticket=ticket).exists():
-            raise serializers.ValidationError({
-                'message': f"Ticket already has a repair log"
-            })
+            raise serializers.ValidationError('Ticket already has a repair log')
 
         return attrs
     
