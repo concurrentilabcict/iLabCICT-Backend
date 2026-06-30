@@ -37,13 +37,9 @@ class UserService:
         allowed_roles = User.UserRole.values
 
         if role and role not in allowed_roles:
-            raise ValidationError({
-                'message': f'Invalid user role'
-            })
+            raise ValidationError('Invalid user role')
         
         if is_active not in ('true', 'false', None):
-            raise ValidationError({
-                'message': f'is-active must only be True or False'
-            })
+            raise ValidationError('is-active must only be True or False')
         
 
