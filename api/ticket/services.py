@@ -37,7 +37,7 @@ class TicketService:
         elif user.role == User.UserRole.FACULTY:
             queryset = queryset.filter(assigned_to_id=user.id)
 
-        elif user.role == "admin" and technician_id:
+        elif user.role == User.UserRole.ADMIN and technician_id:
             queryset = queryset.filter(assigned_to_id=technician_id)
 
         if status is not None:
@@ -57,27 +57,19 @@ class TicketService:
         allowed_ticket_types = Ticket.TicketType.values
 
         if status and status not in allowed_ticket_statuses:
-            raise ValidationError({
-                'message': f'Invalid ticket status'
-            })
+            raise ValidationError('Invalid ticket status')
         
         if type and type not in allowed_ticket_types:
-            raise ValidationError({
-                'message': f'Invalid ticket type'
-            })
+            raise ValidationError('Invalid ticket type')
         
         if technician_id is not None:
             try:
                 technician_id = int(technician_id)
             except (TypeError, ValueError):
-                raise ValidationError({
-                    "technician-id": "Invalid technician-id."
-                })
+                raise ValidationError('Invalid technician-id')
         
         if is_invalid_date_format(date) and date is not None:
-            raise ValidationError({
-                'message': f'Date format must be in YYYY-MM-DD'
-            })
+            raise ValidationError('Date format must be in YYYY-MM-DD')
 
     
     @staticmethod
