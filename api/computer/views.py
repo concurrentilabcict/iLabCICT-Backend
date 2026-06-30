@@ -21,13 +21,13 @@ class ComputerDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Computer.objects.all()
     serializer_class = ComputerSerializer
 
-    def get_permissions(self):
-        if self.request.method == 'DELETE':
-            return [IsAuthenticated(), IsAdmin()]
-        elif self.request.method in ('POST', 'PUT'):
-            return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
+    #def get_permissions(self):
+     #   if self.request.method == 'DELETE':
+      #      return [IsAuthenticated(), IsAdmin()]
+       # elif self.request.method in ('POST', 'PUT'):
+        #    return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
         
-        return [IsAuthenticated(), IsStaff()]
+        #return [IsAuthenticated(), IsStaff()]
 
 #old one
 class ActiveComputerListView(ListAPIView):

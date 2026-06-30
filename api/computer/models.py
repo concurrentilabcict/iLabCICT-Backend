@@ -25,6 +25,7 @@ class Computer(models.Model):
     disk_size_installed = models.IntegerField()
     build_version = models.CharField(max_length=30)
     computer_status = models.CharField(max_length=20, choices=ComputerStatus.choices, default=ComputerStatus.ACTIVE)
+    motherboard = models.CharField(max_length=100, default='none')
 
     # peripherals
     monitor_status = models.CharField(max_length=20, choices=PeripheralStatus.choices, default=PeripheralStatus.NONE)
