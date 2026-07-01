@@ -32,7 +32,6 @@ class Computer(models.Model):
     mouse_status = models.CharField(max_length=20, choices=PeripheralStatus.choices, default=PeripheralStatus.NONE)
     keyboard_status = models.CharField(max_length=20, choices=PeripheralStatus.choices, default=PeripheralStatus.NONE)
     ups_status = models.CharField(max_length=20, choices=PeripheralStatus.choices, default=PeripheralStatus.NONE)
-    motherboard_status=models.CharField(max_length=20, choices=PeripheralStatus.choices, default=PeripheralStatus.NONE)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
