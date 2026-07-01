@@ -14,7 +14,7 @@ class RoomService:
             room=room
             )
 
-        queryset = Room.objects.all()
+        queryset = Room.objects.select_related('assigned_custodian')
 
         if status is not None:
             queryset = queryset.filter(status=status)
