@@ -1,5 +1,5 @@
 from django.db import models
-
+from api.user.models import User
 class Room(models.Model):
     class RoomStatus(models.TextChoices):
         OPERATIONAL = "operational", "operational"
@@ -11,6 +11,8 @@ class Room(models.Model):
         PIMENTEL = "pimentel", "pimentel"
         LAW = "law", "law"
         ACAD = "acad", "acad"
+
+    assigned_custodian = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='custodian')
 
     building_name = models.CharField(max_length=20, choices=BuildingName.choices, default=BuildingName.PIMENTEL)
     room_name = models.CharField(max_length=20, unique=True)
