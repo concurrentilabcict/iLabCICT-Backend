@@ -12,7 +12,7 @@ class RoomListCreateView(ListCreateAPIView):
         if self.request.method == 'POST':
             return [IsAuthenticated(), IsAdmin()]
         
-        return [IsAuthenticated, IsStaff()]
+        return [IsAuthenticated(), IsStaff()]
 
     def get_queryset(self):
         return RoomService.get_all(
