@@ -2,16 +2,16 @@ from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIV
 from api.ticket.models import Ticket
 from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer
 from api.ticket.services import TicketService
-from api.permissions import IsAdmin, IsTechnician, IsFaculty, IsStaff
+from api.permissions import IsAdmin, IsTechnicianAssignedTicket, IsFacultyReportedTicket, HasTicketPermission
 from rest_framework.permissions import IsAuthenticated
 
 class TicketListCreateView(ListCreateAPIView):
 
     def get_permissions(self):
         if self.request.method == 'POST':
-            return [IsAuthenticated(), IsFaculty()]
+            return [IsAuthenticated(), IsFacultyReportedTicket()]
             
-        return [IsAuthenticated(), IsStaff()]
+        return [IsAuthenticated(), HasTicketPermission()]
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -35,11 +35,11 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
         if self.request.method == 'PATCH':
-            return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
+            return [IsAuthenticated(), (IsAdmin | IsTechnicianAssignedTicket)()]
         elif self.request.method == 'DELETE':
             return [IsAuthenticated(), IsAdmin()]
 
-        return [IsAuthenticated(), IsStaff()]
+        return [IsAuthenticated(), HasTicketPermission()]
     
     
     def get_serializer_class(self):
