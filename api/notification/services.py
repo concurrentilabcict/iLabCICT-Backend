@@ -18,7 +18,7 @@ class NotificationService():
             date=date
         )
 
-        queryset = Notification.objects.all()
+        queryset = Notification.objects.select_related('ticket')
 
         if user_id is not None:
             queryset = queryset.filter(receiver_id=user_id)
