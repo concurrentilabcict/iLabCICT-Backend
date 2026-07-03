@@ -24,7 +24,8 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
         if view and view.kwargs.get("pk"):
             raise serializers.ValidationError('Repair logs cannot be created through this endpoint')
         
-        ticket = attrs.get("ticket")
+        ticket = attrs.get('ticket')
+        technician = attrs.get('technician_id')
 
         if ticket.type == Ticket.TicketType.REQUEST:
             raise serializers.ValidationError('Request Tickets are not eligible for repair logging')

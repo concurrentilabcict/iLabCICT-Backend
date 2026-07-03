@@ -51,10 +51,10 @@ class TicketWriteSerializer(serializers.ModelSerializer):
 class MinimalTicketSerializer(serializers.ModelSerializer):
 
     reported_by = UserMinimalSerializer(read_only=True)
-    
+    assigned_to = UserMinimalSerializer(read_only=True)
     class Meta:
         model = Ticket
-        fields = ['id', 'type', 'reported_by']
+        fields = ['id', 'type', 'reported_by', 'title', 'assigned_to']
 
 class NotificationTicketSerializer(serializers.ModelSerializer):
 
