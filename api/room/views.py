@@ -3,7 +3,9 @@ from api.room.models import Room
 from api.room.serializers import RoomSerializer
 from api.room.services import RoomService
 from rest_framework.permissions import IsAuthenticated
-from api.permissions import IsAdmin, IsTechnician, IsFaculty, IsStaff
+from api.permissions import IsAdmin, IsTechnician, IsStaff
+from api.computer.models import Computer
+from api.computer.serializers import ComputerReadSerializer
 
 class RoomListCreateView(ListCreateAPIView):
     serializer_class = RoomSerializer
@@ -33,3 +35,13 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
             return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
         
         return [IsAuthenticated(), IsStaff()]
+    
+class RoomAllComputersDetailView(ListAPIView):
+    serializer_class = ComputerReadSerializer
+
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def get_queryset(self):
+        room_id = self.kwargs['pk']
+
+        return Computer.objects.select_related('room').filter(room_id=room_id)
