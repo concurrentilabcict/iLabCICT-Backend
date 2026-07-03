@@ -1,5 +1,5 @@
 from django.urls import path
-from api.room.views import RoomListCreateView, RoomDetailView, RoomAllComputersDetailView
+from api.room.views import RoomListCreateView, RoomDetailView, RoomAllComputersDetailView,RoomWithComputerCodeDetailView
 
 urlpatterns = [
     # GET all rooms, CREATE one room with filters
@@ -8,5 +8,6 @@ urlpatterns = [
     # GET, UPDATE, DELETE one room
     path('<int:pk>/', RoomDetailView.as_view()),
 
-    path('<int:pk>/computers/', RoomAllComputersDetailView.as_view())
+    path('<int:pk>/computers/', RoomAllComputersDetailView.as_view()),
+    path('<int:pk>/computers/<str:uk>/', RoomWithComputerCodeDetailView.as_view())
 ]

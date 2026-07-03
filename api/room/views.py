@@ -45,3 +45,16 @@ class RoomAllComputersDetailView(ListAPIView):
         room_id = self.kwargs['pk']
 
         return Computer.objects.select_related('room').filter(room_id=room_id)
+    
+class RoomWithComputerCodeDetailView(ListAPIView):
+    serializer_class = ComputerReadSerializer
+
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def get_queryset(self):
+        computer_code = self.kwargs['uk']
+        room_id = self.kwargs['pk']
+
+        return Computer.objects.select_related('room').filter(
+            room_id=room_id,
+            computer_code=computer_code)
