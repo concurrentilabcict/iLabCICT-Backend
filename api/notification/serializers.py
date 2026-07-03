@@ -3,6 +3,7 @@ from rest_framework import serializers
 from api.notification.models import Notification
 from api.ticket.serializers import NotificationTicketSerializer
 from api.report.serializers import NotificationReportSerializer
+
 class NotificationSerializer(serializers.ModelSerializer):
     
     class Meta: 
