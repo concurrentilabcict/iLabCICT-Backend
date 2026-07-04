@@ -1,6 +1,6 @@
 from api.room.models import Room
 from rest_framework.exceptions import ValidationError
-from django.db.models import Count
+from django.db.models import Count, Q
 from api.ticket.models import Ticket
 class RoomService:
 
