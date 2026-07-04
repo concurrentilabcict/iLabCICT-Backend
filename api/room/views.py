@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician, IsStaff
 from api.computer.models import Computer
 from api.computer.serializers import ComputerReadSerializer
+from django.db.models import Count, Q
+from api.ticket.models import Ticket
 
 class RoomListCreateView(ListCreateAPIView):
     serializer_class = RoomSerializer
@@ -25,7 +27,15 @@ class RoomListCreateView(ListCreateAPIView):
     
 
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = Room.objects.all()
+    queryset = (Room.objects
+                    .select_related('assigned_custodian')
+                    .annotate(computer_count=Count('computers', distinct=True),
+                              computer_count_with_active_issues=Count(
+                                'computers',
+                                filter=Q(computers__tickets__status=Ticket.TicketStatus.ONGOING),
+                                distinct=True
+                              ))
+                    )
     serializer_class = RoomSerializer
 
     def get_permissions(self):
