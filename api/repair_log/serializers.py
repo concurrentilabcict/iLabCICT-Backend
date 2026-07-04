@@ -27,7 +27,6 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
         ticket = attrs.get('ticket')
         technician = attrs.get('technician')
 
-        print(technician)
         if ticket.assigned_to != technician:
             raise serializers.ValidationError('The specified technician is not assigned to this ticket')
 

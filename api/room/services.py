@@ -1,6 +1,7 @@
 from api.room.models import Room
 from rest_framework.exceptions import ValidationError
-
+from django.db.models import Count
+from api.ticket.models import Ticket
 class RoomService:
 
     @staticmethod
@@ -14,7 +15,15 @@ class RoomService:
             room=room
             )
 
-        queryset = Room.objects.select_related('assigned_custodian')
+        queryset = (Room.objects
+                    .select_related('assigned_custodian')
+                    .annotate(computer_count=Count('computers', distinct=True),
+                              computer_count_with_active_issues=Count(
+                                'computers',
+                                filter=Q(computers__tickets__status=Ticket.TicketStatus.ONGOING),
+                                distinct=True
+                              ))
+                    )
 
         if status is not None:
             queryset = queryset.filter(status=status)
@@ -40,8 +49,6 @@ class RoomService:
         
         if isinstance(room, bool):
             raise ValidationError('Invalid room name')
-        
-
         
 
         
