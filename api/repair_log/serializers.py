@@ -15,7 +15,7 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = RepairLog
         fields = '__all__'
-        read_only_fields = ['repair_log_code']
+        read_only_fields = ['repair_log_code', 'title', 'technician']
 
     def validate(self, attrs):
 
@@ -25,10 +25,11 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Repair logs cannot be created through this endpoint')
         
         ticket = attrs.get('ticket')
-        technician = attrs.get('technician')
+        request = self.context['request']
+        user = request.user
 
-        if ticket.assigned_to != technician:
-            raise serializers.ValidationError('The specified technician is not assigned to this ticket')
+        if ticket.assigned_to != user:
+            raise serializers.ValidationError('This ticket is not assigned to you')
 
         if ticket.type == Ticket.TicketType.REQUEST:
             raise serializers.ValidationError('Request Tickets are not eligible for repair logging')
@@ -52,6 +53,7 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
 
         technician = ticket.assigned_to
         validated_data['technician'] = technician
+        validated_data['title'] = ticket.title
         repair_log = RepairLog.objects.create(**validated_data)
         
         RepairLogService.record_maintenance_history(repair_log.ticket, 

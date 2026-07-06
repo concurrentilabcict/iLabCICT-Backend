@@ -65,6 +65,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data["id"] = self.user.id
         data["first_name"] = self.user.first_name
         data["last_name"] = self.user.last_name
+        data["email"] = self.user.email
         data["is_authenticated"] = self.user.is_authenticated
         data["is_active"] = self.user.is_active
         data["profile_image"] = profile_image.url if profile_image else None
