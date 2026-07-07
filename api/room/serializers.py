@@ -30,6 +30,6 @@ class RoomAndComputerListSerializer(serializers.ModelSerializer):
 class RoomMinimalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
-        fields = ['id', 'room_name', 'building_name']
+        fields = ['id', 'room_name', 'building_name', 'floor_number']
 
 
