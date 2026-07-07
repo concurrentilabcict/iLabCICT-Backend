@@ -1,4 +1,4 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
 from api.room.models import Room
 from api.room.serializers import RoomSerializer, RoomAndComputerListSerializer
 from api.room.services import RoomService
@@ -46,7 +46,7 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
         
         return [IsAuthenticated(), IsStaff()]
     
-class RoomAllComputersDetailView(ListAPIView):
+class RoomAllComputersDetailView(RetrieveAPIView):
     serializer_class = RoomAndComputerListSerializer
 
     permission_classes = [IsAuthenticated, IsStaff]
