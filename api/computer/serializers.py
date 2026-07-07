@@ -48,3 +48,8 @@ class ComputerMinimalSerializer(serializers.ModelSerializer):
     class Meta:
         model = Computer
         fields = ['id', 'computer_code']
+
+class ComputerListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Computer
+        fields = ['id', 'computer_code', 'operating_system', 'computer_status']
