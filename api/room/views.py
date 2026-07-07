@@ -1,6 +1,6 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from api.room.models import Room
-from api.room.serializers import RoomSerializer
+from api.room.serializers import RoomSerializer, RoomAndComputerListSerializer
 from api.room.services import RoomService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician, IsStaff
@@ -47,14 +47,20 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), IsStaff()]
     
 class RoomAllComputersDetailView(ListAPIView):
-    serializer_class = ComputerReadSerializer
+    serializer_class = RoomAndComputerListSerializer
 
     permission_classes = [IsAuthenticated, IsStaff]
 
     def get_queryset(self):
         room_id = self.kwargs['pk']
 
-        return Computer.objects.select_related('room').filter(room_id=room_id)
+        return (
+            Room.objects
+            .select_related('assigned_custodian')
+            .prefetch_related('computers')
+            .annotate(total_computer=Count('computers'))
+            .filter(id=room_id)
+        )
     
 class RoomWithComputerCodeDetailView(ListAPIView):
     serializer_class = ComputerReadSerializer
