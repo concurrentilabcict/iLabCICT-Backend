@@ -96,6 +96,9 @@ class RoomNameAllComputersDetailView(RetrieveAPIView):
 
     permission_classes = [IsAuthenticated, IsStaff]
 
+    lookup_field = 'room_name'
+    lookup_url_kwarg ='room'
+
     def get_queryset(self):
         room_name = self.kwargs['room']
 
