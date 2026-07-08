@@ -14,17 +14,13 @@ class Notification(models.Model):
         READ = 'read', 'read'
         UNREAD = 'unread', 'unread'
 
-    class TicketTypes(models.TextChoices):
-        REQUEST = 'request', 'request'
-        REPORT = 'report', 'report'
-
-    
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='ticket', blank=True, null=True)
     report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='report', blank=True, null=True)
 
     receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    receiver_role = models.CharField(max_length=30, null=True, blank=True)
     title = models.CharField(max_length=120)
-    type = models.CharField(max_length=20, choices=TicketTypes, default=NotificationTypes.TICKET)
+    type = models.CharField(max_length=20, choices=NotificationTypes, default=NotificationTypes.TICKET)
     status = models.CharField(max_length=20, choices=NotificationStatus, default=NotificationStatus.UNREAD)
     created_at = models.DateTimeField(auto_now_add=True)
 
