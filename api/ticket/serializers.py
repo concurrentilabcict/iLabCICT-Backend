@@ -38,6 +38,12 @@ class TicketWriteSerializer(serializers.ModelSerializer):
 
             new_status = attrs.get('status')
             current_status = self.instance.status
+            computer = attrs.get('computer')
+            ticket_type = attrs.get('type')
+
+
+            if computer is not None and ticket_type == Ticket.TicketType.REQUEST:
+                raise serializers.ValidationError('Request ticket cannot contain computer data')
 
             if current_status == Ticket.TicketStatus.RESOLVED:
                 raise serializers.ValidationError('Completed Tickets cannot be modified')

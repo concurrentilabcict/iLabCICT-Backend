@@ -1,6 +1,6 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
 from api.repair_log.models import RepairLog
-from api.repair_log.serializers import RepairLogReadSerializer, RepairLogWriteSerializer
+from api.repair_log.serializers import RepairLogReadSerializer, RepairLogWriteSerializer, RepairLogDetailSerializer
 from api.repair_log.services import RepairLogService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician
@@ -12,7 +12,6 @@ class RepairLogListCreateView(ListCreateAPIView):
             return [IsAuthenticated(), IsTechnician()]
         
         return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
-
 
     def get_queryset(self):
         return RepairLogService.get_all(
@@ -29,7 +28,7 @@ class RepairLogListCreateView(ListCreateAPIView):
     
 class RepairLogDetailView(RetrieveAPIView):
     queryset = RepairLog.objects.all()
-    serializer_class = RepairLogReadSerializer
+    serializer_class = RepairLogDetailSerializer
 
     permission_classes = [IsAuthenticated, IsAdmin | IsTechnician]
     

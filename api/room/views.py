@@ -62,7 +62,7 @@ class RoomAllComputersDetailView(RetrieveAPIView):
             .filter(id=room_id)
         )
     
-class RoomWithComputerCodeDetailView(ListAPIView):
+class RoomWithComputerCodeDetailView(RetrieveAPIView):
     serializer_class = ComputerReadSerializer
 
     permission_classes = [IsAuthenticated, IsStaff]

@@ -19,7 +19,11 @@ class RepairLogService:
             date=date
             )
 
-        queryset = RepairLog.objects.select_related('ticket')
+        queryset = RepairLog.objects.select_related('ticket',
+                                                    'ticket__reported_by',
+                                                    'ticket__assigned_to',
+                                                    'ticket__room',
+                                                    'ticket__computer',)
 
         if user.role == User.UserRole.TECHNICIAN:
             queryset = queryset.filter(technician_id=user.id)
