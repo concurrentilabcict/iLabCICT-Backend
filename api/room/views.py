@@ -46,7 +46,7 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
         
         return [IsAuthenticated(), IsStaff()]
     
-class RoomAllComputersDetailView(ListAPIView):
+class RoomAllComputersDetailView(RetrieveAPIView):
     serializer_class = RoomAndComputerListSerializer
 
     permission_classes = [IsAuthenticated, IsStaff]
@@ -91,7 +91,7 @@ class RoomNameWithComputerCodeDetailView(RetrieveAPIView):
             room__room_name=room_name,
             computer_code=computer_code)
     
-class RoomNameAllComputersDetailView(ListAPIView):
+class RoomNameAllComputersDetailView(RetrieveAPIView):
     serializer_class = RoomAndComputerListSerializer
 
     permission_classes = [IsAuthenticated, IsStaff]
