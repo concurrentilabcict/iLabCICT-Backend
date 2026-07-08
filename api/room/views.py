@@ -46,7 +46,7 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
         
         return [IsAuthenticated(), IsStaff()]
     
-class RoomAllComputersDetailView(RetrieveAPIView):
+class RoomAllComputersDetailView(ListAPIView):
     serializer_class = RoomAndComputerListSerializer
 
     permission_classes = [IsAuthenticated, IsStaff]
@@ -74,3 +74,35 @@ class RoomWithComputerCodeDetailView(RetrieveAPIView):
         return Computer.objects.select_related('room').filter(
             room_id=room_id,
             computer_code=computer_code)
+    
+class RoomNameWithComputerCodeDetailView(RetrieveAPIView):
+    serializer_class = ComputerReadSerializer
+
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    lookup_field = 'computer_code'
+    lookup_url_kwarg ='uk'
+
+    def get_queryset(self):
+        computer_code = self.kwargs['uk']
+        room_name = self.kwargs['room']
+
+        return Computer.objects.select_related('room').filter(
+            room__room_name=room_name,
+            computer_code=computer_code)
+    
+class RoomNameAllComputersDetailView(ListAPIView):
+    serializer_class = RoomAndComputerListSerializer
+
+    permission_classes = [IsAuthenticated, IsStaff]
+
+    def get_queryset(self):
+        room_name = self.kwargs['room']
+
+        return (
+            Room.objects
+            .select_related('assigned_custodian')
+            .prefetch_related('computers')
+            .annotate(total_computer=Count('computers'))
+            .filter(room_name=room_name)
+        )
