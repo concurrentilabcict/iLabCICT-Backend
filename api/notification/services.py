@@ -2,6 +2,7 @@
 from api.notification.models import Notification
 from rest_framework.exceptions import ValidationError
 from api.common.utils.date_checker import is_invalid_date_format
+from api.user.models import User
 
 class NotificationService():
 
@@ -62,25 +63,50 @@ class NotificationService():
     @staticmethod
     def create_new_ticket_notification(receiver_id, title, ticket_id):
 
-        Notification.objects.create(
-            receiver = receiver_id,
-            title = title,
-            ticket_id = ticket_id,
-            report = None,
-            type = Notification.NotificationTypes.TICKET,
-            status = Notification.NotificationStatus.UNREAD
-        )
+        if receiver_id is None:
+            Notification.objects.create(
+                receiver = None,
+                receiver_role=User.UserRole.TECHNICIAN, 
+                title = title,
+                ticket_id = ticket_id,
+                report = None,
+                type = Notification.NotificationTypes.TICKET,
+                status = Notification.NotificationStatus.UNREAD
+            )
+        else:
+            Notification.objects.create(
+                receiver = receiver_id,
+                receiver_role=User.UserRole.TECHNICIAN, 
+                title = title,
+                ticket_id = ticket_id,
+                report = None,
+                type = Notification.NotificationTypes.TICKET,
+                status = Notification.NotificationStatus.UNREAD
+            )
+
 
     @staticmethod
     def create_new_report_notification(receiver_id, title, report_id):
         
-        Notification.objects.create(
-            receiver = receiver_id,
-            title = title,
-            report_id = report_id,
-            ticket = None,
-            type = Notification.NotificationTypes.REPORT,
-            status = Notification.NotificationStatus.UNREAD
-        )
+        if receiver_id is None:
+            Notification.objects.create(
+                receiver = None,
+                receiver_role=User.UserRole.ADMIN,
+                title = title,
+                report_id = report_id,
+                ticket = None,
+                type = Notification.NotificationTypes.REPORT,
+                status = Notification.NotificationStatus.UNREAD
+            )
+        else:
+            Notification.objects.create(
+                receiver = receiver_id,
+                receiver_role=User.UserRole.ADMIN,
+                title = title,
+                report_id = report_id,
+                ticket = None,
+                type = Notification.NotificationTypes.REPORT,
+                status = Notification.NotificationStatus.UNREAD
+            )
     
     
