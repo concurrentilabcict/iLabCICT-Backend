@@ -18,7 +18,7 @@ class Ticket(models.Model):
     reported_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reported_tickets")
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="assigned_tickets")
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name="tickets")
-    computer = models.ForeignKey(Computer, on_delete=models.CASCADE, related_name="tickets")
+    computer = models.ForeignKey(Computer, on_delete=models.CASCADE, related_name="tickets", null=True, blank=True)
 
     ticket_code = models.CharField(max_length=20, unique=True)
 
