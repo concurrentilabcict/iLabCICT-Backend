@@ -7,7 +7,8 @@ class RoomService:
     @staticmethod
     def get_all(status=None,
                 building=None,
-                room=None):
+                room=None,
+                include=""):
         
         RoomService.validate_filters(
             status=status,
@@ -24,6 +25,9 @@ class RoomService:
                                 distinct=True
                               ))
                     )
+        
+        if "computers" in include.split(","):
+            queryset = queryset.prefetch_related("computers")
 
         if status is not None:
             queryset = queryset.filter(status=status)

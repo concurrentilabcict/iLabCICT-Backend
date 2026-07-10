@@ -31,11 +31,9 @@ class TicketService:
             'computer'
             )
         
-        if user.role == User.UserRole.TECHNICIAN:
-            queryset = queryset.filter(assigned_to_id=user.id)
         
-        elif user.role == User.UserRole.FACULTY:
-            queryset = queryset.filter(assigned_to_id=user.id)
+        if user.role == User.UserRole.FACULTY:
+            queryset = queryset.filter(reported_by_id=user.id)
 
         elif user.role == User.UserRole.ADMIN and technician_id:
             queryset = queryset.filter(assigned_to_id=technician_id)

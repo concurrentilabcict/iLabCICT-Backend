@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     "cloudinary",
     "cloudinary_storage",
     "corsheaders",
+    "drf_yasg"
 ]
 
 ASGI_APPLICATION = 'ilabcict.asgi.application'
