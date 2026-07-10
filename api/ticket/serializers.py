@@ -22,6 +22,15 @@ class TicketWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ticket
         fields = '__all__'
+        read_only_fields=['reported_by', 'assigned_to']
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+
+        return Ticket.objects.create(
+            reported_by=user,
+            **validated_data
+        )
 
     def update(self, instance, validated_data):
         instance.status = validated_data.get('status', instance.status)
