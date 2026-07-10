@@ -25,7 +25,6 @@ class RoomListCreateView(ListCreateAPIView):
             room=self.request.query_params.get('room-name')
         )
     
-
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
     queryset = (Room.objects
                     .select_related('assigned_custodian')
@@ -42,7 +41,7 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
         if self.request.method == 'DELETE':
             return [IsAuthenticated(), IsAdmin()]
         elif self.request.method in ('PATCH', 'PUT'):       
-            return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
+            return [IsAuthenticated(), IsAdmin()]
         
         return [IsAuthenticated(), IsStaff()]
     
