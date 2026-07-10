@@ -16,7 +16,7 @@ class RoomSerializer(serializers.ModelSerializer):
 class ComputerListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Computer
-        fields = ['id', 'computer_code', 'operating_system', 'computer_status', 'created_at', 'updated_at']
+        fields = '__all__'
 
 class RoomAndComputerListSerializer(serializers.ModelSerializer):
     total_computer = serializers.IntegerField(read_only=True)
