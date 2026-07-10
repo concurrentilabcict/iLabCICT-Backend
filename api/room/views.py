@@ -22,12 +22,19 @@ class RoomListCreateView(ListCreateAPIView):
         return RoomService.get_all(
             status=self.request.query_params.get('status'),
             building=self.request.query_params.get('building-name'),
-            room=self.request.query_params.get('room-name')
+            room=self.request.query_params.get('room-name'),
+            include=self.request.query_params.get("include", ""),
         )
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["include"] = self.request.query_params.get("include", "")
+        return context
     
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
     queryset = (Room.objects
                     .select_related('assigned_custodian')
+                    .prefetch_related('computers')
                     .annotate(computer_count=Count('computers', distinct=True),
                               computer_count_with_active_issues=Count(
                                 'computers',
