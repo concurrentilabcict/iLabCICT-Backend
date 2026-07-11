@@ -52,13 +52,19 @@ class TicketWriteSerializer(serializers.ModelSerializer):
             computer = attrs.get('computer')
             ticket_type = attrs.get('type')
             current_assigned_to = self.instance.assigned_to
-            new_assigned_to = request.user.id
+            new_assigned_to = request.user
 
             print(new_assigned_to)
             print(current_assigned_to)
 
-            if current_assigned_to is not None and new_assigned_to:
-                raise serializers.ValidationError('This ticket is assigned to another technician')
+            if (
+                current_assigned_to is not None
+                and new_assigned_to is not None
+                and current_assigned_to != new_assigned_to
+            ):
+                raise serializers.ValidationError(
+                    "This ticket is already assigned to another technician."
+                )
 
             if computer is not None and ticket_type == Ticket.TicketType.REQUEST:
                 raise serializers.ValidationError('Request ticket cannot contain computer data')
