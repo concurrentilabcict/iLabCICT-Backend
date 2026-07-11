@@ -1,4 +1,4 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
 from api.computer.models import Computer
 from api.computer.serializers import ComputerReadSerializer, ComputerWriteSerializer
 from api.computer.services import ComputerService
@@ -48,6 +48,19 @@ class ComputerDetailView(RetrieveUpdateDestroyAPIView):
             return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
         
         return [IsAuthenticated(), IsStaff()]
+
+class ComputerCodeDetailView(RetrieveAPIView):
+
+    lookup_field = 'computer_code'
+    lookup_url_kwarg ='uk'
+
+    def get_queryset(self):
+        computer_code = self.kwargs['uk']
+        return Computer.objects.select_related('room').filter(computer_code=computer_code)
+
+    serializer_class = ComputerReadSerializer
+
+    permission_classes = [IsAuthenticated, IsStaff]
 
 #old one
 class ActiveComputerListView(ListAPIView):
