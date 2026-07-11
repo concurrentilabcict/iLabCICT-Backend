@@ -5,13 +5,16 @@ from api.computer.views import (
                                 ActiveComputerListView,
                                 ActiveComputerWithActivePeripheralsListView,
                                 ActiveComputerWithPeripheralListView,
-                                ActiveComputerNoPeripheralsView
+                                ActiveComputerNoPeripheralsView,
+                                ComputerCodeDetailView
                                 )
 
 urlpatterns = [
     path('', ComputerListCreateView.as_view()),
 
     path('<int:pk>/', ComputerDetailView.as_view()),
+
+    path('<str:uk>/', ComputerCodeDetailView.as_view()),
 
     path('active/', ActiveComputerListView.as_view()),
     path('active/peripherals/all/', ActiveComputerWithActivePeripheralsListView.as_view()),
