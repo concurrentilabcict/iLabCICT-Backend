@@ -8,6 +8,7 @@ class MaintenanceHistory(models.Model):
     class MaintenanceTypes(models.TextChoices):
         REPAIR = 'repair', 'repair'
         REPLACE = 'replace', 'replace'
+        INSTALLATION = 'installation', 'installation'
 
     maintenance_history_code = models.CharField(max_length=20, unique=True, null=True)
     computer =  models.ForeignKey(Computer, on_delete=models.CASCADE, related_name='maintenance_history')
