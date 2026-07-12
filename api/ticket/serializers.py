@@ -26,9 +26,12 @@ class TicketWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = self.context["request"].user
+        
+        validated_data.pop("status", None)
 
         return Ticket.objects.create(
             reported_by=user,
+            status=Ticket.TicketStatus.OPEN,
             **validated_data
         )
 
