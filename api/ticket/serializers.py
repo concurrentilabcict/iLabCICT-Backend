@@ -54,6 +54,7 @@ class TicketWriteSerializer(serializers.ModelSerializer):
             current_status = self.instance.status
             computer = attrs.get('computer')
             ticket_type = attrs.get('type')
+            current_ticket_type = self.instance.type
             current_assigned_to = self.instance.assigned_to
             new_assigned_to = request.user
 
@@ -76,8 +77,8 @@ class TicketWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('Completed Tickets cannot be modified')
             elif current_status == Ticket.TicketStatus.ONGOING and new_status == Ticket.TicketStatus.OPEN:
                 raise serializers.ValidationError('Ongoing tickets cannot be reverted to Open.')
-            elif new_status == Ticket.TicketStatus.RESOLVED:
-                raise serializers.ValidationError('Tickets cannot be completed manually')
+            elif new_status == Ticket.TicketStatus.RESOLVED and current_ticket_type == Ticket.TicketType.REPORT:
+                raise serializers.ValidationError('Report Tickets cannot be completed manually')
 
         return attrs
     
