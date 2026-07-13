@@ -52,6 +52,7 @@ class ChatbotService:
                     Computer Code: {computer.computer_code}
                     CPU: {computer.cpu}
                     GPU: {computer.gpu}
+                    Motherboard: {computer.motherboard}
                     RAM: {computer.ram_size_installed} GB
                     Disk: {computer.disk_size_installed} GB
                     Operating System: {computer.operating_system}
@@ -68,11 +69,6 @@ class ChatbotService:
                     """
         
         history = session.get('conversation', [])
-        print("Session Key:", session.session_key)
-        print("History:", session.get("conversation", []))
-
-        print(history)
-
         messages = ChatbotService.build_messages(history, user_message, computer_context)
         reply = ChatbotService.call_ai(messages)
 
