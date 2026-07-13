@@ -3,6 +3,8 @@ from better_profanity import profanity
 from datetime import datetime, timezone
 from django.conf import settings
 from api.common.utils import prompts
+from api.computer.models import Computer
+import re
 import groq
 
 class ChatbotService:
@@ -32,9 +34,44 @@ class ChatbotService:
         if error:
             return {"reply": error, "error": True}
         
+        computer_context = None
+        
+        match = re.search(r"\bPC\d{9}\b", user_message)
+
+        if match:
+            computer_code = match.group()
+
+            computer = Computer.objects.filter(
+                computer_code=computer_code
+            ).select_related('room').first()
+
+            if computer:
+                computer_context = f"""
+                    Computer information from the database:
+
+                    Computer Code: {computer.computer_code}
+                    CPU: {computer.cpu}
+                    GPU: {computer.gpu}
+                    RAM: {computer.ram_size_installed} GB
+                    Disk: {computer.disk_size_installed} GB
+                    Operating System: {computer.operating_system}
+                    Room: {computer.room.room_name}
+                    Building: {computer.room.building_name}
+                    Status: {computer.computer_status}
+
+                    Peripheral status
+                    Monitor: {computer.monitor_status}
+                    Mouse: {computer.mouse_status}
+                    Keyboard: {computer.keyboard_status}
+                    UPS: {computer.ups_status}
+                    Use this information when answering the user's question.
+                    """
+        
         history = session.get('conversation', [])
 
-        messages = ChatbotService.build_messages(history, user_message)
+        print(history)
+
+        messages = ChatbotService.build_messages(history, user_message, computer_context)
         reply = ChatbotService.call_ai(messages)
 
         history.append({"role": "user", "content": user_message})
@@ -45,12 +82,13 @@ class ChatbotService:
         
         return {"reply": reply, "error": False}
         
-    
+    @staticmethod
     def clean_input(text):
         if profanity.contains_profanity(text):
             return "Please keep the conversation professional."
         return None
     
+    @staticmethod
     def is_session_expired(session):
         last_active = session.get('last_active')
         
@@ -60,14 +98,30 @@ class ChatbotService:
         return(now - last_active) > settings.SESSION_AGE
     
 
-    def build_messages(history, user_message):
+    @staticmethod
+    def build_messages(history, user_message, context=None):
         trimmed = history[-(settings.MAX_HISTORY * 2):]
-        return [
+
+        messages = [
             {"role": "system", "content": ChatbotService.system_prompt},
-            *trimmed,
-            {"role": "user", "content": user_message}
         ]
+
+        if context:
+            messages.append({
+                "role": "system",
+                "content": context,
+            })
+
+        messages.extend(trimmed)
+
+        messages.append({
+            "role": "user",
+            "content": user_message,
+        })
+
+        return messages
     
+    @staticmethod
     def call_ai(messages):
 
         groq_models = [
