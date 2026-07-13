@@ -68,6 +68,8 @@ class ChatbotService:
                     """
         
         history = session.get('conversation', [])
+        print("Session Key:", session.session_key)
+        print("History:", session.get("conversation", []))
 
         print(history)
 
