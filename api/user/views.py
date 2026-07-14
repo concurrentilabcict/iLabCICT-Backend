@@ -1,13 +1,14 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, UpdateAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, UpdateAPIView, ListAPIView
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from api.user.models import User
-from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer, UserUpdatePasswordSerializer
+from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer, UserUpdatePasswordSerializer, UserMinimalSerializer
 from api.user.services import UserService
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsProfileOwner
 from rest_framework.exceptions import PermissionDenied
+
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -52,3 +53,8 @@ class UserUpdatePassword(UpdateAPIView):
             {"detail": "Password updated successfully."},
             status=status.HTTP_200_OK
         )
+
+class AvailableCustodianListView(ListAPIView):
+    serializer_class = UserMinimalSerializer
+    queryset = User.objects.filter(custodian__isnull=True, role='faculty')
+    permission_classes = [IsAuthenticated, IsAdmin];
