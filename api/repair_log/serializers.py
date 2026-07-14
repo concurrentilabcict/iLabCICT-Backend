@@ -2,7 +2,7 @@ from rest_framework import serializers
 from api.repair_log.models import RepairLog
 from api.maintenance_history.models import MaintenanceHistory
 from api.repair_log.services import RepairLogService
-from api.ticket.serializers import TicketReadSerializer, MinimalTicketSerializer
+from api.ticket.serializers import TicketReadSerializer, MaintenanceHistoryTicketSerializer
 from api.ticket.models import Ticket
 
 class RepairLogWriteSerializer(serializers.ModelSerializer):
@@ -59,13 +59,14 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
                                                     repair_log.repair_notes, 
                                                     maintenance_type, 
                                                     technician,
-                                                    repair_log.ticket.computer)
+                                                    repair_log.ticket.computer,
+                                                    repair_log)
         
         return repair_log
     
 
 class RepairLogReadSerializer(serializers.ModelSerializer):
-    ticket = TicketReadSerializer(read_only=True)
+    ticket = MaintenanceHistoryTicketSerializer(read_only=True)
 
     class Meta:
         model = RepairLog

@@ -1,5 +1,6 @@
 from django.db import models, transaction, IntegrityError
 from api.computer.models import Computer
+from api.repair_log.models import RepairLog
 from django.conf import settings
 from api.common.utils.entity_code import generate_entity_code
 
@@ -13,6 +14,7 @@ class MaintenanceHistory(models.Model):
     maintenance_history_code = models.CharField(max_length=20, unique=True, null=True)
     computer =  models.ForeignKey(Computer, on_delete=models.CASCADE, related_name='maintenance_history')
     technician = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    repair_log = models.ForeignKey(RepairLog, on_delete=models.CASCADE, related_name='maintenanc_history_repair', null=True)
 
     maintenance_type = models.CharField(max_length=20, choices=MaintenanceTypes)
     maintenance_notes = models.TextField()

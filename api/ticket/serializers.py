@@ -97,3 +97,9 @@ class NotificationTicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ticket
         fields = ['id', 'type', 'reported_by', 'title', 'assigned_to']
+
+class MaintenanceHistoryTicketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Ticket
+        fields = ['id', 'status']

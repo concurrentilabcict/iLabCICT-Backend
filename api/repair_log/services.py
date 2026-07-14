@@ -49,7 +49,7 @@ class RepairLogService:
             raise ValidationError('Date format must be in YYYY-MM-DD')
     
     @staticmethod 
-    def record_maintenance_history(ticket, notes, type, technician, computer):
+    def record_maintenance_history(ticket, notes, type, technician, computer, repair_log):
         full_name = technician.first_name + " " + technician.last_name 
         RepairLogService.update_ticket_to_resolved(ticket)
 
@@ -61,6 +61,7 @@ class RepairLogService:
             maintenance_notes=notes,
             maintenance_type=type,
             date_performed=ticket.updated_at,
+            repair_log=repair_log
         )
 
     

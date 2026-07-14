@@ -17,7 +17,8 @@ class MaintenanceHistoryServices:
             date=date        
             )
         
-        queryset = MaintenanceHistory.objects.all()
+        queryset = MaintenanceHistory.objects.select_related('repair_log',
+                                                             'repair_log__ticket')
 
         if type is not None:
             queryset = queryset.filter(maintenance_type=type)
