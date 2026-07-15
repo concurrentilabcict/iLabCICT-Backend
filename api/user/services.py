@@ -42,11 +42,4 @@ class UserService:
         
         if is_active not in ('true', 'false', None):
             raise ValidationError('is-active must only be True or False')
-    
-    @staticmethod
-    def check_all_available_faculty():
-        queryset = User.objects.filter(role='faculty').exclude(id__in=Room.objects.values_list('assigned_custodian'), flat=True)
-        return queryset
-
-        
 

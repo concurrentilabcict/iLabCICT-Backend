@@ -56,5 +56,21 @@ class UserUpdatePassword(UpdateAPIView):
 
 class AvailableCustodianListView(ListAPIView):
     serializer_class = UserMinimalSerializer
-    queryset = User.objects.filter(custodian__isnull=True, role='faculty')
     permission_classes = [IsAuthenticated, IsAdmin];
+
+    def get_queryset(self):
+
+        include = self.request.query_params.get('include')
+
+        queryset = User.objects.filter(
+                custodian__isnull=True,
+                role='faculty'
+        )
+
+        if include:
+            queryset = (
+                queryset
+                | User.objects.filter(id=include, role='faculty')
+            ).distinct()
+
+        return  queryset
