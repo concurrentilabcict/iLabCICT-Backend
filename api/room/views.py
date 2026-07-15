@@ -1,6 +1,6 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
 from api.room.models import Room
-from api.room.serializers import RoomSerializer, RoomAndComputerListSerializer
+from api.room.serializers import RoomReadSerializer, RoomWriteSerializer, RoomAndComputerListSerializer
 from api.room.services import RoomService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician, IsStaff
@@ -10,7 +10,10 @@ from django.db.models import Count, Q
 from api.ticket.models import Ticket
 
 class RoomListCreateView(ListCreateAPIView):
-    serializer_class = RoomSerializer
+    def get_serializer_class(self):
+        if self.request.method == "POST":
+            return RoomWriteSerializer
+        return RoomReadSerializer
 
     def get_permissions(self):
         if self.request.method == 'POST':
@@ -42,7 +45,11 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
                                 distinct=True
                               ))
                     )
-    serializer_class = RoomSerializer
+    
+    def get_serializer_class(self):
+        if self.request.method in ("PATCH", "PUT"):
+            return RoomWriteSerializer
+        return RoomReadSerializer
 
     def get_permissions(self):
         if self.request.method == 'DELETE':

@@ -8,7 +8,7 @@ class ComputerListSerializer(serializers.ModelSerializer):
         model = Computer
         fields = '__all__'
 
-class RoomSerializer(serializers.ModelSerializer):
+class RoomReadSerializer(serializers.ModelSerializer):
 
     computer_count = serializers.IntegerField(read_only=True)
     computer_count_with_active_issues = serializers.IntegerField(read_only=True)
@@ -29,6 +29,11 @@ class RoomSerializer(serializers.ModelSerializer):
             fields.pop("computers", None)
 
         return fields
+
+class RoomWriteSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        fields = '__all__'
 
 class RoomAndComputerListSerializer(serializers.ModelSerializer):
     total_computer = serializers.IntegerField(read_only=True)
