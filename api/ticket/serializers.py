@@ -3,6 +3,7 @@ from api.ticket.models import Ticket
 from api.computer.serializers import ComputerMinimalSerializer
 from api.room.serializers import RoomMinimalSerializer
 from api.user.serializers import UserMinimalSerializer
+from api.ticket.services import TicketService
 
 class TicketReadSerializer(serializers.ModelSerializer):
     ticket_code = serializers.CharField(read_only=True)
@@ -36,11 +37,11 @@ class TicketWriteSerializer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
-        user = self.context["request"].user
-        instance.status = validated_data.get('status', instance.status)
-        instance.assigned_to = user
-        instance.save()
-        return instance
+        return TicketService.claim_ticket(
+            ticket_id=instance.id,
+            technician=self.context["request"].user,
+            status=validated_data.get("status")
+        )
 
     def validate(self, attrs):
         request = self.context.get('request')
