@@ -42,7 +42,7 @@ class RoomAndComputerListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Room
-        fields = ['id', 'room_name', 'assigned_custodian', 'total_computer', 'computers']
+        fields = ['id', 'room_name', 'assigned_custodian', 'total_computer', 'computers', 'building_name', 'floor_number']
     
 class RoomMinimalSerializer(serializers.ModelSerializer):
     class Meta:
