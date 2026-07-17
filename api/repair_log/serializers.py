@@ -65,12 +65,21 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
         return repair_log
     
 
+class MainRepairLogReadSerializer(serializers.ModelSerializer):
+    ticket = TicketReadSerializer(read_only=True)
+
+    class Meta:
+        model = RepairLog
+        fields='__all__'
+
 class RepairLogReadSerializer(serializers.ModelSerializer):
     ticket = MaintenanceHistoryTicketSerializer(read_only=True)
 
     class Meta:
         model = RepairLog
         fields = ['id', 'title', 'ticket', 'repair_log_code']
+
+
 
 class RepairLogDetailSerializer(serializers.ModelSerializer):
     ticket = TicketReadSerializer(read_only=True)

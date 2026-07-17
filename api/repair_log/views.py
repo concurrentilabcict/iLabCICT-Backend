@@ -1,6 +1,6 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
 from api.repair_log.models import RepairLog
-from api.repair_log.serializers import RepairLogReadSerializer, RepairLogWriteSerializer, RepairLogDetailSerializer
+from api.repair_log.serializers import RepairLogReadSerializer, RepairLogWriteSerializer, RepairLogDetailSerializer, MainRepairLogReadSerializer
 from api.repair_log.services import RepairLogService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician
@@ -24,7 +24,7 @@ class RepairLogListCreateView(ListCreateAPIView):
         if self.request.method == 'POST':
             return RepairLogWriteSerializer
         
-        return RepairLogReadSerializer
+        return MainRepairLogReadSerializer
     
 class RepairLogDetailView(RetrieveAPIView):
     queryset = RepairLog.objects.all()
