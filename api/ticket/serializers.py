@@ -3,7 +3,7 @@ from api.ticket.models import Ticket
 from api.computer.serializers import ComputerMinimalSerializer
 from api.room.serializers import RoomMinimalSerializer
 from api.user.serializers import UserMinimalSerializer
-from api.ticket.services import TicketService
+from django.db import transaction
 
 class TicketReadSerializer(serializers.ModelSerializer):
     ticket_code = serializers.CharField(read_only=True)
@@ -37,11 +37,39 @@ class TicketWriteSerializer(serializers.ModelSerializer):
         )
 
     def update(self, instance, validated_data):
-        return TicketService.claim_ticket(
-            ticket_id=instance.id,
-            technician=self.context["request"].user,
-            status=validated_data.get("status")
-        )
+        technician = self.context["request"].user
+        status = validated_data.get("status")
+
+        with transaction.atomic():
+            updated = (
+                Ticket.objects
+                .filter(
+                    id=instance.id,
+                    assigned_to__isnull=True
+                )
+                .update(
+                    assigned_to=technician,
+                    status=status
+                )
+            )
+
+            if updated:
+                return Ticket.objects.select_related(
+                    "reported_by",
+                    "assigned_to",
+                    "room",
+                    "computer"
+                ).get(id=instance.id)
+
+            instance.refresh_from_db()
+
+            if instance.assigned_to != technician:
+                raise serializers.ValidationError("Ticket has already been claimed.")
+
+            instance.status = status
+            instance.save(update_fields=["status"])
+
+            return instance
 
     def validate(self, attrs):
         request = self.context.get('request')

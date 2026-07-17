@@ -8,6 +8,9 @@ from api.computer.models import Computer
 from api.computer.serializers import ComputerReadSerializer
 from django.db.models import Count, Q
 from api.ticket.models import Ticket
+import time
+from rest_framework.response import Response
+from django.db import connection
 
 class RoomListCreateView(ListCreateAPIView):
     def get_serializer_class(self):
@@ -106,19 +109,15 @@ class RoomNameWithComputerCodeDetailView(RetrieveAPIView):
     
 class RoomNameAllComputersDetailView(RetrieveAPIView):
     serializer_class = RoomAndComputerListSerializer
-
     permission_classes = [IsAuthenticated, IsStaff]
 
-    lookup_field = 'room_name'
-    lookup_url_kwarg ='room'
+    lookup_field = "room_name"
+    lookup_url_kwarg = "room"
 
     def get_queryset(self):
-        room_name = self.kwargs['room']
-
         return (
             Room.objects
-            .select_related('assigned_custodian')
-            .prefetch_related('computers')
-            .annotate(total_computer=Count('computers'))
-            .filter(room_name=room_name)
+            .select_related("assigned_custodian")
+            .prefetch_related("computers")
+            .annotate(total_computer=Count("computers"))
         )
