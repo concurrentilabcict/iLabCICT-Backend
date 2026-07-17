@@ -34,6 +34,23 @@ class UserDetailView(RetrieveUpdateDestroyAPIView):
 
     parser_classes = [JSONParser, MultiPartParser, FormParser]
 
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["include"] = self.request.query_params.get("include", "")
+        return context
+
+    def retrieve(self, request, *args, **kwargs):
+        profile, stats = UserService.get_profile_stats(
+            request.user,
+            include=request.query_params.get("include", "")
+        )
+        serializer = self.get_serializer(profile)
+
+        data = serializer.data
+        data["stats"] = stats
+
+        return Response(data)
+    
     def get_permissions(self):
         if self.request.method == 'DELETE':
             return [IsAuthenticated(), IsAdmin()]
