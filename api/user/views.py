@@ -8,11 +8,13 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsProfileOwner
 from rest_framework.exceptions import PermissionDenied
+from api.throttle import LoginThrottle
 
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 class CustomTokenObtainPairView(TokenObtainPairView):
+    throttle_classes = [LoginThrottle]
     serializer_class = CustomTokenObtainPairSerializer
 
 class UserListCreateView(ListCreateAPIView):
