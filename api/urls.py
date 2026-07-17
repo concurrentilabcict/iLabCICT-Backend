@@ -5,6 +5,8 @@ from api.user.views import CustomTokenObtainPairView
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -15,6 +17,14 @@ schema_view = get_schema_view(
     public=True,
     permission_classes=(AllowAny,)
 )
+
+
+class PingView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        return Response({"ok": True})
 
 
 urlpatterns = [
@@ -48,4 +58,6 @@ urlpatterns = [
         schema_view.with_ui("redoc", cache_timeout=0),
         name="schema-redoc",
     ),
+
+    path('ping/', PingView.as_view())
 ]
