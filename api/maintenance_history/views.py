@@ -14,6 +14,7 @@ class MaintenanceHistoryListView(ListAPIView):
     def get_queryset(self):
         return MaintenanceHistoryServices.get_all(
             type=self.request.query_params.get('type'),
+            computer_code=self.request.query_params.get('computer-code'),
             computer_id=self.request.query_params.get('computer-id'),
             technician_id=self.request.query_params.get('technician-id'),
             date=self.request.query_params.get('date')

@@ -7,6 +7,7 @@ class MaintenanceHistoryServices:
     @staticmethod
     def get_all(type=None,
                 computer_id=None,
+                computer_code=None,
                 technician_id=None,
                 date=None):
         
@@ -18,6 +19,7 @@ class MaintenanceHistoryServices:
             )
         
         queryset = MaintenanceHistory.objects.select_related('repair_log',
+                                                             'computer',
                                                              'repair_log__ticket')
 
         if type is not None:
@@ -31,6 +33,9 @@ class MaintenanceHistoryServices:
 
         if date is not None:
             queryset = queryset.filter(date_performed__date=date)
+
+        if computer_code is not None:
+            queryset = queryset.filter(computer__computer_code=computer_code)
 
         return queryset
 
