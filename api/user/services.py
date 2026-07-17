@@ -2,6 +2,11 @@ from api.user.models import User
 from rest_framework.exceptions import ValidationError
 from api.user.models import User
 from api.room.models import Room
+from datetime import timedelta
+from django.utils import timezone
+from django.db.models import Count
+from django.db.models.functions import TruncDate
+from api.ticket.models import Ticket
 class UserService:
 
     @staticmethod
@@ -43,3 +48,53 @@ class UserService:
         if is_active not in ('true', 'false', None):
             raise ValidationError('is-active must only be True or False')
 
+
+    @staticmethod
+    def get_profile_stats(user, include=None):
+        seven_days_ago = timezone.now() - timedelta(days=7)
+        today = timezone.localdate()
+
+        profile = User.objects.get(id=user.id)
+
+        stats = {}
+
+        if include and "faculty-stats" in include.split(",") and user.role == User.UserRole.FACULTY:
+            tickets_per_day = (
+                Ticket.objects
+                .filter(
+                    reported_by=user,
+                    created_at__gte=seven_days_ago
+                )
+                .annotate(day=TruncDate("created_at"))
+                .values("day")
+                .annotate(count=Count("id"))
+                .order_by("day")
+            )
+
+            tickets_submitted_today = (
+                Ticket.objects
+                .filter(
+                    reported_by=user,
+                    created_at__gte=today
+                )
+                .values("type")
+                .annotate(count=Count("id"))
+            )
+
+            stats["tickets_per_day"] = list(tickets_per_day)
+            stats["total_tickets_last_7_days"] = (
+                Ticket.objects.filter(
+                    reported_by=user,
+                    created_at__gte=seven_days_ago
+                ).count()
+            )
+            stats["tickets_submitted_today"] = list(tickets_submitted_today)
+            stats["total_tickets_today"] = (
+                Ticket.objects.filter(
+                    reported_by=user,
+                    created_at__gte=today
+                ).count()
+            )
+
+        return profile, stats
+       
