@@ -34,7 +34,7 @@ class ComputerListCreateView(ListCreateAPIView):
         return Response(output.data, status=status.HTTP_201_CREATED)
 
 class ComputerDetailView(RetrieveUpdateDestroyAPIView):
-    queryset = Computer.objects.all()
+
     def get_serializer_class(self):
         if self.request.method in ('PATCH', 'PUT'):
             return ComputerWriteSerializer
@@ -56,7 +56,15 @@ class ComputerCodeDetailView(RetrieveAPIView):
 
     def get_queryset(self):
         computer_code = self.kwargs['uk']
-        return Computer.objects.select_related('room').filter(computer_code=computer_code)
+        return ComputerService.get_computer_with_mainentance_history(
+            include=self.request.query_params.get("include", ""),
+            computer_code=computer_code
+        )
+    
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context["include"] = self.request.query_params.get("include", "")
+        return context
 
     serializer_class = ComputerReadSerializer
 
