@@ -4,6 +4,17 @@ from rest_framework.exceptions import ValidationError
 
 class ComputerService:
 
+    @staticmethod
+    def get_computer_with_mainentance_history(include=None, computer_code=None):
+        queryset = Computer.objects.select_related('room').filter(computer_code=computer_code)
+
+        if "maintenance-history" in include.split(","):
+            queryset = queryset.prefetch_related('maintenance_history', 
+                                                 'maintenance_history__repair_log',
+                                                 'maintenance_history__repair_log__ticket')
+
+        return queryset
+
     #new method
     @staticmethod
     def get_all(filters):
@@ -15,7 +26,12 @@ class ComputerService:
         queryset = ComputerService.filter_active(queryset, filters)
         queryset = ComputerService.filter_all_peripherals(queryset, filters)
         queryset = ComputerService.filter_peripheral_status(queryset, filters)
-        
+        print(filters)
+
+        if "maintenance-history" in filters.include.split(","):
+            queryset = queryset.prefetch_related("maintenance_history")
+
+
         return queryset
     
     def filter_per_computer_code(queryset, filters):
