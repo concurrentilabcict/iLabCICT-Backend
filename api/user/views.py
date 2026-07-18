@@ -5,10 +5,12 @@ from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer
 from api.user.services import UserService
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated,AllowAny
 from api.permissions import IsAdmin, IsProfileOwner
 from rest_framework.exceptions import PermissionDenied
 from api.throttle import LoginThrottle
+from rest_framework.views import APIView
+from api.user.serializers import ForgotPasswordSerializer
 
 
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -93,3 +95,20 @@ class AvailableCustodianListView(ListAPIView):
             ).distinct()
 
         return  queryset
+    
+
+class ForgotPasswordAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        UserService.send_reset_email(serializer.user)
+
+        return Response(
+            {
+                "message": "Password reset email has been sent."
+            },
+            status=status.HTTP_200_OK
+        )

@@ -2,6 +2,8 @@ from rest_framework import serializers
 from api.user.models import User
 from django.contrib.auth import authenticate
 from api.user.services import UserService
+from rest_framework_simplejwt.tokens import AccessToken
+from datetime import timedelta
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -96,3 +98,21 @@ class UserUpdatePasswordSerializer(serializers.ModelSerializer):
         instance.set_password(new_password)
         instance.save()
         return instance
+
+
+class ForgotPasswordSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
+        user = User.objects.filter(
+            email=value,
+            is_active=True
+        ).first()
+
+        if not user:
+            raise serializers.ValidationError(
+                "No active account found."
+            )
+
+        self.user = user
+        return value
