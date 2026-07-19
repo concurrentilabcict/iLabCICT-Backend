@@ -7,7 +7,18 @@ from django.utils import timezone
 from django.db.models import Count
 from django.db.models.functions import TruncDate
 from api.ticket.models import Ticket
+from rest_framework_simplejwt.tokens import AccessToken
+from django.core.mail import send_mail
+from django.conf import settings
+from django.db import transaction
+    
 class UserService:
+
+    @staticmethod
+    @transaction.atomic
+    def reset_password(user, new_password):
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
 
     @staticmethod
     def get_user_full_name(user_id):
@@ -98,3 +109,25 @@ class UserService:
 
         return profile, stats
        
+    @staticmethod
+    def send_reset_email(user):
+        token = AccessToken()
+
+        token["user_id"] = user.id
+        token["purpose"] = "password_reset"
+
+        token.set_exp(lifetime=timedelta(minutes=15))
+
+        magic_link = (
+           "https://habibi.com"
+            f"/reset-password?token={token}"
+        )
+
+        send_mail(
+            subject="Reset your password",
+            message=f"Click this link to reset your password. \n" + magic_link,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
+        )
+
