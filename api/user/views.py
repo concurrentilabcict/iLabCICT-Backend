@@ -10,7 +10,7 @@ from api.permissions import IsAdmin, IsProfileOwner
 from rest_framework.exceptions import PermissionDenied
 from api.throttle import LoginThrottle
 from rest_framework.views import APIView
-from api.user.serializers import ForgotPasswordSerializer
+from api.user.serializers import ForgotPasswordSerializer, ResetPasswordWithTokenSerializer
 
 
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -111,4 +111,23 @@ class ForgotPasswordAPIView(APIView):
                 "message": "Password reset email has been sent."
             },
             status=status.HTTP_200_OK
+        )
+    
+class ResetPasswordWithTokenAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        serializer = ResetPasswordWithTokenSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        UserService.reset_password(
+            user=serializer.validated_data["user"],
+            new_password=serializer.validated_data["password"],
+        )
+
+        return Response(
+            {
+                "message": "Password reset successful."
+            },
+            status=status.HTTP_200_OK,
         )

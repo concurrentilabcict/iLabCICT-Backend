@@ -10,7 +10,15 @@ from api.ticket.models import Ticket
 from rest_framework_simplejwt.tokens import AccessToken
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db import transaction
+    
 class UserService:
+
+    @staticmethod
+    @transaction.atomic
+    def reset_password(user, new_password):
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
 
     @staticmethod
     def get_user_full_name(user_id):

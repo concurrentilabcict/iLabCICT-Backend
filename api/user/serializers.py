@@ -4,6 +4,7 @@ from django.contrib.auth import authenticate
 from api.user.services import UserService
 from rest_framework_simplejwt.tokens import AccessToken
 from datetime import timedelta
+from rest_framework_simplejwt.exceptions import TokenError
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -116,3 +117,36 @@ class ForgotPasswordSerializer(serializers.Serializer):
 
         self.user = user
         return value
+    
+class ResetPasswordWithTokenSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+    confirm_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+
+        if attrs["password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError(
+                "Passwords do not match."
+            )
+
+        try:
+            token = AccessToken(attrs["token"])
+
+            if token.get("purpose") != "password_reset":
+                raise serializers.ValidationError(
+                    "Invalid reset token."
+                )
+
+            user = User.objects.get(id=token["user_id"])
+
+        except TokenError as e:
+            print(e)
+            raise serializers.ValidationError(str(e))
+
+        except User.DoesNotExist:
+            raise serializers.ValidationError("User does not exist.")
+
+        attrs["user"] = user
+
+        return attrs
