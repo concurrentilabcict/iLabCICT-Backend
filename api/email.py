@@ -2,66 +2,35 @@ import requests
 
 from django.conf import settings
 class EmailService:
-    BASE_URL = 'https://api.brevo.com/v3/smtp/email'
+    BASE_URL = 'https://i-lab-cict-email-service.vercel.app/api/send-email'
 
     @staticmethod
     def send_password_reset_email(
         *,
         recipient_email,
-        recipient_name,
+        recipient_name=None,
         reset_url
     ):
-        
+
         headers = {
-            "accept": "application/json",
-            "api-key": settings.BREVO_KEY,
-            "content-type": "application/json",
+        "X-API-Key": settings.EMAIL_API_KEY,
+        "Content-Type": "application/json",
         }
 
         payload = {
-            "sender": {
-                "name": "iLabCICT",
-                "email": settings.DEFAULT_FROM_EMAIL,
-            },
-            "to": [
-                {
-                    "email": recipient_email,
-                    "name": recipient_name,
-                }
-            ],
-            "subject": "Reset your password",
-            "htmlContent": f"""
-                <h2>Password Reset</h2>
-
-                <p>Hello {recipient_name},</p>
-
-                <p>
-                    Someone requested to reset your password.
-                </p>
-
-                <p>
-                    Click below:
-                </p>
-
-                <a href="{reset_url}">
-                    Reset Password
-                </a>
-
-                <p>
-                    This link expires in 15 minutes.
-                </p>
-            """,
+        "email": recipient_email,
+        "link": reset_url,
         }
 
-        response = requests.post(
-            EmailService.BASE_URL,
-            headers=headers,
-            json=payload,
-            timeout=10,
-        )
+        try:
+            response = requests.post(EmailService.BASE_URL, json=payload, headers=headers, timeout=10)
+            response.raise_for_status()
+            return True
+        except requests.RequestException as e:
+            print(f"Failed to send reset email: {e}")
+            return False
 
-        response.raise_for_status()
-        print(response.status_code)
-        print(response.json())
 
-        return response.json()
+
+
+      

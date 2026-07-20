@@ -125,8 +125,6 @@ class UserService:
             f"/reset-password?token={token}"
         )
 
-        print(user.email)
-        print(user.first_name)
         try:
             EmailService.send_password_reset_email(
                 recipient_email=user.email,
