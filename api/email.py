@@ -19,6 +19,7 @@ class EmailService:
 
         payload = {
         "email": recipient_email,
+        "name": recipient_name,
         "link": reset_url,
         }
 
