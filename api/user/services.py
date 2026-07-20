@@ -11,6 +11,8 @@ from rest_framework_simplejwt.tokens import AccessToken
 from django.core.mail import send_mail
 from django.conf import settings
 from django.db import transaction
+from api.email import EmailService
+import requests
     
 class UserService:
 
@@ -123,11 +125,15 @@ class UserService:
             f"/reset-password?token={token}"
         )
 
-        send_mail(
-            subject="Reset your password",
-            message=f"Click this link to reset your password. \n" + magic_link,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[user.email],
-            fail_silently=False,
-        )
+        print(user.email)
+        print(user.first_name)
+        try:
+            EmailService.send_password_reset_email(
+                recipient_email=user.email,
+                recipient_name=user.first_name,
+                reset_url=magic_link,
+            )
+        except requests.HTTPError as e:
+            print(e.response.text)
+            raise
 
