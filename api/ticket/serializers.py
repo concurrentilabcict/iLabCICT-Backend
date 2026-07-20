@@ -38,7 +38,7 @@ class TicketWriteSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         technician = self.context["request"].user
-        status = validated_data.get("status")
+        status = validated_data.get("status", instance.status)
 
         with transaction.atomic():
             updated = (
