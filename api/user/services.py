@@ -121,7 +121,7 @@ class UserService:
         token.set_exp(lifetime=timedelta(minutes=15))
 
         magic_link = (
-           "https://habibi.com"
+           "https://i-lab-cict-web.vercel.app"
             f"/reset-password?token={token}"
         )
 
