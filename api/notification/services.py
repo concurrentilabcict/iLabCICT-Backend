@@ -3,17 +3,16 @@ from api.notification.models import Notification
 from rest_framework.exceptions import ValidationError
 from api.common.utils.date_checker import is_invalid_date_format
 from api.user.models import User
-
+from django.db.models import Q
 class NotificationService():
 
     @staticmethod
-    def get_all(user_id=None,
+    def get_all(user=None,
                 type=None,
                 status=None,
                 date=None):
         
         NotificationService.validate_filters(
-            user_id=user_id,
             type=type,
             status=status,
             date=date
@@ -21,8 +20,13 @@ class NotificationService():
 
         queryset = Notification.objects.select_related('ticket')
 
-        if user_id is not None:
-            queryset = queryset.filter(receiver_id=user_id)
+        if user is not None:
+            queryset = queryset.filter(
+                 Q(receiver_role=user.role) &
+                    (
+                        Q(receiver_id=user.id) |
+                        Q(receiver_id__isnull=True)
+                    ))
 
         if type is not None: 
             queryset = queryset.filter(type=type)
@@ -33,22 +37,16 @@ class NotificationService():
         if date is not None:
             queryset = queryset.filter(created_at__date=date)
 
-        if user_id is None:
+        if user is None:
             queryset = []
             
         return queryset
     
     @staticmethod
-    def validate_filters(user_id,type,status,date):
+    def validate_filters(type,status,date):
         allowed_notification_type = Notification.NotificationTypes.values
         allowed_notification_status = Notification.NotificationStatus.values
 
-        if user_id is not None:
-            try:
-                user_id = int(user_id)
-            except (TypeError, ValueError):
-                raise ValidationError('Invalid user-id.')
-        
         if type and type not in allowed_notification_type:
             raise ValidationError('Invalid notification type')
         
@@ -83,6 +81,10 @@ class NotificationService():
                 type = Notification.NotificationTypes.TICKET,
                 status = Notification.NotificationStatus.UNREAD
             )
+
+    @staticmethod
+    def update_ticket_receiver(receiver_id, notif_id):
+        Notification.objects.filter(id=notif_id).update(receiver_id=receiver_id)
 
 
     @staticmethod

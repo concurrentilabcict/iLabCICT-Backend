@@ -13,7 +13,7 @@ class NotificationListView(ListAPIView):
 
     def get_queryset(self):
         return NotificationService.get_all(
-            user_id=self.request.user.id,
+            user=self.request.user,
             type=self.request.query_params.get('type'),
             status=self.request.query_params.get('status'),
             date=self.request.query_params.get('date')
