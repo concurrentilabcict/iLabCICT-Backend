@@ -7,7 +7,7 @@ from django.db import transaction
 from api.common.utils.date_checker import is_invalid_date_format
 from rest_framework.exceptions import ValidationError
 from api.user.models import User
-
+from django.db.models import Q
 class TicketService:
 
     @staticmethod
@@ -31,8 +31,12 @@ class TicketService:
             'computer'
             )
         
-        
-        if user.role == User.UserRole.FACULTY:
+        if user.role == User.UserRole.TECHNICIAN:
+            queryset = queryset.filter(
+                Q(assigned_to=user) | Q(assigned_to__isnull=True)
+                )
+
+        elif user.role == User.UserRole.FACULTY:
             queryset = queryset.filter(reported_by_id=user.id)
 
         elif user.role == User.UserRole.ADMIN and technician_id:
