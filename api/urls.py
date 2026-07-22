@@ -59,5 +59,7 @@ urlpatterns = [
         name="schema-redoc",
     ),
 
-    path('ping/', PingView.as_view())
+    path('ping/', PingView.as_view()),
+
+    path('request-history/', include('api.request_history.urls')),
 ]
