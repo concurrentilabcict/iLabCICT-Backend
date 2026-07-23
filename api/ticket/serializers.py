@@ -3,7 +3,6 @@ from api.ticket.models import Ticket
 from api.computer.serializers import ComputerMinimalSerializer
 from api.room.serializers import RoomMinimalSerializer
 from api.user.serializers import UserMinimalSerializer
-from api.ticket.services import TicketService
 from django.db import transaction
 
 class TicketReadSerializer(serializers.ModelSerializer):

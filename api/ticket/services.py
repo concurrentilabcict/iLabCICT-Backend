@@ -7,6 +7,7 @@ from api.common.utils.date_checker import is_invalid_date_format
 from rest_framework.exceptions import ValidationError
 from api.user.models import User
 from django.db.models import Q
+from api.ticket.serializers import TicketReadSerializer
 class TicketService:
 
     @staticmethod
@@ -85,6 +86,16 @@ class TicketService:
             'computer'
         ).get(pk=ticket.pk)
 
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            'technicians',
+            {
+                'type': 'ticket_created',
+                'ticket': TicketReadSerializer(ticket).data
+            }
+        )
+
         NotificationService.create_new_ticket_notification(
             receiver_id=ticket.assigned_to,
             title='New Ticket Created!',
@@ -104,11 +115,20 @@ class TicketService:
             'computer'
         ).get(pk=ticket.pk)
 
+        channel_layer = get_channel_layer()
 
         NotificationService.create_new_ticket_notification(
             receiver_id=ticket.reported_by,
             title='Ticket Status Updated!',
             ticket_id=ticket.id
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            'technicians',
+            {
+                'type': 'ticket_updated',
+                'ticket': TicketReadSerializer(ticket).data
+            }
         )
 
         return ticket

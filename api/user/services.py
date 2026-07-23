@@ -105,7 +105,6 @@ class UserService:
                 6: "SU",
             }
 
-            # Initialize the last 7 days with zero counts
             last_seven_days = {}
 
             for i in range(6, -1, -1):
@@ -113,9 +112,9 @@ class UserService:
                 last_seven_days[date] = {
                     "day": weekday_map[date.weekday()],
                     "count": 0,
+                    "date": date
                 }
 
-            # Fill in actual ticket counts
             for item in tickets_per_day:
                 last_seven_days[item["day"]]["count"] = item["count"]
 
