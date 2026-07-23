@@ -42,7 +42,26 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
             return [IsAuthenticated(), IsAdmin()]
 
         return [IsAuthenticated(), HasTicketPermission()]
-    
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+
+        serializer = self.get_serializer(
+            instance,
+            data=request.data,
+            partial=partial,
+        )
+        serializer.is_valid(raise_exception=True)
+
+        ticket = TicketService.update_ticket(serializer)
+
+        return Response(
+            TicketReadSerializer(
+                ticket,
+                context=self.get_serializer_context()
+            ).data
+        )
     
     def get_serializer_class(self):
         if self.request.method == 'PATCH':
