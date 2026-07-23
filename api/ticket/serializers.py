@@ -20,6 +20,11 @@ class TicketReadSerializer(serializers.ModelSerializer):
 
 class TicketWriteSerializer(serializers.ModelSerializer):
     ticket_code = serializers.CharField(read_only=True)
+    reported_by = UserMinimalSerializer()
+    assigned_to = UserMinimalSerializer()
+    room = RoomMinimalSerializer()
+    computer = ComputerMinimalSerializer()
+    
 
     class Meta:
         model = Ticket
