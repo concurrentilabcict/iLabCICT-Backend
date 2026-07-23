@@ -3,6 +3,7 @@ from api.ticket.models import Ticket
 from api.computer.serializers import ComputerMinimalSerializer
 from api.room.serializers import RoomMinimalSerializer
 from api.user.serializers import UserMinimalSerializer
+from api.ticket.services import TicketService
 from django.db import transaction
 
 class TicketReadSerializer(serializers.ModelSerializer):
@@ -40,36 +41,17 @@ class TicketWriteSerializer(serializers.ModelSerializer):
         technician = self.context["request"].user
         status = validated_data.get("status", instance.status)
 
-        with transaction.atomic():
-            updated = (
-                Ticket.objects
-                .filter(
-                    id=instance.id,
-                    assigned_to__isnull=True
-                )
-                .update(
-                    assigned_to=technician,
-                    status=status
-                )
-            )
-
-            if updated:
-                return Ticket.objects.select_related(
-                    "reported_by",
-                    "assigned_to",
-                    "room",
-                    "computer"
-                ).get(id=instance.id)
-
-            instance.refresh_from_db()
-
-            if instance.assigned_to != technician:
-                raise serializers.ValidationError("Ticket has already been claimed.")
-
-            instance.status = status
-            instance.save(update_fields=["status"])
-
-            return instance
+        if technician and status == Ticket.TicketStatus.OPEN:
+            return TicketService.claim_ticket(instance=instance,
+                                       technician=technician,
+                                       status=status
+                                       )
+        elif technician and status == Ticket.TicketStatus.ONGOING:
+            return TicketService.update_ticket_to_ongoing(instance=instance)
+        elif technician and status == Ticket.TicketStatus.RESOLVED and instance.type == Ticket.TicketType.REQUEST:
+            ...
+        
+        return instance
 
     def validate(self, attrs):
         request = self.context.get('request')

@@ -64,19 +64,30 @@ class UserService:
 
     @staticmethod
     def get_profile_stats(user, include=None):
-        seven_days_ago = timezone.now() - timedelta(days=7)
         today = timezone.localdate()
+        seven_days_ago = today - timedelta(days=6)
 
         profile = User.objects.get(id=user.id)
 
         stats = {}
 
         if include and "faculty-stats" in include.split(",") and user.role == User.UserRole.FACULTY:
-            tickets_per_day = (
+
+            tickets_submitted_today = (
                 Ticket.objects
                 .filter(
                     reported_by=user,
-                    created_at__gte=seven_days_ago
+                    created_at__date=today
+                )
+                .values("type")
+                .annotate(count=Count("id"))
+            )
+
+            tickets_per_day = list(
+                Ticket.objects
+                .filter(
+                    reported_by=user,
+                    created_at__date__gte=seven_days_ago
                 )
                 .annotate(day=TruncDate("created_at"))
                 .values("day")
@@ -84,28 +95,38 @@ class UserService:
                 .order_by("day")
             )
 
-            tickets_submitted_today = (
-                Ticket.objects
-                .filter(
-                    reported_by=user,
-                    created_at__gte=today
-                )
-                .values("type")
-                .annotate(count=Count("id"))
-            )
+            weekday_map = {
+                0: "M",
+                1: "T",
+                2: "W",
+                3: "TH",
+                4: "F",
+                5: "SA",
+                6: "SU",
+            }
 
-            stats["tickets_per_day"] = list(tickets_per_day)
-            stats["total_tickets_last_7_days"] = (
-                Ticket.objects.filter(
-                    reported_by=user,
-                    created_at__gte=seven_days_ago
-                ).count()
-            )
+            # Initialize the last 7 days with zero counts
+            last_seven_days = {}
+
+            for i in range(6, -1, -1):
+                date = today - timedelta(days=i)
+                last_seven_days[date] = {
+                    "day": weekday_map[date.weekday()],
+                    "count": 0,
+                }
+
+            # Fill in actual ticket counts
+            for item in tickets_per_day:
+                last_seven_days[item["day"]]["count"] = item["count"]
+
+            stats["tickets_per_day"] = list(last_seven_days.values())
+
             stats["tickets_submitted_today"] = list(tickets_submitted_today)
+
             stats["total_tickets_today"] = (
                 Ticket.objects.filter(
                     reported_by=user,
-                    created_at__gte=today
+                    created_at__date=today
                 ).count()
             )
 
