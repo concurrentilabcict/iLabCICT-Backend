@@ -60,8 +60,8 @@ class NotificationService():
     
     @staticmethod
     def create_new_ticket_notification(receiver_id, title, ticket_id, role):
-
-        if receiver_id is None and User.UserRole.TECHNICIAN:
+        
+        if receiver_id is None and role == User.UserRole.TECHNICIAN:
             Notification.objects.create(
                 receiver = None,
                 receiver_role=User.UserRole.TECHNICIAN, 
