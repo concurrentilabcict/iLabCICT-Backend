@@ -59,9 +59,9 @@ class NotificationService():
 
     
     @staticmethod
-    def create_new_ticket_notification(receiver_id, title, ticket_id):
+    def create_new_ticket_notification(receiver_id, title, ticket_id, role):
 
-        if receiver_id is None:
+        if receiver_id is None and User.UserRole.TECHNICIAN:
             Notification.objects.create(
                 receiver = None,
                 receiver_role=User.UserRole.TECHNICIAN, 
@@ -71,7 +71,7 @@ class NotificationService():
                 type = Notification.NotificationTypes.TICKET,
                 status = Notification.NotificationStatus.UNREAD
             )
-        else:
+        elif role == User.UserRole.TECHNICIAN:
             Notification.objects.create(
                 receiver = receiver_id,
                 receiver_role=User.UserRole.TECHNICIAN, 
@@ -81,11 +81,21 @@ class NotificationService():
                 type = Notification.NotificationTypes.TICKET,
                 status = Notification.NotificationStatus.UNREAD
             )
+        elif role == User.UserRole.FACULTY:
+            Notification.objects.create(
+                            receiver = receiver_id,
+                            receiver_role=User.UserRole.FACULTY, 
+                            title = title,
+                            ticket_id = ticket_id,
+                            report = None,
+                            type = Notification.NotificationTypes.TICKET,
+                            status = Notification.NotificationStatus.UNREAD
+                        )
 
     @staticmethod
-    def update_ticket_receiver(receiver_id, notif_id):
-        Notification.objects.filter(id=notif_id).update(receiver_id=receiver_id)
-
+    def update_ticket_receiver(receiver_id, ticket_id):
+        Notification.objects.filter(ticket_id=ticket_id).update(receiver_id=receiver_id)
+        
 
     @staticmethod
     def create_new_report_notification(receiver_id, title, report_id):
