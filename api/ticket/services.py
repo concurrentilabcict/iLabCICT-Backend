@@ -103,12 +103,13 @@ class TicketService:
             role=User.UserRole.TECHNICIAN
         )
 
+
         return ticket
     
     @staticmethod
     def update_ticket(instance, validated_data, technician):
 
-        status = validated_data["status"]
+        status = validated_data.get("status", instance.status)
 
         updated = (
             Ticket.objects
