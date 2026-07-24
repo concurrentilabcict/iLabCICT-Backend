@@ -44,24 +44,24 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
         return [IsAuthenticated(), HasTicketPermission()]
 
     def update(self, request, *args, **kwargs):
-        partial = kwargs.pop("partial", False)
         instance = self.get_object()
 
         serializer = self.get_serializer(
             instance,
             data=request.data,
-            partial=partial,
+            partial=True,
         )
         serializer.is_valid(raise_exception=True)
 
-        ticket = TicketService.update_ticket(serializer)
-
-        return Response(
-            TicketReadSerializer(
-                ticket,
-                context=self.get_serializer_context()
-            ).data
+        ticket = TicketService.update_ticket(
+            instance=instance,
+            validated_data=serializer.validated_data,
+            technician=request.user
         )
+        
+        return Response(
+            TicketReadSerializer(ticket).data
+                        )
     
     def get_serializer_class(self):
         if self.request.method == 'PATCH':
@@ -77,8 +77,6 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
             'computer'
         )
     
-    def perform_update(self, serializer):
-        TicketService.update_ticket(serializer)
 
     def perform_destroy(self, instance):
         TicketService.delete_ticket(instance)

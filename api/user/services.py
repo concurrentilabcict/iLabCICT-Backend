@@ -83,6 +83,17 @@ class UserService:
                 .annotate(count=Count("id"))
             )
 
+            tickets_submitted = {
+                "request_tickets": 0,
+                "report_tickets": 0, 
+            }
+
+            for ticket in tickets_submitted_today:
+                if ticket["type"] == Ticket.TicketType.REQUEST:
+                    tickets_submitted["request_tickets"] = ticket["count"]
+                if ticket["type"] == Ticket.TicketType.REPORT:
+                    tickets_submitted["report_tickets"] = ticket["count"]
+
             tickets_per_day = list(
                 Ticket.objects
                 .filter(
@@ -120,7 +131,7 @@ class UserService:
 
             stats["tickets_per_day"] = list(last_seven_days.values())
 
-            stats["tickets_submitted_today"] = list(tickets_submitted_today)
+            stats["tickets_submitted_today"] = tickets_submitted
 
             stats["total_tickets_today"] = (
                 Ticket.objects.filter(

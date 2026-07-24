@@ -99,29 +99,57 @@ class TicketService:
         NotificationService.create_new_ticket_notification(
             receiver_id=ticket.assigned_to,
             title='New Ticket Created!',
-            ticket_id=ticket.id
+            ticket_id=ticket.id,
+            role=User.UserRole.TECHNICIAN
         )
 
         return ticket
     
     @staticmethod
-    def update_ticket(serializer):
-        ticket = serializer.save()
+    def update_ticket(instance, validated_data, technician):
+
+        status = validated_data["status"]
+
+        updated = (
+            Ticket.objects
+            .filter(
+                id=instance.id,
+                assigned_to__isnull=True
+            )
+            .update(
+                assigned_to=technician,
+                status=status
+            )
+        )
+
+        if not updated:
+            instance.refresh_from_db()
+
+            if instance.assigned_to != technician:
+                raise ValidationError("Ticket already claimed.")
+
+            instance.status = status
+            instance.save(update_fields=["status"])
+
 
         ticket = Ticket.objects.select_related(
             'reported_by',
             'assigned_to',
             'room',
             'computer'
-        ).get(pk=ticket.pk)
+        ).get(pk=instance.pk)
 
+
+        if ticket.status != instance.status:
+            NotificationService.create_new_ticket_notification(
+                                receiver_id=ticket.reported_by,
+                                title='Ticket Status Updated!',
+                                ticket_id=ticket.id,
+                                role=User.UserRole.FACULTY
+                            )
+        
+        
         channel_layer = get_channel_layer()
-
-        NotificationService.create_new_ticket_notification(
-            receiver_id=ticket.reported_by,
-            title='Ticket Status Updated!',
-            ticket_id=ticket.id
-        )
 
         async_to_sync(channel_layer.group_send)(
             'technicians',
@@ -148,45 +176,4 @@ class TicketService:
                 'ticket_id': ticket_id
             }
         )
-
-    
-    @staticmethod
-    @transaction.atomic()
-    def claim_ticket(instance, technician, status):
-        updated = (
-                    Ticket.objects
-                    .filter(
-                        id=instance.id,
-                        assigned_to__isnull=True
-                    )
-                    .update(
-                        assigned_to=technician,
-                        status=status
-                    )
-                )
-
-        if updated:
-            return Ticket.objects.select_related("reported_by",
-                                "assigned_to",
-                                "room",
-                                "computer"
-                            ).get(id=instance.id)
-
-        instance.refresh_from_db()
-        
-        if instance.assigned_to != technician:
-            raise ValidationError("Ticket has already been claimed.")
-
-        instance.status = status
-        instance.save(update_fields=["status"])
-
-        return instance
-
-    @staticmethod
-    def update_ticket_to_ongoing(instance):
-        instance.status = Ticket.TicketStatus.ONGOING
-        instance.save(update_fields=["status"])
-        return instance
-
-
     
