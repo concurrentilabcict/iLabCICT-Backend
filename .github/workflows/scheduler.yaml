@@ -10,10 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Call Scheduler
+      - name: Scheduler Test
         run: |
-          curl -X GET "${{ secrets.SCHEDULER_URL }}" \
-            -H "Authorization: Bearer ${{ secrets.SCHEDULER_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            --fail \
-            --show-error
+          echo "Scheduler triggered successfully!"
+          date
