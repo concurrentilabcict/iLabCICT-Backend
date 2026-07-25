@@ -22,6 +22,7 @@ class TaskSchedulerDetailView(RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
 class SchedulerView(APIView):
+    authentication_classes = []
     permission_classes=[HasSchedulerToken]
 
     def get(self, request):

@@ -69,6 +69,6 @@ class IsTechnician(BasePermission):
 class HasSchedulerToken(BasePermission):
     def has_permission(self, request, view):
         return (
-            request.headers.get("Authorization")
-            == f"Bearer {settings.SCHEDULER_TOKEN}"
+            request.headers.get("X-Scheduler-Token")
+            == settings.SCHEDULER_TOKEN
         )
