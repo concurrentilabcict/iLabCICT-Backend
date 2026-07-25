@@ -94,3 +94,9 @@ class MaintenanceHistoryTicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ticket
         fields = ['id', 'status', 'issue_image']
+
+class RequestHistoryTicketSerializer(serializers.ModelSerializer):
+    class Meta:
+            model = Ticket
+            fields = ['id', 'status', 'issue_image']
+    
