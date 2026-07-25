@@ -152,7 +152,7 @@ class TicketService:
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
             RequestHistory.objects.create(
-                room_id=ticket.room,
+                room_id=ticket.room.id,
                 technician=ticket.assigned_to,
                 ticket_id=ticket.id,
             )
