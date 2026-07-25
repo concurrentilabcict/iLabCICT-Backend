@@ -12,7 +12,7 @@ jobs:
     steps:
       - name: Call Scheduler
         run: |
-          curl -X POST "${{ secrets.SCHEDULER_URL }}" \
+          curl -X GET "${{ secrets.SCHEDULER_URL }}" \
             -H "Authorization: Bearer ${{ secrets.SCHEDULER_TOKEN }}" \
             -H "Content-Type: application/json" \
             --fail \
