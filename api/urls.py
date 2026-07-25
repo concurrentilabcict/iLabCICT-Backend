@@ -62,4 +62,6 @@ urlpatterns = [
     path('ping/', PingView.as_view()),
 
     path('request-history/', include('api.request_history.urls')),
+
+    path('scheduler/', include('api.task_scheduler.urls')),
 ]
