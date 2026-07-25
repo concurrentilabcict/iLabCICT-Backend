@@ -93,8 +93,11 @@ class NotificationService():
                         )
 
     @staticmethod
-    def update_ticket_receiver(receiver_id, ticket_id):
-        Notification.objects.filter(ticket_id=ticket_id).update(receiver_id=receiver_id)
+    def update_technician_receiver(receiver_id, ticket_id):
+        Notification.objects.filter(
+            ticket_id=ticket_id,
+            receiver_id=None 
+            ).update(receiver_id=receiver_id)
         
 
     @staticmethod

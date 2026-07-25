@@ -42,18 +42,15 @@ class TicketWriteSerializer(serializers.ModelSerializer):
         if request and request.method == 'PATCH':
             invalid_fields = set(attrs.keys()) - {'status', 'assigned_to'}
             if invalid_fields:
-                raise serializers.ValidationError("Only 'status' and 'assigned_to' field can be updated")
+                raise serializers.ValidationError("Only 'status', 'assigned_to' and 'request_notes' field can be updated")
 
-            new_status = attrs.get('status')
+            new_status = attrs.get('status', self.instance.status)
             current_status = self.instance.status
             computer = attrs.get('computer')
             ticket_type = attrs.get('type')
             current_ticket_type = self.instance.type
             current_assigned_to = self.instance.assigned_to
             new_assigned_to = request.user
-
-            print(new_assigned_to)
-            print(current_assigned_to)
 
             if (
                 current_assigned_to is not None
