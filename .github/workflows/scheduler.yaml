@@ -2,7 +2,7 @@ name: iLabCICT Report Scheduler
 
 on:
   schedule:
-    - cron: "*/60 * * * *"
+    - cron: "* * * * *"
   workflow_dispatch:
 
 jobs:
