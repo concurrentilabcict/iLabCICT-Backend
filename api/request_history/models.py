@@ -9,7 +9,6 @@ class RequestHistory(models.Model):
     technician = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     date_performed = models.DateTimeField(auto_now_add=True)
     request_history_code = models.CharField(max_length=20, unique=True, null=True)
-    request_notes = models.TextField()
 
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='request_history_ticket', null=True)
 
