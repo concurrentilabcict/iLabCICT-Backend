@@ -13,7 +13,9 @@ from api.common.utils.prompts import load_prompt
 from api.notification.services import NotificationService
 from rest_framework.exceptions import ValidationError, NotFound, APIException
 from api.common.utils.date_checker import is_invalid_date_format
-
+from api.user.models import User
+from datetime import timedelta
+from django.utils import timezone
 class ReportService:
     
     @staticmethod
@@ -58,9 +60,9 @@ class ReportService:
             raise ValidationError('Date format must be in YYYY-MM-DD.')
     
     @staticmethod
-    def generate_report_content(request):
+    def generate_report_content(start_date, end_date, assigned_id):
 
-        repair_logs = ReportService.get_repair_logs_by_week(request.data.get('start_time'), request.data.get('end_time'), request.data.get('assigned_id'))
+        repair_logs = ReportService.get_repair_logs_by_week(start_date, end_date, assigned_id)
         
         if not repair_logs.exists():
            raise NotFound('No repair logs found.')
@@ -77,9 +79,9 @@ class ReportService:
         if summarized_report['status'] == 'unsuccessful':
             raise APIException(summarized_report['value'])
 
-        assigned_id = request.data.get('assigned_id')
+        assigned_id = assigned_id
         technician_name = UserService.get_user_full_name(assigned_id)
-        title = request.data.get('title')
+        title = "Weekly Report"
 
         formatted_report = ReportService.format_report_response(repair_log_count, summarized_report['value'], technician_name)
 
@@ -193,7 +195,19 @@ class ReportService:
                 "status": "unsuccessful"
                 }
 
-       
+    def generate():
+        technician_id_list = list(User.objects.filter(
+            role=User.UserRole.TECHNICIAN
+        ).values_list("id", flat=True))
+
+        end_time = timezone.localdate()
+        start_time = end_time - timedelta(days=6)
+
+        for id in technician_id_list:
+            ReportService.generate_report_content(start_date=start_time,
+                                                  end_date=end_time,
+                                                  assigned_id=id)
+            
         
 
         

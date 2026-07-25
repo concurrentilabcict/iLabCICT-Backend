@@ -1,6 +1,5 @@
 from api.user.models import User
 from rest_framework.exceptions import ValidationError
-from api.user.models import User
 from api.room.models import Room
 from datetime import timedelta
 from django.utils import timezone
