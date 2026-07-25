@@ -1,6 +1,6 @@
 from rest_framework.permissions import BasePermission
 from api.user.models import User
-
+from django.conf import settings
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):
         return request.user.role == 'admin'
@@ -65,3 +65,10 @@ class IsFaculty(BasePermission):
 class IsTechnician(BasePermission):
     def has_permission(self, request, view):
         return request.user.role == User.UserRole.TECHNICIAN
+
+class HasSchedulerToken(BasePermission):
+    def has_permission(self, request, view):
+        return (
+            request.headers.get("Authorization")
+            == f"Bearer {settings.SCHEDULER_TOKEN}"
+        )

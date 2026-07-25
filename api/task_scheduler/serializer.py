@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from api.task_scheduler.models import TaskScheduler
-class TaskSchedulerSerializer(serializers.Serializer):
+class TaskSchedulerSerializer(serializers.ModelSerializer):
 
     class Meta:
         model=TaskScheduler
