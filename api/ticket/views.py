@@ -77,7 +77,7 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
             'computer'
         )
     
-
+ 
     def perform_destroy(self, instance):
         TicketService.delete_ticket(instance)
 
