@@ -7,8 +7,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from api.permissions import IsAdmin, IsProfileOwner
-from rest_framework.exceptions import PermissionDenied
-from api.throttle import LoginThrottle
+from api.throttle import LoginThrottle, ResetPasswordThrottle
 from rest_framework.views import APIView
 from api.user.serializers import ForgotPasswordSerializer, ResetPasswordWithTokenSerializer
 
@@ -64,6 +63,7 @@ class UserUpdatePassword(UpdateAPIView):
     serializer_class = UserUpdatePasswordSerializer
     http_method_names = ['patch']
     queryset = User.objects.all()
+    permission_classes=[IsAuthenticated, IsProfileOwner]
 
     def patch(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -99,6 +99,7 @@ class AvailableCustodianListView(ListAPIView):
 
 class ForgotPasswordAPIView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes=[ResetPasswordThrottle]
 
     def post(self, request):
         serializer = ForgotPasswordSerializer(data=request.data)
@@ -108,13 +109,14 @@ class ForgotPasswordAPIView(APIView):
 
         return Response(
             {
-                "message": "Password reset email has been sent."
+                "detail": "Password reset email has been sent."
             },
             status=status.HTTP_200_OK
         )
     
 class ResetPasswordWithTokenAPIView(APIView):
     permission_classes = [AllowAny]
+    throttle_classes=[ResetPasswordThrottle]
 
     def post(self, request):
         serializer = ResetPasswordWithTokenSerializer(data=request.data)
@@ -127,7 +129,7 @@ class ResetPasswordWithTokenAPIView(APIView):
 
         return Response(
             {
-                "message": "Password reset successful."
+                "detail": "Password reset successful."
             },
             status=status.HTTP_200_OK,
         )
