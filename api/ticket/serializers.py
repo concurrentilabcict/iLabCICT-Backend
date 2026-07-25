@@ -98,5 +98,5 @@ class MaintenanceHistoryTicketSerializer(serializers.ModelSerializer):
 class RequestHistoryTicketSerializer(serializers.ModelSerializer):
     class Meta:
             model = Ticket
-            fields = ['id', 'status', 'issue_image']
+            fields = ['id', 'status', 'issue_image', 'title', 'type', 'complaint_description']
     
