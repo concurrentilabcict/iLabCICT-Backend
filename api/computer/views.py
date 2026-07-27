@@ -34,6 +34,7 @@ class ComputerListCreateView(ListCreateAPIView):
         return Response(output.data, status=status.HTTP_201_CREATED)
 
 class ComputerDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Computer.objects.select_related('room')
 
     def get_serializer_class(self):
         if self.request.method in ('PATCH', 'PUT'):
