@@ -108,8 +108,6 @@ class ReportService:
     
     
     def get_repair_logs_by_week(start_week, end_week, id):
-        start_date = parse_datetime(start_week)
-        end_date = parse_datetime(end_week)
         return RepairLog.objects.filter(created_at__range=(start_date, end_date), technician_id=id)
     
     
