@@ -63,7 +63,6 @@ class ReportService:
     def generate_report_content(start_date, end_date, assigned_id):
 
         repair_logs = ReportService.get_repair_logs_by_week(start_date, end_date, assigned_id)
-        
         if not repair_logs.exists():
            return None
         
@@ -198,8 +197,9 @@ class ReportService:
             role=User.UserRole.TECHNICIAN
         ).values_list("id", flat=True))
 
-        end_time = timezone.localdate()
-        start_time = end_time - timedelta(days=6)
+        start_time = timezone.localdate()
+        end_time = start_time - timedelta(days=6)
+       
 
         start_datetime = timezone.make_aware(
             datetime.combine(end_time, time.min)
@@ -207,7 +207,7 @@ class ReportService:
 
         end_datetime = timezone.make_aware(
             datetime.combine(start_time, time.max)
-)
+        )
 
         for id in technician_id_list:
             ReportService.generate_report_content(start_date=start_datetime,

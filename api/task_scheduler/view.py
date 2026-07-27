@@ -26,10 +26,13 @@ class SchedulerView(APIView):
     permission_classes=[HasSchedulerToken]
 
     def get(self, request):
-        TaskSchedulerService.execute_task()
+        res = TaskSchedulerService.execute_task()
 
         return Response(
-            {"detail": "Scheduler executed successfully"}
+            {
+                "detail": "Scheduler executed successfully",
+                "message": res
+             }
         )
 
         
