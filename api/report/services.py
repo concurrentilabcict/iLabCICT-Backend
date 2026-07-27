@@ -14,7 +14,7 @@ from api.notification.services import NotificationService
 from rest_framework.exceptions import ValidationError, NotFound, APIException
 from api.common.utils.date_checker import is_invalid_date_format
 from api.user.models import User
-from datetime import timedelta
+from datetime import datetime, time, timedelta
 from django.utils import timezone
 class ReportService:
     
@@ -65,7 +65,7 @@ class ReportService:
         repair_logs = ReportService.get_repair_logs_by_week(start_date, end_date, assigned_id)
         
         if not repair_logs.exists():
-           raise NotFound('No repair logs found.')
+           return None
         
         repair_log_count = ReportService.count_repair_log_per_day(repair_logs)
 
@@ -201,9 +201,17 @@ class ReportService:
         end_time = timezone.localdate()
         start_time = end_time - timedelta(days=6)
 
+        start_datetime = timezone.make_aware(
+            datetime.combine(end_time, time.min)
+        )
+
+        end_datetime = timezone.make_aware(
+            datetime.combine(start_time, time.max)
+)
+
         for id in technician_id_list:
-            ReportService.generate_report_content(start_date=start_time,
-                                                  end_date=end_time,
+            ReportService.generate_report_content(start_date=start_datetime,
+                                                  end_date=end_datetime,
                                                   assigned_id=id)
             
         
