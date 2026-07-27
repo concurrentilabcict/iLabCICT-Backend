@@ -108,7 +108,7 @@ class ReportService:
     
     
     def get_repair_logs_by_week(start_week, end_week, id):
-        return RepairLog.objects.filter(created_at__range=(start_date, end_date), technician_id=id)
+        return RepairLog.objects.filter(created_at__range=(start_week, end_week), technician_id=id)
     
     
     def count_repair_log_per_day(repair_logs):
