@@ -21,6 +21,9 @@ class TaskSchedulerDetailView(RetrieveUpdateAPIView):
     queryset = TaskScheduler.objects.all()
     permission_classes = [IsAuthenticated, IsAdmin]
 
+    def perform_update(self, serializer):
+        TaskSchedulerService.update_schedule(serializer=serializer)
+
 class SchedulerView(APIView):
     authentication_classes = []
     permission_classes=[HasSchedulerToken]

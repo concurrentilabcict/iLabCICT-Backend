@@ -86,3 +86,20 @@ class TaskSchedulerService:
         schedule.save(update_fields=["next_execution"])
 
         return schedule
+
+    @staticmethod
+    def update_schedule(serializer):
+        schedule = serializer.save()
+
+        updated_fields = serializer.validated_data.keys()
+
+        if any(field in updated_fields for field in (
+            "execution_time",
+            "weekday",
+            "frequency",
+            "enabled",
+        )):
+            schedule.next_execution = (
+                TaskSchedulerService.calculate_next_exec(schedule)
+            )
+            schedule.save(update_fields=["next_execution"])
