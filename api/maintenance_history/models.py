@@ -18,7 +18,6 @@ class MaintenanceHistory(models.Model):
 
     maintenance_type = models.CharField(max_length=20, choices=MaintenanceTypes)
     maintenance_notes = models.TextField()
-    performed_by = models.CharField(max_length=50)
     date_performed = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
