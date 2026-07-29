@@ -91,12 +91,6 @@ class ReportService:
             status = Report.ReportStatus.UNREAD
         )
 
-        NotificationService.create_new_report_notification(
-            None,
-            'New Report Created!',
-            report.id
-        )#should be admin but for now null
-
         serializer = ReportSerializer(report)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
