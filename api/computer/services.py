@@ -11,7 +11,8 @@ class ComputerService:
         if "maintenance-history" in include.split(","):
             queryset = queryset.prefetch_related('maintenance_history', 
                                                  'maintenance_history__repair_log',
-                                                 'maintenance_history__repair_log__ticket')
+                                                 'maintenance_history__repair_log__ticket',
+                                                 'maintenance_history__technician')
 
         return queryset
 

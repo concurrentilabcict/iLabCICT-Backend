@@ -6,6 +6,7 @@ from django.db import transaction
 from api.ticket.models import Ticket
 from api.repair_log.models import RepairLog
 from api.maintenance_history.models import MaintenanceHistory
+from api.user.serializers import UserMinimalSerializer
 
 class ComputerWriteSerializer(serializers.ModelSerializer):
     computer_code = serializers.CharField(read_only=True)
@@ -57,6 +58,7 @@ class RepairLogReadSerializer(serializers.ModelSerializer):
 
 class MaintenanceHistoryComputerSerializer(serializers.ModelSerializer):
     repair_log = RepairLogReadSerializer(read_only=True)
+    technician = UserMinimalSerializer()
 
     class Meta:
         model = MaintenanceHistory
@@ -71,7 +73,7 @@ class ComputerMinimalSerializer(serializers.ModelSerializer):
 class ComputerReadSerializer(serializers.ModelSerializer):
     room = RoomMinimalSerializer(read_only=True)
     maintenance_history = MaintenanceHistoryComputerSerializer(many=True)
-    
+
     class Meta:
         model = Computer
         fields = '__all__'
