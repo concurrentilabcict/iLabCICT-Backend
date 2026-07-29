@@ -97,14 +97,6 @@ class TicketService:
             }
         )
 
-        NotificationService.create_new_ticket_notification(
-            receiver_id=ticket.assigned_to,
-            title='New Ticket Created!',
-            ticket_id=ticket.id,
-            role=User.UserRole.TECHNICIAN
-        )
-
-
         return ticket
     
     @staticmethod
@@ -143,38 +135,13 @@ class TicketService:
 
 
         if ticket.status != instance.status:
-            NotificationService.create_new_ticket_notification(
-                receiver_id=ticket.reported_by,
-                title='Ticket Status Updated!',
-                ticket_id=ticket.id,
-                role=User.UserRole.FACULTY
-            )
+            ...
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
-            RequestHistory.objects.create(
-                room_id=ticket.room.id,
-                technician=ticket.assigned_to,
-                ticket_id=ticket.id,
-            )
-            NotificationService.create_new_ticket_notification(
-                receiver_id=ticket.reported_by,
-                title='Request Ticket has been resolved!',
-                ticket_id=ticket.id,
-                role=User.UserRole.FACULTY
-            )
+            ...
 
         if updated:
-            NotificationService.create_new_ticket_notification(
-                receiver_id=ticket.reported_by,
-                title='Ticket has been assigned!',
-                ticket_id=ticket.id,
-                role=User.UserRole.FACULTY
-            )
-            NotificationService.update_technician_receiver(
-                receiver_id=ticket.assigned_to,
-                ticket_id=ticket.id
-            )
-
+            ...
         
         channel_layer = get_channel_layer()
 

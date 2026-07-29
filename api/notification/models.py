@@ -1,39 +1,40 @@
 
 from django.db import models
 from django.conf import settings
-from api.ticket.models import Ticket
-from api.report.models import Report
-from django.db.models import Q
 
 class Notification(models.Model):
-    class NotificationTypes(models.TextChoices):
+    class NotificationEntityTypes(models.TextChoices):
         TICKET = 'ticket', 'ticket'
-        REPORT = 'report', 'report'
+        WEEKLY_REPORT = 'weekly-report', 'weekly-report'
+        COMPUTER = 'computer', 'computer'
+        USER = 'user', 'user'
+        MAINTENANCE_HISTORY = 'maintenance_history', 'maintenance_history'
+        ROOM = 'room', 'room'
+        REQUEST_HISTORY = 'request_history', 'request_history'
+        REPAIR_LOG = 'repair_log', 'repair_log'
 
     class NotificationStatus(models.TextChoices):
         READ = 'read', 'read'
         UNREAD = 'unread', 'unread'
 
-    ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='ticket', blank=True, null=True)
-    report = models.ForeignKey(Report, on_delete=models.CASCADE, related_name='report', blank=True, null=True)
+    class NotificationEventTypes(models.TextChoices):
+        BROADCAST_ADMIN_TECHNICIAN = 'broadcast-admin-technician', 'broadcast-admin-technician'
+        MULTICAST_ADMIN = 'multicast-admin', 'multicast-admin'
+        MULTICAST_TECHNICIAN = 'multicast-technician', 'multicast-technician'
+        MULTICAST_FACULTY = 'multicast-faculty', 'multicast-faculty'
+        UNICAST_ADMIN = 'unicast-admin', 'unicast-admin'
+        UNICAST_TECHNICIAN = 'unicast-technician', 'unicast-technician'
+        UNICAST_FACULTY = 'unicast-faculty', 'unicast-faculty'
 
-    receiver = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    receiver_role = models.CharField(max_length=30, null=True, blank=True)
-    title = models.CharField(max_length=120)
-    type = models.CharField(max_length=20, choices=NotificationTypes, default=NotificationTypes.TICKET)
-    status = models.CharField(max_length=20, choices=NotificationStatus, default=NotificationStatus.UNREAD)
+    recipient_id = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='recepient', blank=True, null=True)
+    entity_id = models.PositiveIntegerField(null=True, blank=True)
+    entity_type = models.CharField(max_length=20, choices=NotificationEntityTypes, null=True, blank=True)
+    event_type = models.CharField(max_length=30, choices=NotificationEventTypes, null=True, blank=True)
+    title = models.CharField(max_length=100, null=True, blank=True)
+    activity_summary = models.JSONField(default=dict,null=True, blank=True)
+    status = models.CharField(max_length=20, choices=NotificationStatus, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    class Meta:
-        constraints = [
-            models.CheckConstraint(
-                condition=(
-                    (Q(ticket__isnull=False) & Q(report__isnull=True))
-                    |
-                    (Q(ticket__isnull=True) & Q(report__isnull=False))
-                ),
-                name='notif_one_ref'
-            )
-        ]
+
     
 
