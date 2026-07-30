@@ -13,6 +13,7 @@ class RoomReadSerializer(serializers.ModelSerializer):
     computer_count = serializers.IntegerField(read_only=True)
     computer_count_with_active_issues = serializers.IntegerField(read_only=True)
     assigned_custodian = UserMinimalSerializer(read_only=True)
+    assigned_technician = UserMinimalSerializer(read_only=True)
     computers = ComputerListSerializer(many=True, read_only=True)
 
     class Meta:
