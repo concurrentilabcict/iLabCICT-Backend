@@ -13,6 +13,7 @@ class Room(models.Model):
         ACAD = "acad", "acad"
 
     assigned_custodian = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='custodian')
+    assigned_technician = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True, related_name='technician')
 
     building_name = models.CharField(max_length=20, choices=BuildingName.choices, default=BuildingName.PIMENTEL)
     room_name = models.CharField(max_length=20, unique=True)
