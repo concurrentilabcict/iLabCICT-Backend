@@ -27,9 +27,10 @@ class ComputerService:
         queryset = ComputerService.filter_active(queryset, filters)
         queryset = ComputerService.filter_all_peripherals(queryset, filters)
         queryset = ComputerService.filter_peripheral_status(queryset, filters)
-        print(filters)
 
-        if "maintenance-history" in filters.include.split(","):
+        include = filters.include or ""
+
+        if "maintenance-history" in include.split(","):
             queryset = queryset.prefetch_related("maintenance_history")
 
 

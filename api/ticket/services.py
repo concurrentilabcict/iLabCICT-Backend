@@ -7,9 +7,6 @@ from api.common.utils.date_checker import is_invalid_date_format
 from rest_framework.exceptions import ValidationError
 from api.user.models import User
 from django.db.models import Q
-from api.ticket.serializers import TicketReadSerializer
-from api.request_history.models import RequestHistory
-from api.room.models import Room
 class TicketService:
 
     @staticmethod
@@ -92,6 +89,13 @@ class TicketService:
             **validated_data
         )
 
+        NotificationService.create_new_ticket_notification(
+            recipient_id=assigned_technician_id,
+            title='New Ticket Created!',
+            entity=ticket,
+            role= User.UserRole.TECHNICIAN
+        )
+
         #channel_layer = get_channel_layer()
 
         #async_to_sync(channel_layer.group_send)(
@@ -110,7 +114,7 @@ class TicketService:
         status = validated_data.get("status", instance.status)
 
         #for ticket claiming
-        claimed = (
+        reassigned = (
             Ticket.objects
             .filter(
                 id=instance.id,
@@ -123,7 +127,7 @@ class TicketService:
         )
 
         #start repair
-        if not claimed:
+        if not reassigned:
             instance.refresh_from_db()
             instance.status = status
             instance.save(update_fields=["status"])
@@ -135,14 +139,30 @@ class TicketService:
                     "computer",
                 ).get(pk=instance.pk)
 
-        if ticket.status != instance.status:
-            ... #put notif here
+        if reassigned:
+            NotificationService.create_new_ticket_notification(
+                recipient_id=ticket.reported_by_id,
+                title='Ticket reassigned!',
+                entity=ticket,
+                role= User.UserRole.FACULTY
+                    )
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
-            ... #put notif here
+            NotificationService.create_new_ticket_notification(
+                    recipient_id=ticket.reported_by_id,
+                    title='Request ticket resolved!',
+                    entity=ticket,
+                    role= User.UserRole.FACULTY
+                        )
 
-        if claimed:
-            ... #put notif here
+        elif ticket.status != instance.status:
+            NotificationService.create_new_ticket_notification(
+                recipient_id=ticket.reported_by_id,
+                title='Ticket status updated!',
+                entity=ticket,
+                role= User.UserRole.FACULTY
+                    )
+
         
         #channel_layer = get_channel_layer()
 
