@@ -50,14 +50,13 @@ class RepairLogService:
     
     @staticmethod 
     def record_maintenance_history(ticket, notes, type, technician, computer, repair_log):
-        full_name = technician.first_name + " " + technician.last_name 
         RepairLogService.update_ticket_to_resolved(ticket)
 
         MaintenanceHistory.objects.create(
             computer=computer,
             computer_id=computer.id,
             technician_id=technician.id,
-            performed_by=full_name,
+            performed_by=technician.get_full_name(),
             maintenance_notes=notes,
             maintenance_type=type,
             date_performed=ticket.updated_at,
@@ -68,4 +67,12 @@ class RepairLogService:
     def update_ticket_to_resolved(ticket):
         
         ticket.status = Ticket.TicketStatus.RESOLVED
+
+        NotificationService.create_new_ticket_notification(
+            recipient_id=ticket.reported_by_id,
+            title='Report Ticket Resolved!',
+            entity=ticket,
+            role=User.UserRole.FACULTY
+        )
+
         ticket.save()
