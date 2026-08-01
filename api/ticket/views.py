@@ -46,12 +46,7 @@ class TicketListCreateView(ListCreateAPIView):
             validated_data=serializer.validated_data
         )
 
-        ticket = Ticket.objects.select_related(
-            "reported_by",
-            "assigned_to",
-            "room",
-            "computer",
-        ).get(pk=ticket.pk)
+        
 
         return Response(
             TicketReadSerializer(ticket).data,

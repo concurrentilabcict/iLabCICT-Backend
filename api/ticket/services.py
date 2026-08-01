@@ -109,44 +109,40 @@ class TicketService:
 
         status = validated_data.get("status", instance.status)
 
-        updated = (
+        #for ticket claiming
+        claimed = (
             Ticket.objects
             .filter(
                 id=instance.id,
-                assigned_to__isnull=True
+                status=Ticket.TicketStatus.OPEN
             )
             .update(
                 assigned_to=technician,
-                status=status
+                status=Ticket.TicketStatus.ONGOING
             )
         )
 
-        if not updated:
+        #start repair
+        if not claimed:
             instance.refresh_from_db()
-
-            if instance.assigned_to != technician:
-                raise ValidationError("Ticket already claimed.")
-
             instance.status = status
             instance.save(update_fields=["status"])
 
-
         ticket = Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
-        ).get(pk=instance.pk)
-
+                    "reported_by",
+                    "assigned_to",
+                    "room",
+                    "computer",
+                ).get(pk=instance.pk)
 
         if ticket.status != instance.status:
-            ...
+            ... #put notif here
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
-            ...
+            ... #put notif here
 
-        if updated:
-            ...
+        if claimed:
+            ... #put notif here
         
         #channel_layer = get_channel_layer()
 
