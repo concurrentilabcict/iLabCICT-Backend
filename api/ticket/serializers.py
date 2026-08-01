@@ -25,17 +25,8 @@ class TicketWriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields=['reported_by', 'assigned_to']
 
-    def create(self, validated_data):
-        user = self.context["request"].user
-        
-        validated_data.pop("status", None)
-
-        return Ticket.objects.create(
-            reported_by=user,
-            status=Ticket.TicketStatus.OPEN,
-            **validated_data
-        )
-
+    #remove later
+    
     def validate(self, attrs):
         request = self.context.get('request')
 

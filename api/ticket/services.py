@@ -9,6 +9,7 @@ from api.user.models import User
 from django.db.models import Q
 from api.ticket.serializers import TicketReadSerializer
 from api.request_history.models import RequestHistory
+from api.room.models import Room
 class TicketService:
 
     @staticmethod
@@ -77,25 +78,29 @@ class TicketService:
     
     @staticmethod
     @transaction.atomic
-    def create_ticket(serializer):
-        ticket = serializer.save()
+    def create_ticket(reported_by, validated_data):
 
-        ticket = Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
-        ).get(pk=ticket.pk)
+        room = validated_data.get('room')
+        validated_data.pop('status', None)
 
-        channel_layer = get_channel_layer()
+        assigned_technician_id = room.assigned_technician_id
 
-        async_to_sync(channel_layer.group_send)(
-            'technicians',
-            {
-                'type': 'ticket_created',
-                'ticket': TicketReadSerializer(ticket).data
-            }
+        ticket = Ticket.objects.create(
+            status=Ticket.TicketStatus.OPEN,
+            reported_by=reported_by,
+            assigned_to_id=assigned_technician_id,
+            **validated_data
         )
+
+        #channel_layer = get_channel_layer()
+
+        #async_to_sync(channel_layer.group_send)(
+         #   'technicians',
+          #  {
+           #     'type': 'ticket_created',
+             #   'ticket': TicketReadSerializer(ticket).data
+            #}
+        #)
 
         return ticket
     
@@ -143,15 +148,15 @@ class TicketService:
         if updated:
             ...
         
-        channel_layer = get_channel_layer()
+        #channel_layer = get_channel_layer()
 
-        async_to_sync(channel_layer.group_send)(
-            'technicians',
-            {
-                'type': 'ticket_updated',
-                'ticket': TicketReadSerializer(ticket).data
-            }
-        )
+        #async_to_sync(channel_layer.group_send)(
+         #   'technicians',
+          #  {
+           #     'type': 'ticket_updated',
+            #    'ticket': TicketReadSerializer(ticket).data
+            #}
+        #)
 
         return ticket
     

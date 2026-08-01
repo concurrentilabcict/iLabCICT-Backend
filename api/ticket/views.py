@@ -6,6 +6,7 @@ from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasT
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from rest_framework import status
 
 class TicketListCreateView(ListCreateAPIView):
 
@@ -32,6 +33,29 @@ class TicketListCreateView(ListCreateAPIView):
     
     def perform_create(self, serializer):
         TicketService.create_ticket(serializer)
+
+    def create(self, request, *args, **kwargs):
+
+        serializer = self.get_serializer(
+            data=request.data
+        )
+        serializer.is_valid(raise_exception=True)
+
+        ticket = TicketService.create_ticket(
+            reported_by=request.user,
+            validated_data=serializer.validated_data
+        )
+
+        ticket = Ticket.objects.select_related(
+            "reported_by",
+            "assigned_to",
+            "room",
+            "computer",
+        ).get(pk=ticket.pk)
+
+        return Response(
+            TicketReadSerializer(ticket).data,
+            status=status.HTTP_201_CREATED)
 
 class TicketDetailView(RetrieveUpdateDestroyAPIView):
 
