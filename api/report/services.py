@@ -91,6 +91,12 @@ class ReportService:
             status = Report.ReportStatus.UNREAD
         )
 
+        NotificationService.create_new_report_notification(
+            recipient_id=report.technician_id,
+            title='New Weekly Report!',
+            entity=report
+        )
+
         serializer = ReportSerializer(report)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     

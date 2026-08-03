@@ -96,8 +96,20 @@ class NotificationService():
         
 
     @staticmethod
-    def create_new_report_notification(receiver_id, title, report_id):
-        ...
+    def create_new_report_notification(recipient_id, title, entity):
+        Notification.objects.create(
+            recipient_id=recipient_id,
+            entity_id=entity.id,
+            entity_type = Notification.NotificationEntityTypes.WEEKLY_REPORT,
+            event_type = Notification.NotificationEventTypes.BROADCAST_ADMIN_TECHNICIAN,
+            title=title,
+            activity_summary={
+                'actor': entity.technician.get_full_name(),
+                'entity_title': entity.title  
+            },
+            status=Notification.NotificationStatus.UNREAD
+            )
+        
         
     
     
