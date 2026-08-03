@@ -69,7 +69,7 @@ class RepairLogService:
         ticket.status = Ticket.TicketStatus.RESOLVED
 
         NotificationService.create_new_ticket_notification(
-            recipient_id=ticket.reported_by_id,
+            recipient_id=ticket.reported_by,
             title='Report Ticket Resolved!',
             entity=ticket,
             role=User.UserRole.FACULTY
