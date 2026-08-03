@@ -80,7 +80,7 @@ class ReportService:
 
         assigned_id = assigned_id
         technician_name = UserService.get_user_full_name(assigned_id)
-        title = "Weekly Report"
+        title = f"Weekly Report {start_date.strftime("%Y-%m-%d")}-{end_date.strftime("%Y-%m-%d")}"
 
         formatted_report = ReportService.format_report_response(repair_log_count, summarized_report['value'], technician_name)
 
@@ -202,11 +202,11 @@ class ReportService:
        
 
         start_datetime = timezone.make_aware(
-            datetime.combine(end_time, time.min)
+            datetime.combine(start_time, time.min)
         )
 
         end_datetime = timezone.make_aware(
-            datetime.combine(start_time, time.max)
+            datetime.combine(end_time, time.max)
         )
 
         for id in technician_id_list:
