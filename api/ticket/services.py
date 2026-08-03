@@ -80,17 +80,17 @@ class TicketService:
         room = validated_data.get('room')
         validated_data.pop('status', None)
 
-        assigned_technician_id = room.assigned_technician_id
+        assigned_technician = room.assigned_technician
 
         ticket = Ticket.objects.create(
             status=Ticket.TicketStatus.OPEN,
             reported_by=reported_by,
-            assigned_to_id=assigned_technician_id,
+            assigned_to=assigned_technician,
             **validated_data
         )
 
         NotificationService.create_new_ticket_notification(
-            recipient_id=assigned_technician_id,
+            recipient_id=assigned_technician,
             title='New Ticket Created!',
             entity=ticket,
             role= User.UserRole.TECHNICIAN
@@ -141,7 +141,7 @@ class TicketService:
 
         if reassigned:
             NotificationService.create_new_ticket_notification(
-                recipient_id=ticket.reported_by_id,
+                recipient_id=ticket.reported_by,
                 title='Ticket reassigned!',
                 entity=ticket,
                 role= User.UserRole.FACULTY
@@ -149,7 +149,7 @@ class TicketService:
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
             NotificationService.create_new_ticket_notification(
-                    recipient_id=ticket.reported_by_id,
+                    recipient_id=ticket.reported_by,
                     title='Request ticket resolved!',
                     entity=ticket,
                     role= User.UserRole.FACULTY
@@ -157,7 +157,7 @@ class TicketService:
 
         elif ticket.status != instance.status:
             NotificationService.create_new_ticket_notification(
-                recipient_id=ticket.reported_by_id,
+                recipient_id=ticket.reported_by,
                 title='Ticket status updated!',
                 entity=ticket,
                 role= User.UserRole.FACULTY

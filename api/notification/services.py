@@ -72,7 +72,7 @@ class NotificationService():
                 },
                 status=Notification.NotificationStatus.UNREAD
                         )
-            
+ 
         elif role == User.UserRole.TECHNICIAN:
             Notification.objects.create(
                 recipient_id=recipient_id,
