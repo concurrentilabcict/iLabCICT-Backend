@@ -7,8 +7,6 @@ from api.common.utils.date_checker import is_invalid_date_format
 from rest_framework.exceptions import ValidationError
 from api.user.models import User
 from django.db.models import Q
-from api.ticket.serializers import TicketReadSerializer
-from api.request_history.models import RequestHistory
 class TicketService:
 
     @staticmethod
@@ -77,25 +75,36 @@ class TicketService:
     
     @staticmethod
     @transaction.atomic
-    def create_ticket(serializer):
-        ticket = serializer.save()
+    def create_ticket(reported_by, validated_data):
 
-        ticket = Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
-        ).get(pk=ticket.pk)
+        room = validated_data.get('room')
+        validated_data.pop('status', None)
 
-        channel_layer = get_channel_layer()
+        assigned_technician_id = room.assigned_technician_id
 
-        async_to_sync(channel_layer.group_send)(
-            'technicians',
-            {
-                'type': 'ticket_created',
-                'ticket': TicketReadSerializer(ticket).data
-            }
+        ticket = Ticket.objects.create(
+            status=Ticket.TicketStatus.OPEN,
+            reported_by=reported_by,
+            assigned_to_id=assigned_technician_id,
+            **validated_data
         )
+
+        NotificationService.create_new_ticket_notification(
+            recipient_id=assigned_technician_id,
+            title='New Ticket Created!',
+            entity=ticket,
+            role= User.UserRole.TECHNICIAN
+        )
+
+        #channel_layer = get_channel_layer()
+
+        #async_to_sync(channel_layer.group_send)(
+         #   'technicians',
+          #  {
+           #     'type': 'ticket_created',
+             #   'ticket': TicketReadSerializer(ticket).data
+            #}
+        #)
 
         return ticket
     
@@ -104,54 +113,66 @@ class TicketService:
 
         status = validated_data.get("status", instance.status)
 
-        updated = (
+        #for ticket claiming
+        reassigned = (
             Ticket.objects
             .filter(
                 id=instance.id,
-                assigned_to__isnull=True
+                status=Ticket.TicketStatus.OPEN
             )
             .update(
                 assigned_to=technician,
-                status=status
+                status=Ticket.TicketStatus.ONGOING
             )
         )
 
-        if not updated:
+        #start repair
+        if not reassigned:
             instance.refresh_from_db()
-
-            if instance.assigned_to != technician:
-                raise ValidationError("Ticket already claimed.")
-
             instance.status = status
             instance.save(update_fields=["status"])
 
-
         ticket = Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
-        ).get(pk=instance.pk)
+                    "reported_by",
+                    "assigned_to",
+                    "room",
+                    "computer",
+                ).get(pk=instance.pk)
 
-
-        if ticket.status != instance.status:
-            ...
+        if reassigned:
+            NotificationService.create_new_ticket_notification(
+                recipient_id=ticket.reported_by_id,
+                title='Ticket reassigned!',
+                entity=ticket,
+                role= User.UserRole.FACULTY
+                    )
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
-            ...
+            NotificationService.create_new_ticket_notification(
+                    recipient_id=ticket.reported_by_id,
+                    title='Request ticket resolved!',
+                    entity=ticket,
+                    role= User.UserRole.FACULTY
+                        )
 
-        if updated:
-            ...
+        elif ticket.status != instance.status:
+            NotificationService.create_new_ticket_notification(
+                recipient_id=ticket.reported_by_id,
+                title='Ticket status updated!',
+                entity=ticket,
+                role= User.UserRole.FACULTY
+                    )
+
         
-        channel_layer = get_channel_layer()
+        #channel_layer = get_channel_layer()
 
-        async_to_sync(channel_layer.group_send)(
-            'technicians',
-            {
-                'type': 'ticket_updated',
-                'ticket': TicketReadSerializer(ticket).data
-            }
-        )
+        #async_to_sync(channel_layer.group_send)(
+         #   'technicians',
+          #  {
+           #     'type': 'ticket_updated',
+            #    'ticket': TicketReadSerializer(ticket).data
+            #}
+        #)
 
         return ticket
     

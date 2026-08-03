@@ -25,17 +25,8 @@ class TicketWriteSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields=['reported_by', 'assigned_to']
 
-    def create(self, validated_data):
-        user = self.context["request"].user
-        
-        validated_data.pop("status", None)
-
-        return Ticket.objects.create(
-            reported_by=user,
-            status=Ticket.TicketStatus.OPEN,
-            **validated_data
-        )
-
+    #remove later
+    
     def validate(self, attrs):
         request = self.context.get('request')
 
@@ -52,14 +43,13 @@ class TicketWriteSerializer(serializers.ModelSerializer):
             current_assigned_to = self.instance.assigned_to
             new_assigned_to = request.user
 
-            if (
-                current_assigned_to is not None
-                and new_assigned_to is not None
-                and current_assigned_to != new_assigned_to
-            ):
-                raise serializers.ValidationError(
-                    "This ticket is already assigned to another technician."
-                )
+            if (current_status == Ticket.TicketStatus.ONGOING and 
+                current_assigned_to != new_assigned_to):
+                raise serializers.ValidationError('Ongoing tickets cannot be reassigned')
+
+            if (new_status == Ticket.TicketStatus.OPEN and 
+                current_assigned_to != new_assigned_to):
+                raise serializers.ValidationError('Invalid Action')
 
             if computer is not None and ticket_type == Ticket.TicketType.REQUEST:
                 raise serializers.ValidationError('Request ticket cannot contain computer data')
