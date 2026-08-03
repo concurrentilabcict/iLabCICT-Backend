@@ -7,6 +7,7 @@ from api.common.utils.date_checker import is_invalid_date_format
 from rest_framework.exceptions import ValidationError
 from api.user.models import User
 from django.db.models import Q
+from api.notification.models import Notification
 class TicketService:
 
     @staticmethod
@@ -90,10 +91,11 @@ class TicketService:
         )
 
         NotificationService.create_new_ticket_notification(
-            recipient_id=assigned_technician,
+            recipient_id=None,
             title='New Ticket Created!',
             entity=ticket,
-            role= User.UserRole.TECHNICIAN
+            role= User.UserRole.TECHNICIAN,
+            event=Notification.NotificationEventTypes.MULTICAST_TECHNICIAN
         )
 
         #channel_layer = get_channel_layer()
@@ -146,6 +148,10 @@ class TicketService:
                 entity=ticket,
                 role= User.UserRole.FACULTY
                     )
+            NotificationService.update_ticket_technician_recipient(
+                recipient_id=ticket.assigned_to,
+                entity_id=ticket.id,
+            )
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
             NotificationService.create_new_ticket_notification(

@@ -13,20 +13,36 @@ class NotificationService():
                 date=None):
         
         NotificationService.validate_filters(
-            type=type,
             status=status,
             date=date
         )
 
-        queryset = Notification.objects.select_related('ticket')
+        queryset = Notification.objects.select_related('recipient_id')
 
-        if user is not None:
+        if user.role == User.UserRole.FACULTY:
             queryset = queryset.filter(
-                 Q(receiver_role=user.role) &
-                    (
-                        Q(receiver_id=user.id) |
-                        Q(receiver_id__isnull=True)
-                    ))
+                Q(
+                    event_type=Notification.NotificationEventTypes.UNICAST_FACULTY,
+                    recipient_id=user.id,
+                )
+                |
+                Q(
+                    event_type=Notification.NotificationEventTypes.MULTICAST_FACULTY,
+                )
+            )
+
+        elif user.role == User.UserRole.TECHNICIAN:
+            queryset = queryset.filter(
+                Q(
+                    event_type=Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
+                    recipient_id=user.id,
+                )
+                |
+                Q(
+                    event_type=Notification.NotificationEventTypes.MULTICAST_TECHNICIAN,
+                )
+            )
+
 
         if type is not None: 
             queryset = queryset.filter(type=type)
@@ -43,13 +59,9 @@ class NotificationService():
         return queryset
     
     @staticmethod
-    def validate_filters(type,status,date):
-        allowed_notification_type = Notification.NotificationTypes.values
+    def validate_filters(status,date):
         allowed_notification_status = Notification.NotificationStatus.values
 
-        if type and type not in allowed_notification_type:
-            raise ValidationError('Invalid notification type')
-        
         if status and status not in allowed_notification_status:
             raise ValidationError('Invalid notification status')
         
@@ -57,14 +69,14 @@ class NotificationService():
             raise ValidationError('Date format must be in YYYY-MM-DD')
     
     @staticmethod
-    def create_new_ticket_notification(recipient_id, title, entity, role):
+    def create_new_ticket_notification(recipient_id, title, entity, role, event):
 
         if role == User.UserRole.FACULTY:
             Notification.objects.create(
                 recipient_id=recipient_id,
                 entity_id=entity.id,
                 entity_type = Notification.NotificationEntityTypes.TICKET,
-                event_type = Notification.NotificationEventTypes.UNICAST_FACULTY,
+                event_type = event,
                 title=title,
                 activity_summary={
                     'actor': entity.assigned_to.get_full_name(),
@@ -78,7 +90,7 @@ class NotificationService():
                 recipient_id=recipient_id,
                 entity_id=entity.id,
                 entity_type = Notification.NotificationEntityTypes.TICKET,
-                event_type = Notification.NotificationEventTypes.BROADCAST_ADMIN_TECHNICIAN,
+                event_type = event,
                 title=title,
                 activity_summary={
                     'actor': entity.reported_by.get_full_name(),
@@ -88,11 +100,15 @@ class NotificationService():
                         )
 
     @staticmethod
-    def update_technician_receiver(receiver_id, ticket_id):
+    def update_ticket_technician_recipient(recipient_id, entity_id):
         Notification.objects.filter(
-            ticket_id=ticket_id,
-            receiver_id=None 
-            ).update(receiver_id=receiver_id)
+            entity_id = entity_id,
+            entity_type = Notification.NotificationEntityTypes.TICKET,
+            recipient_id = None
+        ).update(
+            recipient_id = recipient_id,
+            event_type = Notification.NotificationEventTypes.UNICAST_TECHNICIAN
+            )
         
 
     @staticmethod
@@ -101,7 +117,7 @@ class NotificationService():
             recipient_id=recipient_id,
             entity_id=entity.id,
             entity_type = Notification.NotificationEntityTypes.WEEKLY_REPORT,
-            event_type = Notification.NotificationEventTypes.BROADCAST_ADMIN_TECHNICIAN,
+            event_type = Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
             title=title,
             activity_summary={
                 'actor': entity.technician.get_full_name(),

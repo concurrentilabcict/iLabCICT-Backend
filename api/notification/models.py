@@ -18,11 +18,8 @@ class Notification(models.Model):
         UNREAD = 'unread', 'unread'
 
     class NotificationEventTypes(models.TextChoices):
-        BROADCAST_ADMIN_TECHNICIAN = 'broadcast-admin-technician', 'broadcast-admin-technician'
-        MULTICAST_ADMIN = 'multicast-admin', 'multicast-admin'
         MULTICAST_TECHNICIAN = 'multicast-technician', 'multicast-technician'
         MULTICAST_FACULTY = 'multicast-faculty', 'multicast-faculty'
-        UNICAST_ADMIN = 'unicast-admin', 'unicast-admin'
         UNICAST_TECHNICIAN = 'unicast-technician', 'unicast-technician'
         UNICAST_FACULTY = 'unicast-faculty', 'unicast-faculty'
 
