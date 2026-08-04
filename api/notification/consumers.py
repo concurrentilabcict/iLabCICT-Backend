@@ -53,7 +53,7 @@ class NotifcationConsumer(AsyncJsonWebsocketConsumer):
 
 
     async def disconnect(self, close_code):
-
+        from api.user.models import User
         user = self.scope['user']
 
         if user.is_anonymous:
