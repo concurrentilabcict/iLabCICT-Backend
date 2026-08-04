@@ -10,7 +10,13 @@ from django.db.models import Q
 from api.notification.models import Notification
 from api.request_history.models import RequestHistory
 from api.ticket.serializers import TicketReadSerializer
+from channels.db import database_sync_to_async
 class TicketService:
+
+    @database_sync_to_async
+    def get_initial_tickets(user)
+        
+    
 
     @staticmethod
     def get_all(user,
