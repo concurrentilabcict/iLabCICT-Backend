@@ -25,18 +25,6 @@ class NotificationSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-
-        if instance.type == Notification.NotificationTypes.TICKET:
-            data['ticket'] = NotificationTicketSerializer(instance.ticket).data
-            data.pop('report', None)
-        elif instance.type == Notification.NotificationTypes.REPORT:
-            data['report'] = NotificationReportSerializer(instance.report).data
-            data.pop('ticket', None)
-                    
-        return data
-    
 
 
 
