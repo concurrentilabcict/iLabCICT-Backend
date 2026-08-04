@@ -30,6 +30,8 @@ class NotifcationConsumer(AsyncJsonWebsocketConsumer):
 
         await self.accept()
 
+        
+
         await self.send(text_data=json.dumps({
             'message': 'connected'
         }))
