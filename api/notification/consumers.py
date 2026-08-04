@@ -1,6 +1,5 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 import json
-from api.user.models import User
 from channels.db import database_sync_to_async
 
 @database_sync_to_async
@@ -14,7 +13,7 @@ def get_initial_notifications(user):
 
 class NotifcationConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
-
+        from api.user.models import User
         user = self.scope['user']
 
         if user.is_anonymous:
