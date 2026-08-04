@@ -169,7 +169,10 @@ class NotificationService():
 
     @staticmethod
     def create_new_report_notification(recipient_id, title, entity):
-        Notification.objects.create(
+        channel_layer = get_channel_layer()
+        
+
+        notification = Notification.objects.create(
             recipient_id=recipient_id,
             entity_id=entity.id,
             entity_type = Notification.NotificationEntityTypes.WEEKLY_REPORT,
@@ -181,6 +184,22 @@ class NotificationService():
             },
             status=Notification.NotificationStatus.UNREAD
             )
+
+        async_to_sync(channel_layer.group_send)(
+            f'user_{recipient_id}',
+            {
+                'type': 'notification_created',
+                'notification_id': NotificationSerializer(notification).data,
+            }
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            'admin',
+            {
+                'type': 'notification_created',
+                'notification_id': NotificationSerializer(notification).data,
+            }
+        )
         
         
     

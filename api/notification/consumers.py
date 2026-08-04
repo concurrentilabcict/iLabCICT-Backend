@@ -72,6 +72,6 @@ class NotifcationConsumer(AsyncJsonWebsocketConsumer):
 
     async def notification_archived(self, event):
         await self.send(text_data=json.dumps({
-            'event': 'notificaiton_archived',
+            'event': 'notification_archived',
             'notification': event['notification_id']
         }))
