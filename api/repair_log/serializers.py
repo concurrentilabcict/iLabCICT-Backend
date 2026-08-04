@@ -79,8 +79,6 @@ class RepairLogReadSerializer(serializers.ModelSerializer):
         model = RepairLog
         fields = ['id', 'title', 'ticket', 'repair_log_code']
 
-
-
 class RepairLogDetailSerializer(serializers.ModelSerializer):
     ticket = TicketReadSerializer(read_only=True)
     
