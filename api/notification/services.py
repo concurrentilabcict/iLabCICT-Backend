@@ -22,6 +22,8 @@ class NotificationService():
 
         queryset = Notification.objects.select_related('recipient_id')
 
+        queryset = queryset.exclude(status=Notification.NotificationStatus.ARCHIVED)
+        
         if user.role == User.UserRole.FACULTY:
             queryset = queryset.filter(
                 Q(
@@ -45,7 +47,6 @@ class NotificationService():
                     event_type=Notification.NotificationEventTypes.MULTICAST_TECHNICIAN,
                 )
             )
-
 
         if type is not None: 
             queryset = queryset.filter(type=type)

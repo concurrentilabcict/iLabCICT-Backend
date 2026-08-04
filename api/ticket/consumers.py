@@ -7,13 +7,11 @@ def get_initial_tickets(user):
     from api.ticket.services import TicketService
     from api.ticket.serializers import TicketReadSerializer
 
-    queryset = TicketService.get_all(user)
+    queryset = TicketService.get_all(user=user)
 
     return TicketReadSerializer(queryset, many=True).data
 
 class TicketConsumer(AsyncWebsocketConsumer):
-
-   
 
     async def connect(self):
 
@@ -38,7 +36,7 @@ class TicketConsumer(AsyncWebsocketConsumer):
 
         await self.send(text_data=json.dumps({
             'event': 'initial_tickets',
-            'tickets': tickets
+            'ticket': tickets
         }))
 
     async def disconnect(self, close_code):
