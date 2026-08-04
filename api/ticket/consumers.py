@@ -2,17 +2,18 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 import json
 from channels.db import database_sync_to_async
 
+@database_sync_to_async
+def get_initial_tickets(user):
+    from api.ticket.services import TicketService
+    from api.ticket.serializers import TicketReadSerializer
+
+    queryset = TicketService.get_all(user)
+
+    return TicketReadSerializer(queryset, many=True).data
 
 class TicketConsumer(AsyncWebsocketConsumer):
 
-    @database_sync_to_async
-    def get_initial_tickets(user):
-        from api.ticket.services import TicketService
-        from api.ticket.serializers import TicketReadSerializer
-
-        queryset = TicketService.get_all(user)
-
-        return TicketReadSerializer(queryset, many=True).data
+   
 
     async def connect(self):
 
@@ -29,7 +30,7 @@ class TicketConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        tickets = await self.get_initial_tickets(user)
+        tickets = await get_initial_tickets(user)
 
         await self.send(text_data=json.dumps({
             'message': 'connected'
