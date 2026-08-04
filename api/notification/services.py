@@ -4,6 +4,9 @@ from rest_framework.exceptions import ValidationError
 from api.common.utils.date_checker import is_invalid_date_format
 from api.user.models import User
 from django.db.models import Q
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+from api.notification.serializers import NotificationSerializer
 class NotificationService():
 
     @staticmethod
@@ -71,8 +74,11 @@ class NotificationService():
     @staticmethod
     def create_new_ticket_notification(recipient_id, title, entity, role, event):
 
+        notification = None
+        channel_layer = get_channel_layer()
+
         if role == User.UserRole.FACULTY:
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 recipient_id=recipient_id,
                 entity_id=entity.id,
                 entity_type = Notification.NotificationEntityTypes.TICKET,
@@ -86,7 +92,7 @@ class NotificationService():
                         )
  
         elif role == User.UserRole.TECHNICIAN:
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 recipient_id=recipient_id,
                 entity_id=entity.id,
                 entity_type = Notification.NotificationEntityTypes.TICKET,
@@ -99,16 +105,66 @@ class NotificationService():
                 status=Notification.NotificationStatus.UNREAD
                         )
 
+        NotificationService.send_notification_ticket_channels(
+            recipient_id=recipient_id,
+            role=role,
+            data=NotificationSerializer(notification).data,
+            channel_layer=channel_layer
+        )
+
+
     @staticmethod
-    def update_ticket_technician_recipient(recipient_id, entity_id):
-        Notification.objects.filter(
-            entity_id = entity_id,
-            entity_type = Notification.NotificationEntityTypes.TICKET,
-            recipient_id = None
-        ).update(
-            recipient_id = recipient_id,
-            event_type = Notification.NotificationEventTypes.UNICAST_TECHNICIAN
+    def send_notification_ticket_channels(recipient_id, role, data, channel_layer):
+
+        if recipient_id is not None:
+            async_to_sync(channel_layer.group_send)(
+                f'user_{recipient_id}',
+                {
+                    'type': 'notification_created',
+                    'notification': data,
+                }
             )
+
+        elif role == User.UserRole.TECHNICIAN:
+            async_to_sync(channel_layer.group_send)(
+                'technicians',
+                {
+                    'type': 'notification_created',
+                    'notification': data,
+                }
+            )
+
+        async_to_sync(channel_layer.group_send(
+                    'admins',
+                    {
+                        'type': 'notification_created',
+                        'notification': data
+                    }
+                ))
+        
+    @staticmethod
+    def update_ticket_technician_recipient(entity_id):
+        channel_layer = get_channel_layer()
+
+        notification = Notification.objects.filter(
+            entity_id=entity_id,
+            entity_type=Notification.NotificationEntityTypes.TICKET,
+            recipient_id=None
+        ).first()
+
+        if notification is None:
+            return
+
+        notification.status = Notification.NotificationStatus.ARCHIVED
+        notification.save(update_fields=["status"])
+
+        async_to_sync(channel_layer.group_send)(
+            'technicians',
+            {
+                'type': 'notification_archived',
+                'notification_id': notification.id,
+            }
+        )
         
 
     @staticmethod

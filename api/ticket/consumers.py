@@ -4,8 +4,14 @@ import json
 class TicketConsumer(AsyncWebsocketConsumer):
     async def connect(self):
 
+        user = self.scope['user']
+
+        if user.is_anonymous:
+            await self.close(code=4001)
+            return
+
         await self.channel_layer.group_add(
-            'technicians',
+            'tickets',
             self.channel_name
         )
 
@@ -18,7 +24,7 @@ class TicketConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         await self.channel_layer.group_discard(
-            'technicians',
+            'tickets',
             self.channel_name
         )
 

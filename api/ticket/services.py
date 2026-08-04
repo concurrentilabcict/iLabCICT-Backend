@@ -8,6 +8,8 @@ from rest_framework.exceptions import ValidationError
 from api.user.models import User
 from django.db.models import Q
 from api.notification.models import Notification
+from api.request_history.models import RequestHistory
+from api.ticket.serializers import TicketReadSerializer
 class TicketService:
 
     @staticmethod
@@ -98,15 +100,15 @@ class TicketService:
             event=Notification.NotificationEventTypes.MULTICAST_TECHNICIAN
         )
 
-        #channel_layer = get_channel_layer()
+        channel_layer = get_channel_layer()
 
-        #async_to_sync(channel_layer.group_send)(
-         #   'technicians',
-          #  {
-           #     'type': 'ticket_created',
-             #   'ticket': TicketReadSerializer(ticket).data
-            #}
-        #)
+        async_to_sync(channel_layer.group_send)(
+            'tickets',
+            {
+                'type': 'ticket_created',
+                'ticket': TicketReadSerializer(ticket).data
+            }
+        )
 
         return ticket
     
@@ -149,8 +151,13 @@ class TicketService:
                 role= User.UserRole.FACULTY
                     )
             NotificationService.update_ticket_technician_recipient(
-                recipient_id=ticket.assigned_to,
                 entity_id=ticket.id,
+            )
+            NotificationService.create_new_ticket_notification(
+                recipient_id=ticket.assigned_to,
+                title='Ticket Assigned to You',
+                entity=ticket,
+                role = User.UserRole.TECHNICIAN
             )
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
@@ -160,6 +167,11 @@ class TicketService:
                     entity=ticket,
                     role= User.UserRole.FACULTY
                         )
+            RequestHistory.objects.create(
+                room=ticket.room,
+                technician=ticket.assigned_to,
+                ticket=ticket
+            )
 
         elif ticket.status != instance.status:
             NotificationService.create_new_ticket_notification(
@@ -170,15 +182,15 @@ class TicketService:
                     )
 
         
-        #channel_layer = get_channel_layer()
+        channel_layer = get_channel_layer()
 
-        #async_to_sync(channel_layer.group_send)(
-         #   'technicians',
-          #  {
-           #     'type': 'ticket_updated',
-            #    'ticket': TicketReadSerializer(ticket).data
-            #}
-        #)
+        async_to_sync(channel_layer.group_send)(
+            'tickets',
+            {
+                'type': 'ticket_updated',
+                'ticket': TicketReadSerializer(ticket).data
+            }
+        )
 
         return ticket
     

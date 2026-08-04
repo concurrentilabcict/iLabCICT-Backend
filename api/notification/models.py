@@ -16,6 +16,7 @@ class Notification(models.Model):
     class NotificationStatus(models.TextChoices):
         READ = 'read', 'read'
         UNREAD = 'unread', 'unread'
+        ARCHIVED = 'archived', 'archived'
 
     class NotificationEventTypes(models.TextChoices):
         MULTICAST_TECHNICIAN = 'multicast-technician', 'multicast-technician'
