@@ -1,6 +1,6 @@
 from channels.generic.websocket import AsyncWebsocketConsumer
 import json
-from api.ticket.services import TicketService
+
 
 class TicketConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -18,8 +18,8 @@ class TicketConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
+        from api.ticket.services import TicketService
         tickets = TicketService.get_all(user)
-
 
         await self.send(text_data=json.dumps({
             'message': 'connected'
