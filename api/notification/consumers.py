@@ -1,6 +1,16 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
 import json
 from api.user.models import User
+from channels.db import database_sync_to_async
+
+@database_sync_to_async
+def get_initial_notifications(user):
+    from api.notification.services import NotificationService
+    from api.notification.serializers import NotificationSerializer
+
+    queryset = NotificationService.get_all(user=user)
+
+    return NotificationSerializer(queryset, many=True).data
 
 class NotifcationConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):
@@ -30,11 +40,18 @@ class NotifcationConsumer(AsyncJsonWebsocketConsumer):
 
         await self.accept()
 
-        
+        notifications = await get_initial_notifications(user)
 
         await self.send(text_data=json.dumps({
             'message': 'connected'
         }))
+
+        await self.send(text_data=json.dumps({
+            'event': 'initial_notifications',
+            'notification': notifications
+        }))
+
+
 
     async def disconnect(self, close_code):
 
