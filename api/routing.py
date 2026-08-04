@@ -3,4 +3,5 @@ from api.ticket.consumers import TicketConsumer
 
 websocket_urlpatterns = [
     path('ws/tickets/', TicketConsumer.as_asgi()),
+    path('ws/notifications/', TicketConsumer.as_asgi()),
 ]

@@ -134,13 +134,13 @@ class NotificationService():
                 }
             )
 
-        async_to_sync(channel_layer.group_send(
-                    'admins',
-                    {
-                        'type': 'notification_created',
-                        'notification': data
-                    }
-                ))
+        async_to_sync(channel_layer.group_send)(
+            'admins',
+            {
+                'type': 'notification_created',
+                'notification': data
+            }
+        )
         
     @staticmethod
     def update_ticket_technician_recipient(entity_id):
