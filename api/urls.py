@@ -64,4 +64,6 @@ urlpatterns = [
     path('request-history/', include('api.request_history.urls')),
 
     path('scheduler/', include('api.task_scheduler.urls')),
+
+    path('audit-logs/', include('api.audit_logs.urls')),
 ]
