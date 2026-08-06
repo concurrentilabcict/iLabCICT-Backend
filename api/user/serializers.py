@@ -5,7 +5,8 @@ from api.user.services import UserService
 from rest_framework_simplejwt.tokens import AccessToken
 from datetime import timedelta
 from rest_framework_simplejwt.exceptions import TokenError
-
+from api.audit_logs.models import AuditLogs
+from api.audit_logs.services import AuditLogsService
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 class UserSerializer(serializers.ModelSerializer):
@@ -38,14 +39,70 @@ class UserSerializer(serializers.ModelSerializer):
     
     def update(self, instance, validated_data):
         password = validated_data.pop("password", None)
+        request = self.context['request']
+        user_name = request.user.get_full_name()
        
         if password:
+            AuditLogs.objects.create(
+                performed_by=request.user,
+                action_title='Unauthorized change password attempt',
+                action_summary= f'{user_name} attempted to updated their password using the profile update endpoint.',
+                metadata={
+                    'result': 'blocked',
+                    'field': 'password',
+                    'endpoint': request.path,
+                    'ip_address': AuditLogsService.get_ip_address(request),
+                    'user_agent': AuditLogsService.get_user_agent(request)
+
+                }
+            )
+
             raise serializers.ValidationError('Password not authorized to be updated.')
+
+        changes = {}
+
+        for field in ['first_name', 'last_name', 'email', 'profile_image']:
+            if field not in validated_data:
+                continue
+
+            if field == "profile_image":
+                old_value = instance.profile_image.name if instance.profile_image else None
+                new_value = validated_data[field].name if validated_data[field] else None
+
+                if old_value != new_value:
+                    changes[field] = {
+                        "changed": True
+                    }
+
+                continue
+
+            old_value = getattr(instance, field)
+            new_value = validated_data[field]
+
+            if old_value != new_value:
+                changes[field] = {
+                    "old": old_value,
+                    "new": new_value,
+                }
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         
         instance.save()
+
+        if changes:
+            AuditLogs.objects.create(
+                performed_by=request.user,
+                action_title='Updated user profile',
+                action_summary= f'{user_name} updated their profile information.',
+                metadata={
+                    'result': 'successful',
+                    'changes': changes,
+                    'ip_address': AuditLogsService.get_ip_address(request),
+                    'user_agent': AuditLogsService.get_user_agent(request)
+                }
+            )
+
         return instance
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -61,20 +118,51 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
          return token
     
     def validate(self, attrs):
-        data = super().validate(attrs)
+        
+        request = self.context['request']
 
-        profile_image = self.user.profile_image
+        try:
+            data = super().validate(attrs)
 
-        data["role"] = self.user.role
-        data["id"] = self.user.id
-        data["first_name"] = self.user.first_name
-        data["last_name"] = self.user.last_name
-        data["email"] = self.user.email
-        data["is_authenticated"] = self.user.is_authenticated
-        data["is_active"] = self.user.is_active
-        data["profile_image"] = profile_image.url if profile_image else None
+            profile_image = self.user.profile_image
+        
+            data["role"] = self.user.role
+            data["id"] = self.user.id
+            data["first_name"] = self.user.first_name
+            data["last_name"] = self.user.last_name
+            data["email"] = self.user.email
+            data["is_authenticated"] = self.user.is_authenticated
+            data["is_active"] = self.user.is_active
+            data["profile_image"] = profile_image.url if profile_image else None
+
+            
+        except serializers.ValidationError:
+            AuditLogs.objects.create(
+                performed_by=None,
+                action_tile='Failed login attempt',
+                action_summary=f'Someone attempted to log in using: {attrs.get('username')}',
+                metadata={
+                    'result': 'blocked',
+                    'ip_address': AuditLogsService.get_client_ip(request=request),
+                    'user_agent': AuditLogsService.get_user_agent(request=request)
+                }
+            )
+            raise
+
+        AuditLogs.objects.create(
+                    performed_by=self.user,
+                    action_title='User Login',
+                    action_summary=f'{self.user.get_full_name()} logged in.',
+                    metadata={
+                        'result': 'successful',
+                        'ip_address': AuditLogsService.get_client_ip(request=request),
+                        'user_agent': AuditLogsService.get_user_agent(request=request)
+                    }
+                )
 
         return data
+
+       
     
 class UserMinimalSerializer(serializers.ModelSerializer):
     class Meta:

@@ -11,7 +11,6 @@ from api.throttle import LoginThrottle, ResetPasswordThrottle
 from rest_framework.views import APIView
 from api.user.serializers import ForgotPasswordSerializer, ResetPasswordWithTokenSerializer
 
-
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 class CustomTokenObtainPairView(TokenObtainPairView):

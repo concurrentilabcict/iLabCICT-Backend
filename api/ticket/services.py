@@ -132,6 +132,7 @@ class TicketService:
 
         #start repair
         if not reassigned:
+            print('im here')
             instance.refresh_from_db()
             instance.status = status
             instance.save(update_fields=["status"])
@@ -144,27 +145,30 @@ class TicketService:
                 ).get(pk=instance.pk)
 
         if reassigned:
-            NotificationService.create_new_ticket_notification(
-                recipient_id=ticket.reported_by,
+            NotificationService.create_new_ticket_notification( #this
+                recipient_id=ticket.reported_by_id,
                 title='Ticket reassigned!',
                 entity=ticket,
+                event=Notification.NotificationEventTypes.UNICAST_FACULTY,
                 role= User.UserRole.FACULTY
                     )
             NotificationService.update_ticket_technician_recipient(
                 entity_id=ticket.id,
             )
             NotificationService.create_new_ticket_notification(
-                recipient_id=ticket.assigned_to,
-                title='Ticket Assigned to You',
+                recipient_id=ticket.assigned_to_id,
+                title='Ticket assigned to You',
                 entity=ticket,
+                event=Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
                 role = User.UserRole.TECHNICIAN
             )
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
             NotificationService.create_new_ticket_notification(
-                    recipient_id=ticket.reported_by,
+                    recipient_id=ticket.reported_by_id,
                     title='Request ticket resolved!',
                     entity=ticket,
+                    event=Notification.NotificationEventTypes.UNICAST_FACULTY,
                     role= User.UserRole.FACULTY
                         )
             RequestHistory.objects.create(
@@ -175,9 +179,10 @@ class TicketService:
 
         elif ticket.status != instance.status:
             NotificationService.create_new_ticket_notification(
-                recipient_id=ticket.reported_by,
+                recipient_id=ticket.reported_by_id,
                 title='Ticket status updated!',
                 entity=ticket,
+                event=Notification.NotificationEventTypes.UNICAST_FACULTY,
                 role= User.UserRole.FACULTY
                     )
 
@@ -194,19 +199,4 @@ class TicketService:
 
         return ticket
     
-    @staticmethod
-    def delete_ticket(instance):    
-        ticket_id = instance.id
-
-        instance.delete()
-
-        channel_layer = get_channel_layer()
-
-        async_to_sync(channel_layer.group_send)(
-            'technicians',
-            {
-                'type': 'ticket_deleted',
-                'ticket_id': ticket_id
-            }
-        )
     

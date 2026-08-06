@@ -4,7 +4,6 @@ from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer
 from api.ticket.services import TicketService
 from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasTicketPermission
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 
