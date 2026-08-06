@@ -5,7 +5,6 @@ from api.user.services import UserService
 from rest_framework_simplejwt.tokens import AccessToken
 from datetime import timedelta
 from rest_framework_simplejwt.exceptions import TokenError
-from api.audit_logs.models import AuditLogs
 from api.audit_logs.services import AuditLogsService
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
@@ -43,17 +42,16 @@ class UserSerializer(serializers.ModelSerializer):
         user_name = request.user.get_full_name()
        
         if password:
-            AuditLogs.objects.create(
+
+            AuditLogsService.log(
+                request=request,
                 performed_by=request.user,
                 action_title='Unauthorized change password attempt',
-                action_summary= f'{user_name} attempted to updated their password using the profile update endpoint.',
+                action_summary='Unauthorized change password attempt',
                 metadata={
                     'result': 'blocked',
                     'field': 'password',
                     'endpoint': request.path,
-                    'ip_address': AuditLogsService.get_ip_address(request),
-                    'user_agent': AuditLogsService.get_user_agent(request)
-
                 }
             )
 
@@ -91,18 +89,18 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
 
         if changes:
-            AuditLogs.objects.create(
+
+            AuditLogsService.log(
+                request=request,
                 performed_by=request.user,
                 action_title='Updated user profile',
                 action_summary= f'{user_name} updated their profile information.',
                 metadata={
                     'result': 'successful',
-                    'changes': changes,
-                    'ip_address': AuditLogsService.get_ip_address(request),
-                    'user_agent': AuditLogsService.get_user_agent(request)
+                    'changes': changes
                 }
             )
-
+            
         return instance
     
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -137,32 +135,27 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
             
         except serializers.ValidationError:
-            AuditLogs.objects.create(
+            AuditLogsService.log(
+                request=request,
                 performed_by=None,
                 action_tile='Failed login attempt',
                 action_summary=f'Someone attempted to log in using: {attrs.get('username')}',
                 metadata={
-                    'result': 'blocked',
-                    'ip_address': AuditLogsService.get_client_ip(request=request),
-                    'user_agent': AuditLogsService.get_user_agent(request=request)
-                }
+                    'result': 'blocked'
+                }    
             )
             raise
 
-        AuditLogs.objects.create(
-                    performed_by=self.user,
-                    action_title='User Login',
-                    action_summary=f'{self.user.get_full_name()} logged in.',
-                    metadata={
-                        'result': 'successful',
-                        'ip_address': AuditLogsService.get_client_ip(request=request),
-                        'user_agent': AuditLogsService.get_user_agent(request=request)
-                    }
-                )
-
+        AuditLogsService.log(
+            request=request,
+            performed_by=self.user,
+            action_tile='Successful user Login',
+            action_summary=f'{self.user.get_full_name()} logged in.',
+            metadata={
+                'result': 'successful'
+            }    
+        )
         return data
-
-       
     
 class UserMinimalSerializer(serializers.ModelSerializer):
     class Meta:
@@ -181,11 +174,34 @@ class UserUpdatePasswordSerializer(serializers.ModelSerializer):
         old_password = validated_data.pop("old_password", None)
         new_password = validated_data.pop("password", None)
 
+        request = self.context["request"]
         if not instance.check_password(old_password):
+
+            AuditLogsService.log(
+                request=request,
+                performed_by=instance,
+                action_title='Failed attempt to change user password',
+                action_summary=f"{instance.get_full_name()} entered an incorrect password.",
+                metadata={
+                    'result': 'unsuccessful'
+                }
+            )
+
             raise serializers.ValidationError('Incorrect password.')
-        
+
         instance.set_password(new_password)
-        instance.save()
+        instance.save(update_fields=['password'])
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=instance,
+            action_title="Successful password Changed",
+            action_summary=f"{instance.get_full_name()} changed their password.",
+            metadata={
+                'result': 'successful'
+            }
+        )
+
         return instance
 
 
@@ -198,13 +214,28 @@ class ForgotPasswordSerializer(serializers.Serializer):
             is_active=True
         ).first()
 
+        request = self.context['request']
+
         if not user:
+            AuditLogsService.log(
+                request=request,
+                performed_by=None,
+                action_title='Invalid password reset attempt',
+                action_summary=f"Password reset requested for an unknown or inactive account: {value}.",
+                metadata={
+                    'result': 'unsuccessful',
+                    'email': value,
+                }
+            )
+
             raise serializers.ValidationError(
                 "No active account found."
             )
 
         self.user = user
         return value
+
+
     
 class ResetPasswordWithTokenSerializer(serializers.Serializer):
     token = serializers.CharField()
@@ -218,10 +249,24 @@ class ResetPasswordWithTokenSerializer(serializers.Serializer):
                 "Passwords do not match."
             )
 
+        request = self.context['request']
+
         try:
             token = AccessToken(attrs["token"])
 
             if token.get("purpose") != "password_reset":
+
+                AuditLogsService.log(
+                    request=request,
+                    performed_by=None,
+                    action_title='Failed password reset',
+                    action_summary='Passwrod rest attempted with an invalid reset token.',
+                    metadata={
+                        'result': 'unsuccessful',
+                        'reason': 'invalid_token'
+                    }
+                )
+
                 raise serializers.ValidationError(
                     "Invalid reset token."
                 )
@@ -229,10 +274,31 @@ class ResetPasswordWithTokenSerializer(serializers.Serializer):
             user = User.objects.get(id=token["user_id"])
 
         except TokenError as e:
-            print(e)
+            AuditLogsService.log(
+                request=request,
+                performed_by=None,
+                action_title='Failed password reset',
+                action_summary='Token error occured on password reset attempt',
+                 metadata={
+                    'result': 'unsuccessful',
+                    'reason': str(e),
+                }          
+            )
+
             raise serializers.ValidationError(str(e))
 
         except User.DoesNotExist:
+            AuditLogsService.log(
+                request=request,
+                performed_by=None,
+                action_title='Failed password reset',
+                action_summary='Token error occured on password reset attempt',
+                    metadata={
+                    'result': 'unsuccessful',
+                    'reason': 'invalid_user',
+                }          
+            )
+
             raise serializers.ValidationError("User does not exist.")
 
         attrs["user"] = user
