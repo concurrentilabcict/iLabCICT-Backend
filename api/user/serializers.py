@@ -138,7 +138,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             AuditLogsService.log(
                 request=request,
                 performed_by=None,
-                action_tile='Failed login attempt',
+                action_title='Failed login attempt',
                 action_summary=f'Someone attempted to log in using: {attrs.get('username')}',
                 metadata={
                     'result': 'blocked'
@@ -149,7 +149,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         AuditLogsService.log(
             request=request,
             performed_by=self.user,
-            action_tile='Successful user Login',
+            action_title='Successful user Login',
             action_summary=f'{self.user.get_full_name()} logged in.',
             metadata={
                 'result': 'successful'
