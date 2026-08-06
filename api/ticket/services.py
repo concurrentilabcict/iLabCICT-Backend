@@ -35,7 +35,8 @@ class TicketService:
         
         if user.role == User.UserRole.TECHNICIAN:
             queryset = queryset.filter(
-                Q(assigned_to=user) | Q(assigned_to__isnull=True)
+                    Q(assigned_to=user)
+                    | Q(status=Ticket.TicketStatus.OPEN)
                 )
 
         elif user.role == User.UserRole.FACULTY:

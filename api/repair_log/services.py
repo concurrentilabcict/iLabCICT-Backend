@@ -6,7 +6,9 @@ from api.ticket.models import Ticket
 from api.common.utils.date_checker import is_invalid_date_format
 from api.user.models import User
 from api.notification.models import Notification
-
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync  
+from api.ticket.serializers import TicketReadSerializer
 class RepairLogService:
     
     @staticmethod
@@ -76,3 +78,15 @@ class RepairLogService:
         )
 
         ticket.save()
+
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            'tickets',
+            {
+                'type': 'ticket_updated',
+                'ticket': TicketReadSerializer(ticket).data
+            }
+        )
+
+
