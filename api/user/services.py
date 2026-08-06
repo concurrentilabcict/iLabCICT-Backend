@@ -12,7 +12,6 @@ from django.conf import settings
 from django.db import transaction
 from api.email import EmailService
 import requests
-from api.audit_logs.models import AuditLogs
 from api.audit_logs.services import AuditLogsService
 class UserService:
 
@@ -22,14 +21,13 @@ class UserService:
         user.set_password(new_password)
         user.save(update_fields=["password"])
 
-        AuditLogs.objects.create(
+        AuditLogsService.log(
+            request=request,
             performed_by=user,
             action_title='Successful password reset',
             action_summary=f"{user.get_full_name()} successfully updated it's user password.",
             metadata={
-                'result': 'successful',
-                'ip_address': AuditLogsService.get_client_ip(request),
-                'user_agent': AuditLogsService.get_user_agent(request)
+                'result': 'successful'
             }
         )
 
@@ -174,28 +172,25 @@ class UserService:
                 reset_url=magic_link,
             )
 
-            AuditLogs.objects.create(
-                performed_by=user,
+            AuditLogsService.log(
+                request=request,
                 action_title='Password reset requested',
                 action_summary=f'{user.get_full_name()} requested a password reset.',
                 metadata={
                     'result': 'successful',
-                    'ip_address': AuditLogsService.get_client_ip(request),
-                    'user_agent': AuditLogsService.get_user_agent(request),
                 }
             )
 
         except requests.HTTPError as e:
-            AuditLogs.objects.create(
+            AuditLogsService.log(
+                request=request,
                 performed_by=user,
                 action_title="Password reset request failed",
                 action_summary=f"Failed to send password reset email to {user.get_full_name()}.",
                 metadata={
                     "result": "failed",
-                    "ip_address": AuditLogsService.get_client_ip(request),
-                    "user_agent": AuditLogsService.get_user_agent(request),
                     "error": str(e),
-                },
+                }
             )
             raise
 
