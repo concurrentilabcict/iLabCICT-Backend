@@ -148,6 +148,7 @@ class TicketService:
                 recipient_id=ticket.reported_by,
                 title='Ticket reassigned!',
                 entity=ticket,
+                event=Notification.NotificationEventTypes.UNICAST_FACULTY,
                 role= User.UserRole.FACULTY
                     )
             NotificationService.update_ticket_technician_recipient(
@@ -157,6 +158,7 @@ class TicketService:
                 recipient_id=ticket.assigned_to,
                 title='Ticket Assigned to You',
                 entity=ticket,
+                event=Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
                 role = User.UserRole.TECHNICIAN
             )
 
@@ -165,6 +167,7 @@ class TicketService:
                     recipient_id=ticket.reported_by,
                     title='Request ticket resolved!',
                     entity=ticket,
+                    event=Notification.NotificationEventTypes.UNICAST_FACULTY,
                     role= User.UserRole.FACULTY
                         )
             RequestHistory.objects.create(
@@ -178,6 +181,7 @@ class TicketService:
                 recipient_id=ticket.reported_by,
                 title='Ticket status updated!',
                 entity=ticket,
+                event=Notification.NotificationEventTypes.UNICAST_FACULTY,
                 role= User.UserRole.FACULTY
                     )
 

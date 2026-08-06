@@ -10,29 +10,12 @@ from api.permissions import IsAdmin, IsProfileOwner
 from api.throttle import LoginThrottle, ResetPasswordThrottle
 from rest_framework.views import APIView
 from api.user.serializers import ForgotPasswordSerializer, ResetPasswordWithTokenSerializer
-from api.audit_logs.models import AuditLogs
-from api.audit_logs.services import AuditLogsService
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [LoginThrottle]
     serializer_class = CustomTokenObtainPairSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        AuditLogs.objects.create(
-            performed_by=serializer.user,
-            aciton_title='User Login',
-            action_summary=f'{serializer.user.get_full_name()} logged in.',
-            metadata={
-                'ip_address': AuditLogsService.get_client_ip(request=request),
-                'user_agent': AuditLogsService.get_user_agent(request=request)
-            }
-        )
-        return Response(serializer.validated_data)
 
 class UserListCreateView(ListCreateAPIView):
     serializer_class = UserSerializer

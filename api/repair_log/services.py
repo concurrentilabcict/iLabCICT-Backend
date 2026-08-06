@@ -5,6 +5,7 @@ from rest_framework.exceptions import ValidationError
 from api.ticket.models import Ticket
 from api.common.utils.date_checker import is_invalid_date_format
 from api.user.models import User
+from api.notification.models import Notification
 
 class RepairLogService:
     
@@ -72,6 +73,7 @@ class RepairLogService:
             recipient_id=ticket.reported_by,
             title='Report Ticket Resolved!',
             entity=ticket,
+            event=Notification.NotificationEventTypes.UNICAST_FACULTY,
             role=User.UserRole.FACULTY
         )
 
