@@ -151,7 +151,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
         AuditLogs.objects.create(
                     performed_by=self.user,
-                    aciton_title='User Login',
+                    action_title='User Login',
                     action_summary=f'{self.user.get_full_name()} logged in.',
                     metadata={
                         'result': 'successful',

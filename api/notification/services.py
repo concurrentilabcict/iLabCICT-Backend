@@ -23,7 +23,7 @@ class NotificationService():
         queryset = Notification.objects.select_related('recipient_id')
 
         queryset = queryset.exclude(status=Notification.NotificationStatus.ARCHIVED)
-        
+
         if user.role == User.UserRole.FACULTY:
             queryset = queryset.filter(
                 Q(
@@ -80,7 +80,7 @@ class NotificationService():
 
         if role == User.UserRole.FACULTY:
             notification = Notification.objects.create(
-                recipient_id=recipient_id,
+                recipient_id_id=recipient_id,
                 entity_id=entity.id,
                 entity_type = Notification.NotificationEntityTypes.TICKET,
                 event_type = event,
@@ -94,7 +94,7 @@ class NotificationService():
  
         elif role == User.UserRole.TECHNICIAN:
             notification = Notification.objects.create(
-                recipient_id=recipient_id,
+                recipient_id_id=recipient_id,
                 entity_id=entity.id,
                 entity_type = Notification.NotificationEntityTypes.TICKET,
                 event_type = event,

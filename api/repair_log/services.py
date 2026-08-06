@@ -54,10 +54,8 @@ class RepairLogService:
         RepairLogService.update_ticket_to_resolved(ticket)
 
         MaintenanceHistory.objects.create(
-            computer=computer,
             computer_id=computer.id,
             technician_id=technician.id,
-            performed_by=technician.get_full_name(),
             maintenance_notes=notes,
             maintenance_type=type,
             date_performed=ticket.updated_at,
@@ -70,7 +68,7 @@ class RepairLogService:
         ticket.status = Ticket.TicketStatus.RESOLVED
 
         NotificationService.create_new_ticket_notification(
-            recipient_id=ticket.reported_by,
+            recipient_id=ticket.reported_by_id,
             title='Report Ticket Resolved!',
             entity=ticket,
             event=Notification.NotificationEventTypes.UNICAST_FACULTY,
