@@ -12,14 +12,26 @@ from django.conf import settings
 from django.db import transaction
 from api.email import EmailService
 import requests
-    
+from api.audit_logs.models import AuditLogs
+from api.audit_logs.services import AuditLogsService
 class UserService:
 
     @staticmethod
     @transaction.atomic
-    def reset_password(user, new_password):
+    def reset_password(user, new_password, request):
         user.set_password(new_password)
         user.save(update_fields=["password"])
+
+        AuditLogs.objects.create(
+            performed_by=user,
+            action_title='Successful password reset',
+            action_summary=f"{user.get_full_name()} successfully updated it's user password.",
+            metadata={
+                'result': 'successful',
+                'ip_address': AuditLogsService.get_client_ip(request),
+                'user_agent': AuditLogsService.get_user_agent(request)
+            }
+        )
 
     @staticmethod
     def get_user_full_name(user_id):
@@ -142,7 +154,7 @@ class UserService:
         return profile, stats
        
     @staticmethod
-    def send_reset_email(user):
+    def send_reset_email(user, request):
         token = AccessToken()
 
         token["user_id"] = user.id
@@ -161,7 +173,29 @@ class UserService:
                 recipient_name=user.first_name,
                 reset_url=magic_link,
             )
+
+            AuditLogs.objects.create(
+                performed_by=user,
+                action_title='Password reset requested',
+                action_summary=f'{user.get_full_name()} requested a password reset.',
+                metadata={
+                    'result': 'successful',
+                    'ip_address': AuditLogsService.get_client_ip(request),
+                    'user_agent': AuditLogsService.get_user_agent(request),
+                }
+            )
+
         except requests.HTTPError as e:
-            print(e.response.text)
+            AuditLogs.objects.create(
+                performed_by=user,
+                action_title="Password reset request failed",
+                action_summary=f"Failed to send password reset email to {user.get_full_name()}.",
+                metadata={
+                    "result": "failed",
+                    "ip_address": AuditLogsService.get_client_ip(request),
+                    "user_agent": AuditLogsService.get_user_agent(request),
+                    "error": str(e),
+                },
+            )
             raise
 

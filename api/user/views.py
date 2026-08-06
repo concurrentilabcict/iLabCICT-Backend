@@ -64,15 +64,11 @@ class UserUpdatePassword(UpdateAPIView):
     queryset = User.objects.all()
     permission_classes=[IsAuthenticated, IsProfileOwner]
 
-    def patch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(
-            {"detail": "Password updated successfully."},
-            status=status.HTTP_200_OK
-        )
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        response.data = {"detail": "Password updated successfully."}
+        return response
+    
 
 class AvailableCustodianListView(ListAPIView):
     serializer_class = UserMinimalSerializer
@@ -104,7 +100,7 @@ class ForgotPasswordAPIView(APIView):
         serializer = ForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        UserService.send_reset_email(serializer.user)
+        UserService.send_reset_email(serializer.user, request)
 
         return Response(
             {
@@ -124,6 +120,7 @@ class ResetPasswordWithTokenAPIView(APIView):
         UserService.reset_password(
             user=serializer.validated_data["user"],
             new_password=serializer.validated_data["password"],
+            request=request
         )
 
         return Response(
