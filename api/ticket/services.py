@@ -10,6 +10,8 @@ from django.db.models import Q
 from api.notification.models import Notification
 from api.request_history.models import RequestHistory
 from api.ticket.serializers import TicketReadSerializer
+from api.audit_logs.services import AuditLogsService
+
 class TicketService:
 
     @staticmethod
@@ -79,10 +81,11 @@ class TicketService:
     
     @staticmethod
     @transaction.atomic
-    def create_ticket(reported_by, validated_data):
+    def create_ticket(reported_by, validated_data, request):
 
         room = validated_data.get('room')
         validated_data.pop('status', None)
+        ticket_type = validated_data.get('type')
 
         assigned_technician = room.assigned_technician
 
@@ -101,6 +104,21 @@ class TicketService:
             event=Notification.NotificationEventTypes.MULTICAST_TECHNICIAN
         )
 
+        AuditLogsService.log(
+            request=request,
+            performed_by=reported_by,
+            action_title='Ticket created',
+            action_summary=f'{reported_by.get_full_name()} created a {ticket_type.lower()} ticket.',
+            metadata={
+                'ticket_id': ticket.id,
+                'ticket_title': ticket.title,
+                'ticket_type': ticket.type,
+                'room_id': ticket.room_id,
+                'assigned_to_id': ticket.assigned_to_id,
+                'status': ticket.status,
+            }
+        )
+
         groups = {
             f'tickets_user_{ticket.reported_by_id}',
             'tickets_technicians',
@@ -116,7 +134,7 @@ class TicketService:
         return ticket
     
     @staticmethod
-    def update_ticket(instance, validated_data, technician):
+    def update_ticket(instance, validated_data, technician, request):
 
         status = validated_data.get("status", instance.status)
         #for ticket claiming
@@ -137,7 +155,6 @@ class TicketService:
             instance.status = status
             instance.save(update_fields=["status"])
 
-
         ticket = Ticket.objects.select_related(
                     "reported_by",
                     "assigned_to",
@@ -147,48 +164,127 @@ class TicketService:
 
         if reassigned:
             
-            NotificationService.create_new_ticket_notification(
-                recipient_id=ticket.reported_by_id,
-                title='Ticket reassigned!',
-                entity=ticket,
-                event=Notification.NotificationEventTypes.UNICAST_FACULTY,
-                role= User.UserRole.FACULTY
-                    )
-            NotificationService.update_ticket_technician_recipient(
-                entity_id=ticket.id,
-            )
-            NotificationService.create_new_ticket_notification(
-                recipient_id=ticket.assigned_to_id,
-                title='Ticket assigned to You',
-                entity=ticket,
-                event=Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
-                role = User.UserRole.TECHNICIAN
+            TicketService.handle_ticket_reassigned(
+                ticket=ticket,
+                technician=technician,
+                request=request,
+                instance=instance
             )
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
-            
-            NotificationService.create_new_ticket_notification(
-                    recipient_id=ticket.reported_by_id,
-                    title='Request ticket resolved!',
-                    entity=ticket,
-                    event=Notification.NotificationEventTypes.UNICAST_FACULTY,
-                    role= User.UserRole.FACULTY
-                        )
-            RequestHistory.objects.create(
-                room=ticket.room,
-                technician=ticket.assigned_to,
-                ticket=ticket
+
+            TicketService.handle_resolved_request_tickets(
+                ticket=ticket,
+                technician=technician,
+                request=request
             )
 
         elif ticket.status != instance.status:
-            NotificationService.create_new_ticket_notification(
-                recipient_id=ticket.reported_by_id,
-                title='Ticket status updated!',
-                entity=ticket,
-                event=Notification.NotificationEventTypes.UNICAST_FACULTY,
-                role= User.UserRole.FACULTY
-                    )
 
+            TicketService.handle_ticket_status_change(
+                ticket=ticket,
+                technician=technician,
+                request=request,
+                instance=instance
+            )
+
+        TicketService.handle_ticket_broadcast(
+            reassigned=reassigned,
+            ticket=ticket
+        )
+
+        return ticket
+
+
+    @staticmethod
+    def handle_ticket_reassigned(ticket, technician, request, instance):
+        NotificationService.create_new_ticket_notification(
+                        recipient_id=ticket.reported_by_id,
+                        title='Ticket reassigned!',
+                        entity=ticket,
+                        event=Notification.NotificationEventTypes.UNICAST_FACULTY,
+                        role= User.UserRole.FACULTY
+                            )
+        NotificationService.update_ticket_technician_recipient(
+            entity_id=ticket.id,
+        )
+        NotificationService.create_new_ticket_notification(
+            recipient_id=ticket.assigned_to_id,
+            title='Ticket assigned to You',
+            entity=ticket,
+            event=Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
+            role = User.UserRole.TECHNICIAN
+        )
+        AuditLogsService.log(
+            request=request,
+            performed_by=technician,
+            action_title='Ticket reassigned',
+            action_summary=f'${technician.get_full_name()} claimed a ticket.',
+            metadata={
+                'ticket_id': ticket.id,
+                'status': ticket.status,
+                'old_assigned_to_id': instance.assigned_to_id,
+                'new_assigned_to_id': ticket.assigned_to_id
+            }
+        )
+
+    @staticmethod
+    def handle_resolved_request_tickets(ticket, technician, request):
+
+        NotificationService.create_new_ticket_notification(
+                            recipient_id=ticket.reported_by_id,
+                            title='Request ticket resolved!',
+                            entity=ticket,
+                            event=Notification.NotificationEventTypes.UNICAST_FACULTY,
+                            role= User.UserRole.FACULTY
+                                )
+        request_history = RequestHistory.objects.create(
+            room=ticket.room,
+            technician=ticket.assigned_to,
+            ticket=ticket
+        )
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=technician,
+            action_title='Request ticket resolved',
+            action_summary=f'${technician.get_full_name()} has resolved a request ticket.',
+            metadata={
+                'request_history_id': request_history.id,
+                'ticket_id': ticket.id,
+                'ticket_type': ticket.type,
+                'room_id': ticket.room_id,
+                'reported_by_id': ticket.reported_by_id,
+                'assigned_to_id': ticket.assigned_to_id,
+                'status': ticket.status,
+            }
+        )
+
+    @staticmethod
+    def handle_ticket_status_change(ticket, technician, instance, request):
+
+        NotificationService.create_new_ticket_notification(
+            recipient_id=ticket.reported_by_id,
+            title='Ticket status updated!',
+            entity=ticket,
+            event=Notification.NotificationEventTypes.UNICAST_FACULTY,
+            role= User.UserRole.FACULTY
+                )
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=technician,
+            action_title=f'${ticket.type} ticket updated',
+            action_summary=f'${technician.get_full_name()} updated a ${ticket.type} ticket status to ${ticket.status}.',
+            metadata={
+                'ticket_id': ticket.id,
+                'new_status': ticket.status,
+                'previous_status': instance.status
+            }
+        )
+
+    @staticmethod
+    def handle_ticket_broadcast(reassigned, ticket):
         groups = {
             'tickets_admins',
             f'tickets_user_{ticket.reported_by_id}'
@@ -210,7 +306,7 @@ class TicketService:
             ticket=TicketReadSerializer(ticket).data,
         )
 
-        return ticket
+    
 
     @staticmethod
     def send_ticket_event(groups, event_type, ticket):

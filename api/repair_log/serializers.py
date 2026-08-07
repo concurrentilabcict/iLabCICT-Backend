@@ -47,6 +47,7 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         #need to optimize further
+        request = self.context['request']
         maintenance_type = validated_data.pop('maintenance_type')
         ticket = validated_data['ticket']
 
@@ -55,12 +56,13 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
         validated_data['title'] = ticket.title
         repair_log = RepairLog.objects.create(**validated_data)
         
-        RepairLogService.record_maintenance_history(repair_log.ticket, 
-                                                    repair_log.repair_notes, 
-                                                    maintenance_type, 
-                                                    technician,
-                                                    repair_log.ticket.computer,
-                                                    repair_log)
+        RepairLogService.record_maintenance_history(ticket=repair_log.ticket, 
+                                                    notes=repair_log.repair_notes, 
+                                                    type=maintenance_type, 
+                                                    technician=technician,
+                                                    computer=repair_log.ticket.computer,
+                                                    repair_log=repair_log,
+                                                    request=request)
         
         return repair_log
     
