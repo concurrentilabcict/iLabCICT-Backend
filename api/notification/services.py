@@ -119,7 +119,7 @@ class NotificationService():
 
         if recipient_id is not None:
             async_to_sync(channel_layer.group_send)(
-                f'user_{recipient_id}',
+                f'notification_user_{recipient_id}',
                 {
                     'type': 'notification_created',
                     'notification': data,
@@ -128,7 +128,7 @@ class NotificationService():
 
         elif role == User.UserRole.TECHNICIAN:
             async_to_sync(channel_layer.group_send)(
-                'technicians',
+                'notification_technicians',
                 {
                     'type': 'notification_created',
                     'notification': data,
@@ -136,7 +136,7 @@ class NotificationService():
             )
 
         async_to_sync(channel_layer.group_send)(
-            'admins',
+            'notification_admins',
             {
                 'type': 'notification_created',
                 'notification': data
@@ -160,7 +160,7 @@ class NotificationService():
         notification.save(update_fields=["status"])
 
         async_to_sync(channel_layer.group_send)(
-            'technicians',
+            'notification_technicians',
             {
                 'type': 'notification_archived',
                 'notification_id': notification.id,
@@ -187,7 +187,7 @@ class NotificationService():
             )
 
         async_to_sync(channel_layer.group_send)(
-            f'user_{recipient_id}',
+            f'notification_user_{recipient_id}',
             {
                 'type': 'notification_created',
                 'notification_id': NotificationSerializer(notification).data,
@@ -195,7 +195,7 @@ class NotificationService():
         )
 
         async_to_sync(channel_layer.group_send)(
-            'admin',
+            'notification_admin',
             {
                 'type': 'notification_created',
                 'notification_id': NotificationSerializer(notification).data,
