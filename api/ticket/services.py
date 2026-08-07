@@ -101,14 +101,16 @@ class TicketService:
             event=Notification.NotificationEventTypes.MULTICAST_TECHNICIAN
         )
 
-        channel_layer = get_channel_layer()
+        groups = {
+            f'tickets_user_{ticket.reported_by_id}',
+            'tickets_technicians',
+            'tickets_admins',
+        }
 
-        async_to_sync(channel_layer.group_send)(
-            'tickets',
-            {
-                'type': 'ticket_created',
-                'ticket': TicketReadSerializer(ticket).data
-            }
+        TicketService.send_ticket_event(
+            groups=list(groups),
+            event_type='ticket_created',
+            ticket=TicketReadSerializer(ticket).data
         )
 
         return ticket
@@ -117,7 +119,6 @@ class TicketService:
     def update_ticket(instance, validated_data, technician):
 
         status = validated_data.get("status", instance.status)
-
         #for ticket claiming
         reassigned = (
             Ticket.objects
@@ -131,12 +132,11 @@ class TicketService:
             )
         )
 
-        #start repair
         if not reassigned:
-            print('im here')
             instance.refresh_from_db()
             instance.status = status
             instance.save(update_fields=["status"])
+
 
         ticket = Ticket.objects.select_related(
                     "reported_by",
@@ -146,7 +146,8 @@ class TicketService:
                 ).get(pk=instance.pk)
 
         if reassigned:
-            NotificationService.create_new_ticket_notification( #this
+            
+            NotificationService.create_new_ticket_notification(
                 recipient_id=ticket.reported_by_id,
                 title='Ticket reassigned!',
                 entity=ticket,
@@ -165,6 +166,7 @@ class TicketService:
             )
 
         if ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
+            
             NotificationService.create_new_ticket_notification(
                     recipient_id=ticket.reported_by_id,
                     title='Request ticket resolved!',
@@ -187,17 +189,40 @@ class TicketService:
                 role= User.UserRole.FACULTY
                     )
 
-        
-        channel_layer = get_channel_layer()
+        groups = {
+            'tickets_admins',
+            f'tickets_user_{ticket.reported_by_id}'
+        }
 
-        async_to_sync(channel_layer.group_send)(
-            'tickets',
-            {
-                'type': 'ticket_updated',
-                'ticket': TicketReadSerializer(ticket).data
-            }
+        if ticket.assigned_to_id and ticket.status == Ticket.TicketStatus.RESOLVED and ticket.type == Ticket.TicketType.REQUEST:
+            groups.add(f'tickets_user_{ticket.assigned_to_id}')
+
+        if reassigned:
+            TicketService.send_ticket_event(
+                groups=['tickets_technicians'],
+                event_type="ticket_reassigned",
+                ticket=TicketReadSerializer(ticket).data,
+            )
+
+        TicketService.send_ticket_event(
+            groups=list(groups),
+            event_type="ticket_updated",
+            ticket=TicketReadSerializer(ticket).data,
         )
 
         return ticket
+
+    @staticmethod
+    def send_ticket_event(groups, event_type, ticket):
+        channel_layer = get_channel_layer()
+
+        for group in set(groups):
+            async_to_sync(channel_layer.group_send)(
+                group,
+                {
+                    'type': event_type,
+                    'ticket': ticket
+                }
+            )
     
     

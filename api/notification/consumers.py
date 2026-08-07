@@ -21,19 +21,19 @@ class NotifcationConsumer(AsyncJsonWebsocketConsumer):
             return
 
         await self.channel_layer.group_add(
-            f'user_{user.id}',
+            f'notification_user_{user.id}',
             self.channel_name
         )
 
         if user.role == User.UserRole.ADMIN:
             await self.channel_layer.group_add(
-                'admins',
+                'notification_admins',
                 self.channel_name
             )
 
         elif user.role == User.UserRole.TECHNICIAN:
             await self.channel_layer.group_add(
-                'technicians',
+                'notification_technicians',
                 self.channel_name
             )
 
@@ -60,19 +60,19 @@ class NotifcationConsumer(AsyncJsonWebsocketConsumer):
             return
         
         await self.channel_layer.group_discard(
-            f'user_{user.id}',
+            f'notification_user_{user.id}',
             self.channel_name
         )
 
         if user.role == User.UserRole.ADMIN:
             await self.channel_layer.group_discard(
-                'admins',
+                'notification_admins',
                 self.channel_name
             )
 
         elif user.role == User.UserRole.TECHNICIAN:
             await self.channel_layer.group_discard(
-                'technicians',
+                'notification_technicians',
                 self.channel_name
             )
 

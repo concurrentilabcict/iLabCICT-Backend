@@ -14,6 +14,7 @@ def get_initial_tickets(user):
 class TicketConsumer(AsyncWebsocketConsumer):
 
     async def connect(self):
+        from api.user.models import User
 
         user = self.scope['user']
 
@@ -22,9 +23,21 @@ class TicketConsumer(AsyncWebsocketConsumer):
             return
 
         await self.channel_layer.group_add(
-            'tickets',
+            f'tickets_user_{user.id}',
             self.channel_name
         )
+
+        if user.role == User.UserRole.ADMIN:
+            await self.channel_layer.group_add(
+                'tickets_admin',
+                self.channel_name
+            )
+
+        elif user.role == User.UserRole.TECHNICIAN:
+            await self.channel_layer.group_add(
+                'tickets_technicians',
+                self.channel_name
+            )
 
         await self.accept()
 
@@ -40,10 +53,29 @@ class TicketConsumer(AsyncWebsocketConsumer):
         }))
 
     async def disconnect(self, close_code):
+        from api.user.models import User
+        user = self.scope['user']
+
+        if user.is_anonymous:
+            return
+
         await self.channel_layer.group_discard(
-            'tickets',
+            f'tickets_user_{user.id}',
             self.channel_name
         )
+
+        if user.role == User.UserRole.ADMIN:
+            await self.channel_layer.group_discard(
+                'tickets_admin',
+                self.channel_name
+            )
+        
+        elif user.role == User.UserRole.TECHNICIAN:
+            await self.channel_layer.group_discard(
+                'tickets_technicians',
+                self.channel_name
+            )
+        
 
     async def receive(self, text_data):
         data = json.loads(text_data)
@@ -67,5 +99,11 @@ class TicketConsumer(AsyncWebsocketConsumer):
     async def ticket_deleted(self, event):
         await self.send(text_data=json.dumps({
             'event': 'ticket_deleted',
+            'ticket': event['ticket_id']
+        }))
+
+    async def ticket_reassigned(self, event):
+        await self.send(text_data=json.dumps({
+            'event': 'ticket_reassigned',
             'ticket': event['ticket_id']
         }))
