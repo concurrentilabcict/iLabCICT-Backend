@@ -15,7 +15,7 @@ class CreateTaskSchedulerView(CreateAPIView):
     permission_classes= [IsAuthenticated, IsAdmin]
 
     def perform_create(self, serializer):
-        request = self.context.get('request')
+        request = self.request
 
         TaskSchedulerService.create_schedule(serializer=serializer, request=request)
 
@@ -25,7 +25,7 @@ class TaskSchedulerDetailView(RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def perform_update(self, serializer):
-        request = self.context.get('request')
+        request = self.request
 
         TaskSchedulerService.update_schedule(serializer=serializer, request=request)
 

@@ -2,6 +2,7 @@ from api.room.models import Room
 from rest_framework.exceptions import ValidationError
 from django.db.models import Count, Q
 from api.ticket.models import Ticket
+from api.audit_logs.services import AuditLogsService 
 class RoomService:
 
     @staticmethod
@@ -53,6 +54,70 @@ class RoomService:
         
         if isinstance(room, bool):
             raise ValidationError('Invalid room name')
-        
+
+    @staticmethod
+    def log_room_create(room, request):
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title='Room created',
+            action_summary=f"{request.user.get_full_name()} created room '{room.room_name}'.",
+            metadata={
+                'room_id': room.id,
+                'room_name': room.room_name,
+                'assigned_technician_id': room.assigned_technician_id
+            }
+        )
+
+    @staticmethod
+    def create_room(serializer, request):
+        room = serializer.save()
+
+        RoomService.log_room_create(
+            room=room,
+            request=request
+        )
+
+        return room
+
+    @staticmethod
+    def log_room_update(room,
+                        request,
+                        updated_fields,
+                        old_name,
+                        old_technician_id):
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title='Room updated',
+            action_summary=f"{request.user.get_full_name()} updated room '{room.room_name}'.",
+            metadata={
+                'room_id': room.id,
+                'updated_fields': updated_fields,
+                'old_room_name': old_name,
+                'new_room_name': room.room_name,
+                'old_assigned_technician_id': old_technician_id,
+                'new_assigned_technician_id': room.assigned_technician_id,
+            }
+        )
+
+    @staticmethod
+    def update_room(serializer, request):
+        room = serializer.instance
+
+        old_name = room.room_name
+        old_technician_id = room.assigned_technician_id
+
+        room = serializer.save()
+
+        RoomService.log_room_update(
+            room=room,
+            request=request,
+            updated_fields=list(serializer.validated_data.keys()),
+            old_name=old_name,
+            old_technician_id=old_technician_id,
+        )
+
+        return room
 
         
