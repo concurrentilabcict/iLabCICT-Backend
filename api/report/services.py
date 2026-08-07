@@ -209,7 +209,7 @@ class ReportService:
             datetime.combine(end_time, time.max)
         )
 
-        for id in technician_id_list:
+        for technician_id in technician_id_list:
             try:
                 ReportService.generate_report_content(
                     start_date=start_datetime,
