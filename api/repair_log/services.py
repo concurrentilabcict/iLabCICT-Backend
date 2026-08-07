@@ -8,6 +8,7 @@ from api.user.models import User
 from api.notification.models import Notification
 from api.ticket.services import TicketService
 from api.ticket.serializers import TicketReadSerializer
+from api.audit_logs.services import AuditLogsService
 class RepairLogService:
     
     @staticmethod
@@ -51,16 +52,33 @@ class RepairLogService:
             raise ValidationError('Date format must be in YYYY-MM-DD')
     
     @staticmethod 
-    def record_maintenance_history(ticket, notes, type, technician, computer, repair_log):
+    def record_maintenance_history(ticket, notes, type, technician, computer, repair_log, request):
         RepairLogService.update_ticket_to_resolved(ticket)
 
-        MaintenanceHistory.objects.create(
+        maintenance_history = MaintenanceHistory.objects.create(
             computer_id=computer.id,
             technician_id=technician.id,
             maintenance_notes=notes,
             maintenance_type=type,
             date_performed=ticket.updated_at,
             repair_log=repair_log
+        )
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=technician,
+            action_title='Report ticket resolved',
+            action_summary=f'${technician.get_full_name()} has resolved a report ticket.',
+            metadata={
+                'repair_log_id': repair_log.id,
+                'maintenance_history_id': maintenance_history.id,
+                'ticket_id': ticket.id,
+                'ticket_type': ticket.type,
+                'room_id': ticket.room_id,
+                'reported_by_id': ticket.reported_by_id,
+                'assigned_to_id': ticket.assigned_to_id,
+                'status': ticket.status,
+            }
         )
 
     

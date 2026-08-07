@@ -197,8 +197,8 @@ class ReportService:
             role=User.UserRole.TECHNICIAN
         ).values_list("id", flat=True))
 
-        start_time = timezone.localdate()
-        end_time = start_time - timedelta(days=6)
+        end_time = timezone.localdate()
+        start_time = end_time - timedelta(days=6)
        
 
         start_datetime = timezone.make_aware(
@@ -209,10 +209,15 @@ class ReportService:
             datetime.combine(end_time, time.max)
         )
 
-        for id in technician_id_list:
-            ReportService.generate_report_content(start_date=start_datetime,
-                                                  end_date=end_datetime,
-                                                  assigned_id=id)
+        for technician_id in technician_id_list:
+            try:
+                ReportService.generate_report_content(
+                    start_date=start_datetime,
+                    end_date=end_datetime,
+                    assigned_id=technician_id,
+                )
+            except Exception as e:
+                print(f"Failed for technician {technician_id}: {e}")
             
         
 

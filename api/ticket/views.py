@@ -30,9 +30,6 @@ class TicketListCreateView(ListCreateAPIView):
             date=self.request.query_params.get('date')
         )
     
-    def perform_create(self, serializer):
-        TicketService.create_ticket(serializer)
-
     def create(self, request, *args, **kwargs):
 
         serializer = self.get_serializer(
@@ -41,11 +38,10 @@ class TicketListCreateView(ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         ticket = TicketService.create_ticket(
+            request=request,
             reported_by=request.user,
             validated_data=serializer.validated_data
         )
-
-        
 
         return Response(
             TicketReadSerializer(ticket).data,
@@ -72,6 +68,7 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
         serializer.is_valid(raise_exception=True)
 
         ticket = TicketService.update_ticket(
+            request=request,
             instance=instance,
             validated_data=serializer.validated_data,
             technician=request.user

@@ -12,6 +12,7 @@ import time
 from rest_framework.response import Response
 from django.db import connection
 
+
 class RoomListCreateView(ListCreateAPIView):
     def get_serializer_class(self):
         if self.request.method == "POST":
@@ -36,6 +37,10 @@ class RoomListCreateView(ListCreateAPIView):
         context = super().get_serializer_context()
         context["include"] = self.request.query_params.get("include", "")
         return context
+
+    def perform_create(self, serializer):
+        request = self.request
+        RoomService.create_room(serializer=serializer, request=request)
     
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
     queryset = (Room.objects
@@ -61,6 +66,10 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
             return [IsAuthenticated(), IsAdmin()]
         
         return [IsAuthenticated(), IsStaff()]
+
+    def perform_update(self, serializer):
+        request = self.request
+        RoomService.update_room(serializer=serializer, request=request)
     
 class RoomAllComputersDetailView(RetrieveAPIView):
     serializer_class = RoomAndComputerListSerializer

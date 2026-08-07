@@ -105,5 +105,5 @@ class TicketConsumer(AsyncWebsocketConsumer):
     async def ticket_reassigned(self, event):
         await self.send(text_data=json.dumps({
             'event': 'ticket_reassigned',
-            'ticket': event['ticket_id']
+            'ticket': event['ticket']
         }))
