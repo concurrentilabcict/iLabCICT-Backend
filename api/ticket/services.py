@@ -111,7 +111,6 @@ class TicketService:
             action_summary=f'{reported_by.get_full_name()} created a {ticket_type.lower()} ticket.',
             metadata={
                 'ticket_id': ticket.id,
-                'ticket_title': ticket.title,
                 'ticket_type': ticket.type,
                 'room_id': ticket.room_id,
                 'assigned_to_id': ticket.assigned_to_id,
@@ -252,7 +251,6 @@ class TicketService:
             metadata={
                 'request_history_id': request_history.id,
                 'ticket_id': ticket.id,
-                'ticket_type': ticket.type,
                 'room_id': ticket.room_id,
                 'reported_by_id': ticket.reported_by_id,
                 'assigned_to_id': ticket.assigned_to_id,

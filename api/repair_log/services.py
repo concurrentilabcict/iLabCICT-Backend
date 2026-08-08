@@ -73,7 +73,6 @@ class RepairLogService:
                 'repair_log_id': repair_log.id,
                 'maintenance_history_id': maintenance_history.id,
                 'ticket_id': ticket.id,
-                'ticket_type': ticket.type,
                 'room_id': ticket.room_id,
                 'reported_by_id': ticket.reported_by_id,
                 'assigned_to_id': ticket.assigned_to_id,
