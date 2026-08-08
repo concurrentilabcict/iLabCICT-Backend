@@ -274,7 +274,7 @@ class TicketService:
         AuditLogsService.log(
             request=request,
             performed_by=technician,
-            action_title=f'{ticket.type} ticket updated',
+            action_title=f'{ticket.type.title()} ticket updated',
             action_summary=f'{technician.get_full_name()} updated a ${ticket.type} ticket status to ${ticket.status}.',
             metadata={
                 'ticket_id': ticket.id,
