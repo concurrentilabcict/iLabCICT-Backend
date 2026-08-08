@@ -3,6 +3,9 @@ from rest_framework.exceptions import ValidationError
 from django.db.models import Count, Q
 from api.ticket.models import Ticket
 from api.audit_logs.services import AuditLogsService 
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync  
+from api.room.serializers import RoomReadSerializer
 class RoomService:
 
     @staticmethod
@@ -73,6 +76,11 @@ class RoomService:
     def create_room(serializer, request):
         room = serializer.save()
 
+        RoomService.broacast_room_event(
+            room=RoomReadSerializer(room).data,
+            event_type='room_created'
+        )
+
         RoomService.log_room_create(
             room=room,
             request=request
@@ -85,7 +93,8 @@ class RoomService:
                         request,
                         updated_fields,
                         old_name,
-                        old_technician_id):
+                        old_technician_id,
+                        old_custodian_id):
         AuditLogsService.log(
             request=request,
             performed_by=request.user,
@@ -98,6 +107,8 @@ class RoomService:
                 'new_room_name': room.room_name,
                 'old_assigned_technician_id': old_technician_id,
                 'new_assigned_technician_id': room.assigned_technician_id,
+                'old_assigned_custodian_id': old_custodian_id,
+                'new_assigned_custodian_id': room.assigned_custodian_id
             }
         )
 
@@ -107,8 +118,14 @@ class RoomService:
 
         old_name = room.room_name
         old_technician_id = room.assigned_technician_id
+        old_custodian_id = room.assigned_custodian_id
 
         room = serializer.save()
+
+        RoomService.broacast_room_event(
+            room=RoomReadSerializer(room).data,
+            event_type='room_updated'
+        )
 
         RoomService.log_room_update(
             room=room,
@@ -120,4 +137,15 @@ class RoomService:
 
         return room
 
+    @staticmethod
+    def broacast_room_event(room, event_type):
+        channel_layer = get_channel_layer()
+
+        async_to_sync(channel_layer.group_send)(
+            'rooms_all',
+            {
+                'type': event_type,
+                'room': room
+            }
+        )
         
