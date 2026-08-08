@@ -7,6 +7,7 @@ from api.ticket.models import Ticket
 from api.repair_log.models import RepairLog
 from api.maintenance_history.models import MaintenanceHistory
 from api.user.serializers import UserMinimalSerializer
+from api.audit_logs.services import AuditLogsService
 
 class ComputerWriteSerializer(serializers.ModelSerializer):
     computer_code = serializers.CharField(read_only=True)
@@ -39,9 +40,6 @@ class ComputerWriteSerializer(serializers.ModelSerializer):
                 computers.append(computer)
 
         return computers
-
-
-
 
 class MaintenanceHistoryTicketSerializer(serializers.ModelSerializer):
 

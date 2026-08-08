@@ -13,6 +13,7 @@ from django.db import transaction
 from api.email import EmailService
 import requests
 from api.audit_logs.services import AuditLogsService
+from zoneinfo import ZoneInfo
 class UserService:
 
     @staticmethod
@@ -109,7 +110,7 @@ class UserService:
                     reported_by=user,
                     created_at__date__gte=seven_days_ago
                 )
-                .annotate(day=TruncDate("created_at"))
+                .annotate(day=TruncDate("created_at", tzinfo=ZoneInfo('Asia/Manila')))
                 .values("day")
                 .annotate(count=Count("id"))
                 .order_by("day")

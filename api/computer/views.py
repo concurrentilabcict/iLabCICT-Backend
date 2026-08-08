@@ -28,7 +28,10 @@ class ComputerListCreateView(ListCreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        computers = serializer.save()
+        computers = ComputerService.create_computers(
+            serializer=serializer,
+            request=request
+        )
 
         output = ComputerReadSerializer(computers, many=True)
         return Response(output.data, status=status.HTTP_201_CREATED)
@@ -49,6 +52,12 @@ class ComputerDetailView(RetrieveUpdateDestroyAPIView):
             return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
         
         return [IsAuthenticated(), IsStaff()]
+
+    def perform_update(self, serializer):
+        ComputerService.update_computer(
+            serializer=serializer,
+            request=self.request
+        )
 
 class ComputerCodeDetailView(RetrieveAPIView):
 

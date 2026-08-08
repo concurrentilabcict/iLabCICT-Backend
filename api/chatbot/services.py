@@ -6,7 +6,7 @@ from api.common.utils import prompts
 from api.computer.models import Computer
 import re
 import groq
-
+from api.audit_logs.services import AuditLogsService
 class ChatbotService:
 
 
@@ -25,7 +25,7 @@ class ChatbotService:
         
     
     @staticmethod
-    def process_conversation(session, user_message):
+    def process_conversation(session, user_message, request):
 
         if ChatbotService.is_session_expired(session):
             session.flush()
@@ -46,6 +46,19 @@ class ChatbotService:
             ).select_related('room').first()
 
             if computer:
+
+                AuditLogsService.log(
+                    request=request,
+                    performed_by=request.user,
+                    action_title='Chatbot queried computer',
+                    action_summary=f'{request.user.get_full_name()} used the chatbot to query computer information.',
+                    metadata={
+                        'computer_code': computer.computer_code,
+                        'computer_id': computer.id,
+                        'chatbot_action': 'computer_query'
+                    }
+                )
+
                 computer_context = f"""
                     Computer information from the database:
 

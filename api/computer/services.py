@@ -1,6 +1,7 @@
 from django.db.models import Q
 from api.computer.models import Computer
 from rest_framework.exceptions import ValidationError
+from api.audit_logs.services import AuditLogsService
 
 class ComputerService:
 
@@ -104,6 +105,59 @@ class ComputerService:
         
         if status and status not in allowed_statuses:
             raise ValidationError('Invalid peripheral status')
+
+
+    @staticmethod
+    def create_computers(serializer, request):
+        computers = serializer.save()
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title='Computers created',
+            action_summary=f"{request.user.get_full_name()} created {len(computers)} computer(s).",
+            metadata={
+                "computer_ids": [computer.id for computer in computers],
+                "quantity": len(computers),
+            }
+        )
+
+        return computers
+
+    @staticmethod
+    def update_computer(serializer, request):
+        computer = serializer.instance
+
+        old_values = {}
+
+        for field, new_value in serializer.validated_data.items():
+            old_value = getattr(computer, field)
+
+            if old_value != new_value:
+                old_values[field] = old_value
+
+        computer = serializer.save()
+
+        changes = {}
+
+        for field in old_values:
+            changes[field] = {
+                'old': old_values[field],
+                'new': getattr(computer, field)
+            }
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title='Computer updated',
+            action_summary=f"{request.user.get_full_name()} updated computer '{computer.computer_code}.'",
+            metadata={
+                'computer_id': computer.id,
+                'changes': changes
+            }
+        )
+
+        return computer
 
 
 #---------------------------------------------old method-----------------------------------------------------------
