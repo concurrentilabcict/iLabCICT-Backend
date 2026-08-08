@@ -219,7 +219,7 @@ class TicketService:
             request=request,
             performed_by=technician,
             action_title='Ticket reassigned',
-            action_summary=f'${technician.get_full_name()} claimed a ticket.',
+            action_summary=f'{technician.get_full_name()} claimed a ticket.',
             metadata={
                 'ticket_id': ticket.id,
                 'status': ticket.status,
@@ -248,7 +248,7 @@ class TicketService:
             request=request,
             performed_by=technician,
             action_title='Request ticket resolved',
-            action_summary=f'${technician.get_full_name()} has resolved a request ticket.',
+            action_summary=f'{technician.get_full_name()} has resolved a request ticket.',
             metadata={
                 'request_history_id': request_history.id,
                 'ticket_id': ticket.id,
@@ -274,8 +274,8 @@ class TicketService:
         AuditLogsService.log(
             request=request,
             performed_by=technician,
-            action_title=f'${ticket.type} ticket updated',
-            action_summary=f'${technician.get_full_name()} updated a ${ticket.type} ticket status to ${ticket.status}.',
+            action_title=f'{ticket.type} ticket updated',
+            action_summary=f'{technician.get_full_name()} updated a ${ticket.type} ticket status to ${ticket.status}.',
             metadata={
                 'ticket_id': ticket.id,
                 'new_status': ticket.status,
