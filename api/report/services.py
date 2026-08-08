@@ -16,6 +16,8 @@ from api.common.utils.date_checker import is_invalid_date_format
 from api.user.models import User
 from datetime import datetime, time, timedelta
 from django.utils import timezone
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
 class ReportService:
     
     @staticmethod
@@ -95,6 +97,16 @@ class ReportService:
             recipient_id=report.technician_id,
             title='New Weekly Report!',
             entity=report
+        )
+
+        groups = {
+            f'reports_user_{report.technician_id}',
+            'reports_admin'
+        }
+
+        ReportService.broadcast_report_event(
+            groups=groups,
+            report=ReportSerializer(report).data
         )
 
         serializer = ReportSerializer(report)
@@ -218,6 +230,22 @@ class ReportService:
                 )
             except Exception as e:
                 print(f"Failed for technician {technician_id}: {e}")
+
+
+    @staticmethod
+    def broadcast_report_event(groups, report):
+
+        channel_layer = get_channel_layer()
+
+        for group in set(groups):
+            async_to_sync(channel_layer.group_send)(
+                group,
+                {
+                    'type': 'report_created',
+                    'report': report
+                }
+            )
+
             
         
 
