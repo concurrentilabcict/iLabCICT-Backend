@@ -68,7 +68,7 @@ class RepairLogService:
             request=request,
             performed_by=technician,
             action_title='Report ticket resolved',
-            action_summary=f'${technician.get_full_name()} has resolved a report ticket.',
+            action_summary=f'{technician.get_full_name()} has resolved a report ticket.',
             metadata={
                 'repair_log_id': repair_log.id,
                 'maintenance_history_id': maintenance_history.id,

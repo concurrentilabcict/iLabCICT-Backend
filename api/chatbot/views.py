@@ -17,7 +17,7 @@ class ChatView(APIView):
         if not user_message:
             raise ValidationError('Message cannot be empty')
         
-        result = ChatbotService.process_conversation(request.session, user_message)
+        result = ChatbotService.process_conversation(session=request.session, user_message=user_message, request=request)
         return Response(result, status=status.HTTP_200_OK)
     
 class ChatResetView(APIView):
