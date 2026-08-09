@@ -68,4 +68,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
             'room': event['room']
         }))
 
+
+class RoomIDAllComputersConsumer(AsyncWebsocketConsumer):
+    ...
+
     
