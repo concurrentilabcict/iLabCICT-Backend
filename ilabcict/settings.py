@@ -240,3 +240,10 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 BREVO_KEY= os.getenv("BREVO_KEY")
 EMAIL_API_KEY= os.getenv("EMAIL_API_KEY")
 SCHEDULER_TOKEN = os.getenv("SCHEDULER_TOKEN")
+
+ENVIRONMENT = os.getenv('ENV', 'development')
+
+if ENVIRONMENT == 'development':
+    API_BASE_URL = "http://127.0.0.1:8000"
+else:
+    API_BASE_URL = "https://ilabcict-backend.onrender.com"

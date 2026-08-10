@@ -15,19 +15,35 @@ def get_initial_room():
 def get_initial_room_computers(room_id):
     from api.room.services import RoomService
     from api.room.serializers import RoomAndComputerListSerializer
-    room = RoomService.get_computers_room_id(room_id=room_id)
+    from django.conf import settings
 
-    computers = room.initial_computers
 
-    last_computer = computers[-1] if computers else None
+    computers = RoomService.get_computers_room_id(room_id=room_id)
+
+    paginated_computers = computers.initial_computers
+
+    last_computer = (
+        paginated_computers[-1]
+        if paginated_computers
+        else None
+    )
+
+    has_more = (
+        computers.total_computer > len(paginated_computers)
+    )
 
     return{
-        'room_with_computers': RoomAndComputerListSerializer(room).data,
-        'next_after_id': (
-            last_computer.id
-            if last_computer
+        'room_with_computers': RoomAndComputerListSerializer(
+            computers
+        ).data,
+
+        'next': (
+            f'{settings.API_BASE_URL}/api/rooms/'
+            f'{room_id}/computers/'
+            f'?after-id={last_computer.id}'
+            if has_more and last_computer
             else None
-        ) 
+        )
     }
     
 
@@ -123,7 +139,7 @@ class RoomIDAllComputersConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'event': 'initial_room_computers',
             'initial_computers': (room_computers_data['room_with_computers']),
-            'next_after_id': (room_computers_data['next_after_id'])
+            'next_after_id': (room_computers_data['next'])
         }))
 
 

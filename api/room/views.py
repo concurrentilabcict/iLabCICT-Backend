@@ -80,7 +80,7 @@ class RoomAllComputersDetailView(ListAPIView):
     def get_queryset(self):
         room_id = self.kwargs['pk']
 
-        after_id = self.request.query_params.get('after_id')
+        after_id = self.request.query_params.get('after-id')
 
         computers_queryset = (
             Computer.objects
@@ -90,6 +90,7 @@ class RoomAllComputersDetailView(ListAPIView):
 
         if after_id:
             computers_queryset = Computer.objects.filter(
+                room_id=room_id,
                 id__gt=after_id
             ).order_by('id')
 
@@ -122,20 +123,26 @@ class RoomAllComputersDetailView(ListAPIView):
 
         has_more = len(computers) > 15
 
-        computers = computers[:15]
+        computers = computers[:self.PAGE_SIZE]
 
         room.initial_computers = computers
 
         serializer = self.get_serializer(room)
 
+        next_url = None
+        if has_more and computers:
+            last = computers[-1]
+
+            next_url = (
+                 f'{request.build_absolute_uri(request.path)}'
+                f'?after-id={last.id}'
+            )
+
         return Response({
-            **serializer.data,
-            'next_after_id': (
-                computers[-1].id
-                if has_more
-                else None
-            ),
-            'has_more': has_more,
+            'results': serializer.data,
+            'count': room.total_computer,
+            'next': next_url,
+            'previous': None
         })
 
 

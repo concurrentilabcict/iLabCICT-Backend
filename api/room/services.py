@@ -114,10 +114,7 @@ class RoomService:
     @staticmethod
     def log_room_update(room,
                         request,
-                        updated_fields,
-                        old_name,
-                        old_technician_id,
-                        old_custodian_id):
+                        changes):
         AuditLogsService.log(
             request=request,
             performed_by=request.user,
@@ -125,25 +122,31 @@ class RoomService:
             action_summary=f"{request.user.get_full_name()} updated room '{room.room_name}'.",
             metadata={
                 'room_id': room.id,
-                'updated_fields': updated_fields,
-                'old_room_name': old_name,
-                'new_room_name': room.room_name,
-                'old_assigned_technician_id': old_technician_id,
-                'new_assigned_technician_id': room.assigned_technician_id,
-                'old_assigned_custodian_id': old_custodian_id,
-                'new_assigned_custodian_id': room.assigned_custodian_id
-            }
-        )
+                'changes': changes
+                }
+       )
 
     @staticmethod
     def update_room(serializer, request):
         room = serializer.instance
 
-        old_name = room.room_name
-        old_technician_id = room.assigned_technician_id
-        old_custodian_id = room.assigned_custodian_id
+        old_values = {}
+
+        for field, new_value in serializer.validated_data.items():
+            old_value = getattr(room, field)
+
+            if old_value != new_value:
+                old_values[field] = old_value
 
         room = serializer.save()
+
+        changes = {}
+
+        for field in old_values:
+            changes[field] = {
+                'old': old_values[field],
+                'new': getattr(room, field)
+            }
 
         RoomService.broacast_room_event(
             room=RoomReadSerializer(room).data,
@@ -153,9 +156,7 @@ class RoomService:
         RoomService.log_room_update(
             room=room,
             request=request,
-            updated_fields=list(serializer.validated_data.keys()),
-            old_name=old_name,
-            old_technician_id=old_technician_id,
+            changes=changes
         )
 
         return room

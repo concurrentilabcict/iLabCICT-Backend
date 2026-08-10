@@ -56,7 +56,7 @@ class AuditLogsService():
 
     @staticmethod
     def get_all(user=None):
-        queryset = AuditLogs.objects.select_related('audit_logs')
+        queryset = AuditLogs.objects.select_related('performed_by')
 
         if user is None:
             return queryset.none()

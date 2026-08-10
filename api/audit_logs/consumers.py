@@ -6,27 +6,25 @@ from channels.db import database_sync_to_async
 def get_initial_audit_logs(user):
     from api.audit_logs.services import AuditLogsService
     from api.audit_logs.serializers import AuditLogsSerializer
+    from django.conf import settings
 
-    logs = list(AuditLogsService.get_all(user=user)[:50])
+    logs = list(AuditLogsService.get_all(user=user)[:51])
 
+    has_more = len(logs) > 50
+    logs = logs[:50]
 
     oldest_log = logs[-1] if logs else None
 
     return {
         'data':  AuditLogsSerializer(logs, many=True).data,
-
-        'oldest_created_at': (
-            oldest_log.created_at.isoformat()
-            if oldest_log
+        'next': (
+            f'{settings.API_BASE_URL}/api/audit-logs/'
+            f'&before-id={oldest_log.id}'
+            f'?before-created-at='
+            f'{oldest_log.created_at.isoformat().replace("+00:00", "Z")}'
+            if has_more and oldest_log
             else None
-        ),
-
-        'oldest_id': (
-            oldest_log.id
-            if oldest_log
-            else None
-        ),
-
+        )
     } 
 
 class AuditLogsConsumer(AsyncWebsocketConsumer):
@@ -59,8 +57,7 @@ class AuditLogsConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'event': 'initial_audit_logs',
             'audit_log': audit_logs['data'],
-            'oldest_id': audit_logs['oldest_id'],
-            'oldest_created_at': audit_logs['oldest_created_at'],
+            'next': audit_logs['next']
         }))
 
     async def disconnect(self, close_code):
