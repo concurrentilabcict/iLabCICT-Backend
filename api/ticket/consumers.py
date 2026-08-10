@@ -6,10 +6,24 @@ from channels.db import database_sync_to_async
 def get_initial_tickets(user):
     from api.ticket.services import TicketService
     from api.ticket.serializers import TicketReadSerializer
+    from django.conf import settings
 
-    queryset = TicketService.get_all(user=user)
+    tickets, next_cursor = (TicketService.get_paginated_tickets(user=user))
 
-    return TicketReadSerializer(queryset, many=True).data
+    return {
+        'results': TicketReadSerializer(
+            tickets,
+            many=True
+        ).data,
+
+        'next': (
+            f'{settings.API_BASE_URL}'
+            f'/api/tickets/paginated/'
+            f'?cursor={next_cursor}'
+            if next_cursor
+            else None
+        )
+    }
 
 class TicketConsumer(AsyncWebsocketConsumer):
 
@@ -49,7 +63,7 @@ class TicketConsumer(AsyncWebsocketConsumer):
 
         await self.send(text_data=json.dumps({
             'event': 'initial_tickets',
-            'ticket': tickets
+            **tickets
         }))
 
     async def disconnect(self, close_code):
