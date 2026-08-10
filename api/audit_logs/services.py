@@ -3,7 +3,7 @@ from api.audit_logs.models import AuditLogs
 from api.user.models import User
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync 
-from api.audit_logs.serializers import AuditLogsSerializer
+
 class AuditLogsService():
 
     @staticmethod
@@ -30,6 +30,7 @@ class AuditLogsService():
         action_summary,
         metadata=None,
             ):
+        from api.audit_logs.serializers import AuditLogsSerializer
 
         metadata = metadata or {}
 
