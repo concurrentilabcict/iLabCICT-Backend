@@ -9,6 +9,8 @@ from api.notification.models import Notification
 from api.ticket.services import TicketService
 from api.ticket.serializers import TicketReadSerializer
 from api.audit_logs.services import AuditLogsService
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync  
 class RepairLogService:
     
     @staticmethod
@@ -30,9 +32,6 @@ class RepairLogService:
 
         if user.role == User.UserRole.TECHNICIAN:
             queryset = queryset.filter(technician_id=user.id)
-
-        if technician_id and User.UserRole.ADMIN:
-            queryset = queryset.filter(technician_id=technician_id)
         
         if date is not None:
             queryset = queryset.filter(created_at__date=date)
@@ -106,5 +105,18 @@ class RepairLogService:
             event_type='ticket_updated',
             ticket=TicketReadSerializer(ticket).data
         )
+
+    @staticmethod
+    def broadcast_repair_log_event(groups, repair_log):
+        channel_layer = get_channel_layer()
+
+        for group in set(groups):
+            async_to_sync(channel_layer.group_send)(
+                group,
+                {
+                    'type': 'repair_log_created',
+                    'repair_log': repair_log
+                }
+            )
 
 

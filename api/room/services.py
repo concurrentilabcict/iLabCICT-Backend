@@ -1,12 +1,35 @@
 from api.room.models import Room
 from rest_framework.exceptions import ValidationError
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Prefetch
+from api.computer.models import Computer
 from api.ticket.models import Ticket
 from api.audit_logs.services import AuditLogsService 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
 from api.room.serializers import RoomReadSerializer
 class RoomService:
+
+    @staticmethod
+    def get_computers_room_id(room_id=None):
+
+        queryset = (Room.objects
+                    .select_related('assigned_custodian')
+                    .prefetch_related(
+                        Prefetch(
+                            'computers',
+                            queryset=Computer.objects.order_by('id')[:15],
+                            to_attr='initial_computers'
+                        ) 
+                    )
+                    .annotate(total_computer=Count('computers'))
+                    .filter(id=room_id)
+                    .first()
+                    )
+        
+        if room_id is None:
+            return queryset.none()
+
+        return queryset
 
     @staticmethod
     def get_all(status=None,

@@ -5,6 +5,14 @@ from api.repair_log.services import RepairLogService
 from api.ticket.serializers import TicketReadSerializer, MaintenanceHistoryTicketSerializer
 from api.ticket.models import Ticket
 
+class MainRepairLogReadSerializer(serializers.ModelSerializer):
+    ticket = TicketReadSerializer(read_only=True)
+
+    class Meta:
+        model = RepairLog
+        fields='__all__'
+
+
 class RepairLogWriteSerializer(serializers.ModelSerializer):
 
     maintenance_type = serializers.ChoiceField(
@@ -55,6 +63,16 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
         validated_data['technician'] = technician
         validated_data['title'] = ticket.title
         repair_log = RepairLog.objects.create(**validated_data)
+
+        groups = {
+            'repair_logs_admin',
+            f'repair_logs_user_{technician.id}'
+        }
+
+        RepairLogService.broadcast_repair_log_event(
+            groups=groups,
+            repair_log=MainRepairLogReadSerializer(repair_log).data
+        )
         
         RepairLogService.record_maintenance_history(ticket=repair_log.ticket, 
                                                     notes=repair_log.repair_notes, 
@@ -67,12 +85,7 @@ class RepairLogWriteSerializer(serializers.ModelSerializer):
         return repair_log
     
 
-class MainRepairLogReadSerializer(serializers.ModelSerializer):
-    ticket = TicketReadSerializer(read_only=True)
 
-    class Meta:
-        model = RepairLog
-        fields='__all__'
 
 class RepairLogReadSerializer(serializers.ModelSerializer):
     ticket = MaintenanceHistoryTicketSerializer(read_only=True)

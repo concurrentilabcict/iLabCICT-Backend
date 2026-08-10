@@ -2,7 +2,9 @@ from django.db.models import Q
 from api.computer.models import Computer
 from rest_framework.exceptions import ValidationError
 from api.audit_logs.services import AuditLogsService
-
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync 
+ 
 class ComputerService:
 
     @staticmethod
@@ -111,6 +113,11 @@ class ComputerService:
     def create_computers(serializer, request):
         computers = serializer.save()
 
+        ComputerService.broadcast_computer_created(
+            computers=computers,
+            event_type='computer_created'
+        )
+
         AuditLogsService.log(
             request=request,
             performed_by=request.user,
@@ -126,6 +133,7 @@ class ComputerService:
 
     @staticmethod
     def update_computer(serializer, request):
+        from api.computer.serializers import ComputerDefaultSerializer
         computer = serializer.instance
 
         old_values = {}
@@ -146,6 +154,11 @@ class ComputerService:
                 'new': getattr(computer, field)
             }
 
+        ComputerService.broadcast_computer_updated(
+            computer=computer,
+            event_type='computer_updated'
+        )
+
         AuditLogsService.log(
             request=request,
             performed_by=request.user,
@@ -159,6 +172,43 @@ class ComputerService:
 
         return computer
 
+    @staticmethod
+    def broadcast_computer_created(computers, event_type):
+        from api.computer.serializers import ComputerDefaultSerializer
+
+        channel_layer = get_channel_layer()
+
+        room_id = computers[0].room_id
+
+        serialized_computers = ComputerDefaultSerializer(
+            computers,
+            many=True
+        ).data
+
+        async_to_sync(channel_layer.group_send)(
+            f'room_{room_id}',
+            {
+                'type': event_type,
+                'computer': serialized_computers
+            }
+        )
+
+    @staticmethod
+    def broadcast_computer_updated(computer, event_type):
+        from api.computer.serializers import ComputerDefaultSerializer
+        channel_layer = get_channel_layer()
+
+        room_id = computer.room_id
+
+        serialized_computer = ComputerDefaultSerializer(computer).data
+
+        async_to_sync(channel_layer.group_send)(
+            f'room_{room_id}',
+            {
+                'type': event_type,
+                'computer': serialized_computer
+            }
+        )
 
 #---------------------------------------------old method-----------------------------------------------------------
     @staticmethod

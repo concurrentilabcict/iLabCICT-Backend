@@ -39,7 +39,7 @@ class RoomWriteSerializer(serializers.ModelSerializer):
 
 class RoomAndComputerListSerializer(serializers.ModelSerializer):
     total_computer = serializers.IntegerField(read_only=True)
-    computers = ComputerListSerializer(many=True, read_only=True)
+    computers = ComputerListSerializer(many=True, read_only=True, source='initial_computers')
     assigned_custodian = UserMinimalSerializer(read_only=True)
 
     class Meta:

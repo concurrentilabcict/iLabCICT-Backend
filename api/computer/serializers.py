@@ -87,6 +87,12 @@ class ComputerReadSerializer(serializers.ModelSerializer):
 
         return fields
 
+class ComputerDefaultSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Computer
+        fields = '__all__'
+
 
 
 

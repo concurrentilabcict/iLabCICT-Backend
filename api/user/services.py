@@ -79,76 +79,203 @@ class UserService:
 
         profile = User.objects.get(id=user.id)
 
-        stats = {}
-
-        if include and "faculty-stats" in include.split(",") and user.role == User.UserRole.FACULTY:
-
-            tickets_submitted_today = (
-                Ticket.objects
-                .filter(
-                    reported_by=user,
-                    created_at__date=today
-                )
-                .values("type")
-                .annotate(count=Count("id"))
-            )
-
-            tickets_submitted = {
-                "request_tickets": 0,
-                "report_tickets": 0, 
-            }
-
-            for ticket in tickets_submitted_today:
-                if ticket["type"] == Ticket.TicketType.REQUEST:
-                    tickets_submitted["request_tickets"] = ticket["count"]
-                if ticket["type"] == Ticket.TicketType.REPORT:
-                    tickets_submitted["report_tickets"] = ticket["count"]
-
-            tickets_per_day = list(
-                Ticket.objects
-                .filter(
-                    reported_by=user,
-                    created_at__date__gte=seven_days_ago
-                )
-                .annotate(day=TruncDate("created_at", tzinfo=ZoneInfo('Asia/Manila')))
-                .values("day")
-                .annotate(count=Count("id"))
-                .order_by("day")
-            )
-
-            weekday_map = {
-                0: "M",
-                1: "T",
-                2: "W",
-                3: "TH",
-                4: "F",
-                5: "SA",
-                6: "SU",
-            }
-
-            last_seven_days = {}
-
-            for i in range(6, -1, -1):
-                date = today - timedelta(days=i)
-                last_seven_days[date] = {
-                    "day": weekday_map[date.weekday()],
-                    "count": 0,
-                    "date": date
+        weekday_map = {
+            0: "M",
+            1: "T",
+            2: "W",
+            3: "TH",
+            4: "F",
+            5: "SA",
+            6: "SU",
                 }
 
-            for item in tickets_per_day:
-                last_seven_days[item["day"]]["count"] = item["count"]
-
-            stats["tickets_per_day"] = list(last_seven_days.values())
-
-            stats["tickets_submitted_today"] = tickets_submitted
-
-            stats["total_tickets_today"] = (
-                Ticket.objects.filter(
-                    reported_by=user,
-                    created_at__date=today
-                ).count()
+        if include and 'faculty-stats' in include.split(',') and user.role == User.UserRole.FACULTY:
+            return UserService.get_faculty_stats(
+                user=user,
+                today=today,
+                seven_days_ago=seven_days_ago,
+                profile=profile,
+                weekday_map=weekday_map
             )
+        elif include and 'technician-stats' in include.split(',') and user.role == User.UserRole.TECHNICIAN:
+            return UserService.get_technician_stats(
+                user=user,
+                today=today,
+                seven_days_ago=seven_days_ago,
+                profile=profile,
+                weekday_map=weekday_map
+            )
+
+    @staticmethod
+    def get_technician_stats(user, today, seven_days_ago, profile, weekday_map):
+        stats = {}
+
+        total_tickets_assigned_result = {
+            'report_tickets': 0,
+            'request_tickets': 0,
+            'total': 0
+        }
+
+        total_tickets_assigned = (
+            Ticket.objects
+            .filter(
+                assigned_to=user
+            )
+            .values('type')
+            .annotate(count=Count('id'))
+        )
+
+        for ticket in total_tickets_assigned:
+            if ticket['type'] == Ticket.TicketType.REQUEST:
+                total_tickets_assigned_result['request_tickets'] = ticket['count']
+                total_tickets_assigned_result['total'] += ticket['count']
+            elif ticket['type'] == Ticket.TicketType.REPORT:
+                total_tickets_assigned_result['report_tickets'] = ticket['count']
+                total_tickets_assigned_result['total'] += ticket['count']
+
+        total_tickets_assigned_today_result = {
+            'report_tickets': 0,
+            'request_tickets': 0,
+            'total': 0
+            }
+        
+        total_tickets_assigned_today = (
+            Ticket.objects
+            .filter(
+                assigned_to=user,
+                created_at__date=today
+            )
+            .values('type')
+            .annotate(count=Count('id'))
+        )
+
+        for ticket in total_tickets_assigned_today:
+            if ticket['type'] == Ticket.TicketType.REQUEST:
+                total_tickets_assigned_today_result['request_tickets'] = ticket['count']
+                total_tickets_assigned_today_result['total'] += ticket['count']
+            elif ticket['type'] == Ticket.TicketType.REPORT:
+                total_tickets_assigned_today_result['report_tickets'] = ticket['count']
+                total_tickets_assigned_today_result['total'] += ticket['count']
+
+
+        tickets_per_day_resolved = list(
+            Ticket.objects
+            .filter(
+                assigned_to=user,
+                status=Ticket.TicketStatus.RESOLVED,
+                updated_at__gte=seven_days_ago
+            )
+            .annotate(day=TruncDate('updated_at', tzinfo=ZoneInfo('Asia/Manila')))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
+
+        last_seven_days = {}
+
+        for i in range(6, -1, -1):
+            date = today - timedelta(days=i)
+            last_seven_days[date] = {
+                "day": weekday_map[date.weekday()],
+                "count": 0,
+                "date": date
+            }
+
+        for item in tickets_per_day_resolved:
+            last_seven_days[item["day"]]["count"] = item["count"]
+
+
+        assigned_tickets_per_status ={
+            'open': 0,
+            'ongoing': 0,
+            'resolved': 0
+        }
+
+
+        assigned_tickets_status_today = (
+            Ticket.objects
+            .filter(
+                assigned_to=user,
+                created_at__date=today
+                )
+            .values('status')
+            .annotate(count=Count("id"))
+        )
+
+        for ticket_status in assigned_tickets_status_today:
+            if ticket_status['status'] == Ticket.TicketStatus.OPEN:
+                assigned_tickets_per_status['open'] = ticket_status['count']
+            elif ticket_status['status'] == Ticket.TicketStatus.ONGOING:
+                assigned_tickets_per_status['ongoing'] = ticket_status['count']
+            elif ticket_status['status'] == Ticket.TicketStatus.RESOLVED:
+                assigned_tickets_per_status['resolved'] = ticket_status['count']
+
+        stats['total_tickets_assigned'] = total_tickets_assigned_result
+        stats['total_tickets_assigned_today'] = total_tickets_assigned_today_result
+        stats['resolved_tickets_per_day'] = list(last_seven_days.values())
+        stats['assigned_ticket_status_today'] = assigned_tickets_per_status
+        return profile, stats
+
+
+    @staticmethod
+    def get_faculty_stats(user, today, seven_days_ago, profile,weekday_map):
+        stats={}
+        tickets_submitted_today = (
+                        Ticket.objects
+                        .filter(
+                            reported_by=user,
+                            created_at__date=today
+                        )
+                        .values("type")
+                        .annotate(count=Count("id"))
+                    )
+
+        tickets_submitted = {
+            "request_tickets": 0,
+            "report_tickets": 0, 
+        }
+
+        for ticket in tickets_submitted_today:
+            if ticket["type"] == Ticket.TicketType.REQUEST:
+                tickets_submitted["request_tickets"] = ticket["count"]
+            if ticket["type"] == Ticket.TicketType.REPORT:
+                tickets_submitted["report_tickets"] = ticket["count"]
+
+        tickets_per_day = list(
+            Ticket.objects
+            .filter(
+                reported_by=user,
+                created_at__date__gte=seven_days_ago
+            )
+            .annotate(day=TruncDate("created_at", tzinfo=ZoneInfo('Asia/Manila')))
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
+
+        last_seven_days = {}
+
+        for i in range(6, -1, -1):
+            date = today - timedelta(days=i)
+            last_seven_days[date] = {
+                "day": weekday_map[date.weekday()],
+                "count": 0,
+                "date": date
+            }
+
+        for item in tickets_per_day:
+            last_seven_days[item["day"]]["count"] = item["count"]
+
+        stats["tickets_per_day"] = list(last_seven_days.values())
+
+        stats["tickets_submitted_today"] = tickets_submitted
+
+        stats["total_tickets_today"] = (
+            Ticket.objects.filter(
+                reported_by=user,
+                created_at__date=today
+            ).count()
+        )
 
         return profile, stats
        

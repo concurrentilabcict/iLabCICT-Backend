@@ -6,7 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician, IsStaff
 from api.computer.models import Computer
 from api.computer.serializers import ComputerReadSerializer
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Prefetch
 from api.ticket.models import Ticket
 import time
 from rest_framework.response import Response
@@ -71,21 +71,74 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
         request = self.request
         RoomService.update_room(serializer=serializer, request=request)
     
-class RoomAllComputersDetailView(RetrieveAPIView):
+class RoomAllComputersDetailView(ListAPIView):
     serializer_class = RoomAndComputerListSerializer
-
     permission_classes = [IsAuthenticated, IsStaff]
+
+    PAGE_SIZE=15
 
     def get_queryset(self):
         room_id = self.kwargs['pk']
 
-        return (
-            Room.objects
-            .select_related('assigned_custodian')
-            .prefetch_related('computers')
-            .annotate(total_computer=Count('computers'))
-            .filter(id=room_id)
+        after_id = self.request.query_params.get('after_id')
+
+        computers_queryset = (
+            Computer.objects
+            .filter(room_id=room_id)
+            .order_by('id')
         )
+
+        if after_id:
+            computers_queryset = Computer.objects.filter(
+                id__gt=after_id
+            ).order_by('id')
+
+        computers_queryset = computers_queryset[:self.PAGE_SIZE + 1]
+
+        return (Room.objects
+                    .select_related('assigned_custodian')
+                    .prefetch_related(
+                        Prefetch(
+                            'computers',
+                            queryset=computers_queryset,
+                            to_attr='initial_computers'
+                        ) 
+                    )
+                    .annotate(total_computer=Count('computers'))
+                    .filter(id=room_id))
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+
+        room = queryset.first()
+
+        if room is None:
+            return Response(
+                {'detail': 'Room not found.'},
+                status=404
+            )
+
+        computers = room.initial_computers
+
+        has_more = len(computers) > 15
+
+        computers = computers[:15]
+
+        room.initial_computers = computers
+
+        serializer = self.get_serializer(room)
+
+        return Response({
+            **serializer.data,
+            'next_after_id': (
+                computers[-1].id
+                if has_more
+                else None
+            ),
+            'has_more': has_more,
+        })
+
+
     
 class RoomWithComputerCodeDetailView(RetrieveAPIView):
     serializer_class = ComputerReadSerializer

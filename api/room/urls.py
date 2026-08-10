@@ -11,6 +11,6 @@ urlpatterns = [
     path('<int:pk>/computers/', RoomAllComputersDetailView.as_view()),
     path('<int:pk>/computers/<str:uk>/', RoomWithComputerCodeDetailView.as_view()),
 
-    path('<str:room>/computers/', RoomNameAllComputersDetailView.as_view()),
+    path('<str:room>/computers/', RoomNameAllComputersDetailView.as_view()), #i think this is where i websocket
     path('<str:room>/computers/<str:uk>/', RoomNameWithComputerCodeDetailView.as_view())
 ]
