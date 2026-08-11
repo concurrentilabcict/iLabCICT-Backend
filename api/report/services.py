@@ -43,7 +43,7 @@ class ReportService:
         if status is not None:
             queryset = queryset.filter(status=status)
         
-        return queryset
+        return queryset.order_by('-created_at', '-id')
     
     @staticmethod
     def validate_filters(technician_id,date,status):
