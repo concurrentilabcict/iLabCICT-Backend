@@ -62,7 +62,7 @@ class RepairLogConsumer(AsyncWebsocketConsumer):
 
         await self.send(text_data=json.dumps({
             'event': 'initial_repair_logs',
-            'repair_logs': repair_logs['data'],
+            'repair_log': repair_logs['data'],
             'next': repair_logs['next']        
         }))
 

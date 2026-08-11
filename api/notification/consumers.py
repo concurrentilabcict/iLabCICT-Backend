@@ -57,7 +57,8 @@ class NotifcationConsumer(AsyncJsonWebsocketConsumer):
 
         await self.send(text_data=json.dumps({
             'event': 'initial_notifications',
-            'notification': notifications
+            'notification': notifications['data'],
+            'next':notifications['next']
         }))
 
 
