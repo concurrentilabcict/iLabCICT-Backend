@@ -78,3 +78,28 @@ class CursorService:
 
         except (ValueError, TypeError, json.JSONDecodeError):
             return None 
+
+class SingleCursorService:
+    @staticmethod
+    def encode_cursor(obj):
+        payload = {
+            'id': obj.id,
+        }
+
+        encoded = base64.urlsafe_b64encode(
+            json.dumps(payload).encode()
+        ).decode()
+
+        return encoded
+
+    @staticmethod
+    def decode_cursor(cursor):
+        try:
+            decoded = base64.urlsafe_b64decode(
+                cursor.encode()
+            ).decode()
+
+            return json.loads(decoded)
+
+        except (ValueError, TypeError, json.JSONDecodeError):
+            return None 

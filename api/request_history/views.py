@@ -4,11 +4,13 @@ from api.request_history.models import RequestHistory
 from api.permissions import IsStaff
 from rest_framework.permissions import IsAuthenticated
 from api.request_history.services import RequestHistoryService
+from api.paginations import RequestHistoryPagination
 class RequestHistoryListView(ListAPIView):
     def get_queryset(self):
         return RequestHistoryService.get_all(room_id=self.request.query_params.get("room-id"))
     serializer_class = RequestHistorySerializer
     permission_classes = [IsAuthenticated, IsStaff]
+    pagination_class = RequestHistoryPagination
 
 class RequestHistoryDetailView(RetrieveAPIView):
     queryset = RequestHistory.objects.all()

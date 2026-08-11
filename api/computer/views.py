@@ -6,7 +6,8 @@ from api.permissions import IsAdmin, IsTechnician, IsStaff
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
-
+from api.maintenance_history.models import MaintenanceHistory
+from api.paginations import MaintenanceHistoryPagination
 class ComputerListCreateView(ListCreateAPIView):
 
     def get_serializer_class(self):
@@ -62,23 +63,76 @@ class ComputerDetailView(RetrieveUpdateDestroyAPIView):
 class ComputerCodeDetailView(RetrieveAPIView):
 
     lookup_field = 'computer_code'
-    lookup_url_kwarg ='uk'
+    lookup_url_kwarg = 'uk'
+
+    serializer_class = ComputerReadSerializer
+
+    permission_classes = [
+        IsAuthenticated,
+        IsStaff
+    ]
 
     def get_queryset(self):
         computer_code = self.kwargs['uk']
+
         return ComputerService.get_computer_with_mainentance_history(
             include=self.request.query_params.get("include", ""),
             computer_code=computer_code
         )
-    
+
     def get_serializer_context(self):
         context = super().get_serializer_context()
-        context["include"] = self.request.query_params.get("include", "")
+
+        context["include"] = self.request.query_params.get(
+            "include",
+            ""
+        )
+
         return context
 
-    serializer_class = ComputerReadSerializer
+    def retrieve(self, request, *args, **kwargs):
+        from api.computer.serializers import (
+            MaintenanceHistoryComputerSerializer
+        )
 
-    permission_classes = [IsAuthenticated, IsStaff]
+        computer = self.get_object()
+
+        maintenance_queryset = (
+            MaintenanceHistory.objects
+            .filter(computer=computer)
+            .select_related(
+                'repair_log',
+                'repair_log__ticket',
+                'technician',
+            )
+            .order_by(
+                '-date_performed',
+                '-id'
+            )
+        )
+
+        paginator = MaintenanceHistoryPagination()
+
+        paginated_history = paginator.paginate_queryset(
+            maintenance_queryset,
+            request
+        )
+
+        serializer = self.get_serializer(computer)
+
+        data = serializer.data
+
+        data['maintenance_history'] = {
+            'count': paginator.page.paginator.count,
+            'next': paginator.get_next_link(),
+            'previous': paginator.get_previous_link(),
+            'results': MaintenanceHistoryComputerSerializer(
+                paginated_history,
+                many=True
+            ).data
+        }
+
+        return Response(data)
 
 #old one
 class ActiveComputerListView(ListAPIView):

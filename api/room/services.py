@@ -7,29 +7,111 @@ from api.audit_logs.services import AuditLogsService
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
 from api.room.serializers import RoomReadSerializer
+from api.cursor import SingleCursorService
 class RoomService:
 
+    PAGE_SIZE=15
+
     @staticmethod
-    def get_computers_room_id(room_id=None):
+    def get_paginated_rooms(cursor=None, include= ""):
+        queryset = (Room.objects
+            .select_related('assigned_custodian')
+            .annotate(computer_count=Count('computers', distinct=True),
+                        computer_count_with_active_issues=Count(
+                        'computers',
+                        filter=Q(computers__tickets__status=Ticket.TicketStatus.ONGOING),
+                        distinct=True
+                        ))
+            .order_by('id')
+            )
+
+        if "computers" in include.split(","):
+            queryset = queryset.prefetch_related("computers")
+
+        if cursor:
+            cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None:
+                raise ValueError('Invalid cursor.')
+
+            room_id = cursor_data['id']
+
+            queryset = queryset.filter(
+                id__gt=room_id
+            )
+
+        rooms = list(
+            queryset[:RoomService.PAGE_SIZE + 1]
+        )
+
+        has_more = len(rooms) > RoomService.PAGE_SIZE
+
+        rooms = rooms[:RoomService.PAGE_SIZE]
+
+        next_cursor = None
+        if has_more and rooms:
+            next_cursor = SingleCursorService.encode_cursor(
+                rooms[-1]
+            )
+
+        return rooms, next_cursor
+
+    @staticmethod
+    def get_computers_room_id(room_id=None, cursor=None):
+
+        computers_queryset = (
+                    Computer.objects
+                    .filter(room_id=room_id)
+                    .order_by('id')
+                )
+        
+        if cursor:
+            cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None:
+                raise ValueError('Invalid cursor.')
+
+            after_id = cursor_data['id']
+
+            computers_queryset = Computer.objects.filter(
+                room_id=room_id,
+                id__gt=after_id
+            ).order_by('id')
+
+        computers_queryset = computers_queryset[:RoomService.PAGE_SIZE + 1]
 
         queryset = (Room.objects
                     .select_related('assigned_custodian')
                     .prefetch_related(
                         Prefetch(
                             'computers',
-                            queryset=Computer.objects.order_by('id')[:15],
+                            queryset=computers_queryset,
                             to_attr='initial_computers'
                         ) 
                     )
                     .annotate(total_computer=Count('computers'))
-                    .filter(id=room_id)
-                    .first()
-                    )
-        
-        if room_id is None:
-            return queryset.none()
+                    .filter(id=room_id))
 
-        return queryset
+        room = queryset.first()
+
+        if room is None:
+            return None, None
+
+        computers = room.initial_computers
+        has_more = len(computers) > RoomService.PAGE_SIZE
+        computers = computers[:RoomService.PAGE_SIZE]
+
+        room.initial_computers = computers
+
+        next_cursor = None
+
+        if has_more and computers:
+            next_cursor = SingleCursorService.encode_cursor(
+                computers[-1]
+            )
+
+        return room, next_cursor
+
 
     @staticmethod
     def get_all(status=None,

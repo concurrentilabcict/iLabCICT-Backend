@@ -11,7 +11,7 @@ from api.ticket.models import Ticket
 import time
 from rest_framework.response import Response
 from django.db import connection
-
+from django.conf import settings
 
 class RoomListCreateView(ListCreateAPIView):
     def get_serializer_class(self):
@@ -41,6 +41,36 @@ class RoomListCreateView(ListCreateAPIView):
     def perform_create(self, serializer):
         request = self.request
         RoomService.create_room(serializer=serializer, request=request)
+
+    def list(self, request, *args, **kwargs):
+        cursor = request.query_params.get('cursor')
+
+        try:
+            rooms, next_cursor = RoomService.get_paginated_rooms(
+                cursor=cursor,
+                include=request.query_params.get('include', ''),
+            )
+        except ValueError:
+            return Response(
+                {'detail': 'Invalid cursor.'},
+                status=400
+            )
+
+        serializer = self.get_serializer(
+            rooms,
+            many=True
+        )
+
+        return Response({
+            'results': serializer.data,
+            'next': (
+                f'{settings.API_BASE_URL}'
+                f'/api/rooms/'
+                f'?cursor={next_cursor}'
+                if next_cursor
+                else None
+            ) 
+        })
     
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
     queryset = (Room.objects
@@ -75,74 +105,34 @@ class RoomAllComputersDetailView(ListAPIView):
     serializer_class = RoomAndComputerListSerializer
     permission_classes = [IsAuthenticated, IsStaff]
 
-    PAGE_SIZE=15
-
-    def get_queryset(self):
-        room_id = self.kwargs['pk']
-
-        after_id = self.request.query_params.get('after-id')
-
-        computers_queryset = (
-            Computer.objects
-            .filter(room_id=room_id)
-            .order_by('id')
-        )
-
-        if after_id:
-            computers_queryset = Computer.objects.filter(
-                room_id=room_id,
-                id__gt=after_id
-            ).order_by('id')
-
-        computers_queryset = computers_queryset[:self.PAGE_SIZE + 1]
-
-        return (Room.objects
-                    .select_related('assigned_custodian')
-                    .prefetch_related(
-                        Prefetch(
-                            'computers',
-                            queryset=computers_queryset,
-                            to_attr='initial_computers'
-                        ) 
-                    )
-                    .annotate(total_computer=Count('computers'))
-                    .filter(id=room_id))
-
     def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
+        room_id = self.kwargs['pk']
+        cursor = self.request.query_params.get('cursor')
 
-        room = queryset.first()
-
-        if room is None:
+        try:
+            rooms, next_cursor = RoomService.get_computers_room_id(
+                cursor=cursor,
+                room_id=room_id,
+            )
+        except ValueError:
             return Response(
-                {'detail': 'Room not found.'},
-                status=404
+                {'detail': 'Invalid cursor.'},
+                status=400
             )
 
-        computers = room.initial_computers
-
-        has_more = len(computers) > 15
-
-        computers = computers[:self.PAGE_SIZE]
-
-        room.initial_computers = computers
-
-        serializer = self.get_serializer(room)
-
-        next_url = None
-        if has_more and computers:
-            last = computers[-1]
-
-            next_url = (
-                 f'{request.build_absolute_uri(request.path)}'
-                f'?after-id={last.id}'
-            )
+        serializer = self.get_serializer(
+            rooms
+        )
 
         return Response({
             'results': serializer.data,
-            'count': room.total_computer,
-            'next': next_url,
-            'previous': None
+            'next': (
+                f'{settings.API_BASE_URL}/api/rooms/'
+                f'{room_id}/computers/'
+                f'?cursor={next_cursor}'
+                if next_cursor 
+                else None
+            ) 
         })
 
 
