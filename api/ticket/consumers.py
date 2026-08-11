@@ -11,7 +11,7 @@ def get_initial_tickets(user):
     tickets, next_cursor = (TicketService.get_paginated_tickets(user=user))
 
     return {
-        'results': TicketReadSerializer(
+        'ticket': TicketReadSerializer(
             tickets,
             many=True
         ).data,
