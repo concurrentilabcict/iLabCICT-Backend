@@ -11,7 +11,54 @@ from api.ticket.serializers import TicketReadSerializer
 from api.audit_logs.services import AuditLogsService
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
+from api.cursor import CursorService
+from django.db.models import Q
 class RepairLogService:
+
+    PAGE_SIZE = 15
+
+    @staticmethod
+    def get_paginated_repair_logs(user, cursor= None):
+        queryset = RepairLogService.get_all(user=user)
+
+        if cursor:
+            cursor_data = CursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None: 
+                raise ValueError('Invalid cursor')
+
+            created_at = cursor_data['created_at']
+            repair_log_id = cursor_data['id']
+
+            queryset = queryset.filter(
+                Q(created_at__lt=created_at) |
+                Q(
+                    created_at=created_at,
+                    id__lt=repair_log_id
+                )
+            )
+
+        queryset = queryset.order_by(
+            '-created_at',
+            '-id'
+        )
+
+        repair_logs = list(
+            queryset[:RepairLogService.PAGE_SIZE + 1]
+        )
+
+        has_more = len(repair_logs) > RepairLogService.PAGE_SIZE
+
+        repair_logs = repair_logs[:RepairLogService.PAGE_SIZE]
+
+        next_cursor = None
+
+        if has_more and repair_logs:
+            next_cursor = CursorService.encode_cursor(
+                repair_logs[-1]
+            )
+
+        return repair_logs, next_cursor
     
     @staticmethod
     def get_all(
@@ -36,7 +83,7 @@ class RepairLogService:
         if date is not None:
             queryset = queryset.filter(created_at__date=date)
 
-        return queryset
+        return queryset.order_by('-created_at', '-id')
     
     @staticmethod
     def validate_filters(technician_id,date):

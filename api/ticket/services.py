@@ -11,60 +11,10 @@ from api.notification.models import Notification
 from api.request_history.models import RequestHistory
 from api.ticket.serializers import TicketReadSerializer
 from api.audit_logs.services import AuditLogsService
-import base64
-import json
-from django.utils.dateparse import parse_datetime
+from api.cursor import TicketCursorService
 class TicketService:
 
     PAGE_SIZE = 15
-
-    @staticmethod
-    def encode_cursor(ticket):
-        payload = {
-            'status_priority': ticket.status_priority,
-            'created_at': ticket.created_at.isoformat(),
-            'id': ticket.id,
-        }
-
-        encoded = base64.urlsafe_b64encode(
-            json.dumps(payload).encode()
-        ).decode()
-
-        return encoded
-
-    @staticmethod
-    def decode_cursor(cursor):
-        try:
-            decoded = base64.urlsafe_b64decode(
-                cursor.encode()
-            ).decode()
-
-            data = json.loads(decoded)
-
-            created_at = parse_datetime(
-                data['created_at']
-            )
-
-            if created_at is None:
-                return None
-
-            return {
-                'status_priority': int(
-                    data['status_priority']
-                ),
-                'created_at': created_at,
-                'id': int(data['id']),
-            }
-
-
-        except (
-            ValueError,
-            TypeError,
-            json.JSONDecodeError,
-            KeyError,
-            UnicodeDecodeError
-            ):
-            return None
 
     @staticmethod
     def get_paginated_tickets(user, cursor=None):
@@ -102,7 +52,7 @@ class TicketService:
         )
 
         if cursor:
-            cursor_data = TicketService.decode_cursor(cursor=cursor)
+            cursor_data = TicketCursorService.decode_cursor(cursor=cursor)
 
             if cursor_data is None:
                 raise ValueError('Invalid Cursor.')
@@ -145,7 +95,7 @@ class TicketService:
         next_cursor = None
 
         if has_more and tickets:
-            next_cursor = TicketService.encode_cursor(
+            next_cursor = TicketCursorService.encode_cursor(
                 tickets[-1]
             )
 

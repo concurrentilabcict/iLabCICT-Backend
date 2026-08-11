@@ -6,10 +6,20 @@ from channels.db import database_sync_to_async
 def get_initial_repair_logs(user):
     from api.repair_log.services import RepairLogService
     from api.repair_log.serializers import MainRepairLogReadSerializer
+    from django.conf import settings
 
-    queryset = RepairLogService.get_all(user=user)
+    repair_logs, next_cursor = RepairLogService.get_paginated_repair_logs(user=user)
 
-    return MainRepairLogReadSerializer(queryset, many=True).data
+    return {
+        'data': MainRepairLogReadSerializer(repair_logs, many=True).data,
+        'next': (
+            f'{settings.API_BASE_URL}'
+            f'/api/repair-logs/'
+            f'?cursor={next_cursor}'
+            if next_cursor
+            else None
+        )
+    }
 
 class RepairLogConsumer(AsyncWebsocketConsumer):
 
@@ -52,7 +62,8 @@ class RepairLogConsumer(AsyncWebsocketConsumer):
 
         await self.send(text_data=json.dumps({
             'event': 'initial_repair_logs',
-            'repair_logs': repair_logs        
+            'repair_logs': repair_logs['data'],
+            'next': repair_logs['next']        
         }))
 
     async def disconnect(self, close_code):

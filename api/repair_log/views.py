@@ -4,7 +4,8 @@ from api.repair_log.serializers import RepairLogReadSerializer, RepairLogWriteSe
 from api.repair_log.services import RepairLogService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician
-
+from django.conf import settings
+from rest_framework.response import Response
 class RepairLogListCreateView(ListCreateAPIView):
 
     def get_permissions(self):
@@ -13,13 +14,36 @@ class RepairLogListCreateView(ListCreateAPIView):
         
         return [IsAuthenticated(), (IsAdmin | IsTechnician)()]
 
-    def get_queryset(self):
-        return RepairLogService.get_all(
-            user=self.request.user,
-            technician_id=self.request.query_params.get('technician-id'),
-            date=self.request.query_params.get('date')
-        )
+    def get(self, request, *args, **kwargs):
+        cursor = self.request.query_params.get('cursor')
 
+        try:
+            repair_log, next_cursor = (
+                RepairLogService.get_paginated_repair_logs(
+                    user=request.user,
+                    cursor=cursor
+                )
+            )
+        except ValueError:
+            return Response(
+                {'detail': 'Invalid cursor.'},
+                status=400
+            )
+
+        return Response({
+            'results': MainRepairLogReadSerializer(
+                repair_log, many=True
+            ).data,
+            'next': (
+                f'{settings.API_BASE_URL}'
+                f'/api/repair-logs/'
+                f'?cursor={next_cursor}'
+                if next_cursor
+                else None
+            )
+        })
+
+    
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return RepairLogWriteSerializer

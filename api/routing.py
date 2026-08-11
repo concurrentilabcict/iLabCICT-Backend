@@ -7,7 +7,7 @@ from api.repair_log.consumers import RepairLogConsumer
 from api.audit_logs.consumers import AuditLogsConsumer
 websocket_urlpatterns = [
     path('ws/tickets/', TicketConsumer.as_asgi()),
-    path('ws/notifications/', NotifcationConsumer.as_asgi()),
+    path('ws/notifications/user/', NotifcationConsumer.as_asgi()),
     path('ws/rooms/', RoomConsumer.as_asgi()),
     path('ws/rooms/<int:room_id>/computers/', RoomIDAllComputersConsumer.as_asgi()),
     path('ws/reports/', ReportConsumer.as_asgi()),

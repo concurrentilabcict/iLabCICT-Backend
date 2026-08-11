@@ -7,7 +7,55 @@ from django.db.models import Q
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from api.notification.serializers import NotificationSerializer
+from api.cursor import CursorService
 class NotificationService():
+
+    PAGE_SIZE=30
+
+    @staticmethod
+    def get_paginated_notifications(user, cursor=None):
+        queryset = NotificationService.get_all(user=user)
+
+        if cursor:
+            cursor_data = CursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None:
+                raise ValueError('Invalid cursor')
+
+            created_at = cursor_data['created_at']
+            notif_id = cursor_data['id']
+
+            queryset = queryset.filter(
+                Q(created_at__lt=created_at) |
+                Q(
+                    created_at=created_at,
+                    id__lt=notif_id
+                )
+            )
+
+        queryset = queryset.order_by(
+            '-created_at',
+            '-id'
+        )
+
+        notifications = list(
+            queryset[:NotificationService.PAGE_SIZE + 1]
+        )
+
+        has_more = len(notifications) > NotificationService.PAGE_SIZE
+
+        notifications = notifications[:NotificationService.PAGE_SIZE]
+
+        next_cursor = None
+
+        if has_more and notifications:
+            next_cursor = CursorService.encode_cursor(
+                notifications[-1]
+            )
+
+        return notifications, next_cursor
+
+
 
     @staticmethod
     def get_all(user=None,
@@ -58,7 +106,7 @@ class NotificationService():
             queryset = queryset.filter(created_at__date=date)
 
         if user is None:
-            queryset = []
+            queryset = queryset.none()
             
         return queryset
     

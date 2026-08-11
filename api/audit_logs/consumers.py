@@ -8,21 +8,15 @@ def get_initial_audit_logs(user):
     from api.audit_logs.serializers import AuditLogsSerializer
     from django.conf import settings
 
-    logs = list(AuditLogsService.get_all(user=user)[:51])
-
-    has_more = len(logs) > 50
-    logs = logs[:50]
-
-    oldest_log = logs[-1] if logs else None
+    logs, next_cursor = AuditLogsService.get_paginated_audit_logs(user=user)
 
     return {
         'data':  AuditLogsSerializer(logs, many=True).data,
         'next': (
-            f'{settings.API_BASE_URL}/api/audit-logs/'
-            f'&before-id={oldest_log.id}'
-            f'?before-created-at='
-            f'{oldest_log.created_at.isoformat().replace("+00:00", "Z")}'
-            if has_more and oldest_log
+            f'{settings.API_BASE_URL}'
+            f'/api/audit-logs/'
+            f'?cursor={next_cursor}'
+            if next_cursor
             else None
         )
     } 
