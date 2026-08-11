@@ -6,10 +6,19 @@ from channels.db import database_sync_to_async
 def get_initial_reports(user):
     from api.report.services import ReportService
     from api.report.serializers import ReportSerializer
+    from django.conf import settings
 
-    queryset = ReportService.get_all(technician_id=user.id)
+    reports, next_cursor = ReportService.get_paginated_reports(user=user)
 
-    return ReportSerializer(queryset, many=True).data
+    return {
+        'data': ReportSerializer(reports, many=True).data,
+        'next': (f'{settings.API_BASE_URL}'
+                        f'/api/reports/'
+                        f'?cursor={next_cursor}'
+                        if next_cursor
+                        else None)
+    }
+
 
 class ReportConsumer(AsyncWebsocketConsumer):
 
@@ -52,7 +61,8 @@ class ReportConsumer(AsyncWebsocketConsumer):
 
         await self.send(text_data=json.dumps({
             'event': 'initial_reports',
-            'report': reports
+            'report': reports['data'],
+            'next': reports['next']
         }))
 
     async def disconnect(self, close_code):

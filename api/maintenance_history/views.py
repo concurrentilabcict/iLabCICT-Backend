@@ -5,7 +5,7 @@ from api.maintenance_history.serializers import MaintenanceHistorySerializer
 from api.maintenance_history.services import MaintenanceHistoryServices
 from api.permissions import IsStaff
 from rest_framework.permissions import IsAuthenticated
-
+from api.paginations import MaintenanceHistoryPagination
 class MaintenanceHistoryListView(ListAPIView):
     serializer_class = MaintenanceHistorySerializer
 
@@ -19,6 +19,8 @@ class MaintenanceHistoryListView(ListAPIView):
             technician_id=self.request.query_params.get('technician-id'),
             date=self.request.query_params.get('date')
         )
+
+    pagination_class = MaintenanceHistoryPagination
 
 class MaintenanceHistoryDetailView(RetrieveAPIView):
     queryset = MaintenanceHistory.objects.all()

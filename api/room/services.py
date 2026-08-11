@@ -7,29 +7,111 @@ from api.audit_logs.services import AuditLogsService
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
 from api.room.serializers import RoomReadSerializer
+from api.cursor import SingleCursorService
 class RoomService:
 
+    PAGE_SIZE=15
+
     @staticmethod
-    def get_computers_room_id(room_id=None):
+    def get_paginated_rooms(cursor=None, include= ""):
+        queryset = (Room.objects
+            .select_related('assigned_custodian')
+            .annotate(computer_count=Count('computers', distinct=True),
+                        computer_count_with_active_issues=Count(
+                        'computers',
+                        filter=Q(computers__tickets__status=Ticket.TicketStatus.ONGOING),
+                        distinct=True
+                        ))
+            .order_by('id')
+            )
+
+        if "computers" in include.split(","):
+            queryset = queryset.prefetch_related("computers")
+
+        if cursor:
+            cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None:
+                raise ValueError('Invalid cursor.')
+
+            room_id = cursor_data['id']
+
+            queryset = queryset.filter(
+                id__gt=room_id
+            )
+
+        rooms = list(
+            queryset[:RoomService.PAGE_SIZE + 1]
+        )
+
+        has_more = len(rooms) > RoomService.PAGE_SIZE
+
+        rooms = rooms[:RoomService.PAGE_SIZE]
+
+        next_cursor = None
+        if has_more and rooms:
+            next_cursor = SingleCursorService.encode_cursor(
+                rooms[-1]
+            )
+
+        return rooms, next_cursor
+
+    @staticmethod
+    def get_computers_room_id(room_id=None, cursor=None):
+
+        computers_queryset = (
+                    Computer.objects
+                    .filter(room_id=room_id)
+                    .order_by('id')
+                )
+        
+        if cursor:
+            cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None:
+                raise ValueError('Invalid cursor.')
+
+            after_id = cursor_data['id']
+
+            computers_queryset = Computer.objects.filter(
+                room_id=room_id,
+                id__gt=after_id
+            ).order_by('id')
+
+        computers_queryset = computers_queryset[:RoomService.PAGE_SIZE + 1]
 
         queryset = (Room.objects
                     .select_related('assigned_custodian')
                     .prefetch_related(
                         Prefetch(
                             'computers',
-                            queryset=Computer.objects.order_by('id')[:15],
+                            queryset=computers_queryset,
                             to_attr='initial_computers'
                         ) 
                     )
                     .annotate(total_computer=Count('computers'))
-                    .filter(id=room_id)
-                    .first()
-                    )
-        
-        if room_id is None:
-            return queryset.none()
+                    .filter(id=room_id))
 
-        return queryset
+        room = queryset.first()
+
+        if room is None:
+            return None, None
+
+        computers = room.initial_computers
+        has_more = len(computers) > RoomService.PAGE_SIZE
+        computers = computers[:RoomService.PAGE_SIZE]
+
+        room.initial_computers = computers
+
+        next_cursor = None
+
+        if has_more and computers:
+            next_cursor = SingleCursorService.encode_cursor(
+                computers[-1]
+            )
+
+        return room, next_cursor
+
 
     @staticmethod
     def get_all(status=None,
@@ -114,10 +196,7 @@ class RoomService:
     @staticmethod
     def log_room_update(room,
                         request,
-                        updated_fields,
-                        old_name,
-                        old_technician_id,
-                        old_custodian_id):
+                        changes):
         AuditLogsService.log(
             request=request,
             performed_by=request.user,
@@ -125,25 +204,31 @@ class RoomService:
             action_summary=f"{request.user.get_full_name()} updated room '{room.room_name}'.",
             metadata={
                 'room_id': room.id,
-                'updated_fields': updated_fields,
-                'old_room_name': old_name,
-                'new_room_name': room.room_name,
-                'old_assigned_technician_id': old_technician_id,
-                'new_assigned_technician_id': room.assigned_technician_id,
-                'old_assigned_custodian_id': old_custodian_id,
-                'new_assigned_custodian_id': room.assigned_custodian_id
-            }
-        )
+                'changes': changes
+                }
+       )
 
     @staticmethod
     def update_room(serializer, request):
         room = serializer.instance
 
-        old_name = room.room_name
-        old_technician_id = room.assigned_technician_id
-        old_custodian_id = room.assigned_custodian_id
+        old_values = {}
+
+        for field, new_value in serializer.validated_data.items():
+            old_value = getattr(room, field)
+
+            if old_value != new_value:
+                old_values[field] = old_value
 
         room = serializer.save()
+
+        changes = {}
+
+        for field in old_values:
+            changes[field] = {
+                'old': old_values[field],
+                'new': getattr(room, field)
+            }
 
         RoomService.broacast_room_event(
             room=RoomReadSerializer(room).data,
@@ -153,9 +238,7 @@ class RoomService:
         RoomService.log_room_update(
             room=room,
             request=request,
-            updated_fields=list(serializer.validated_data.keys()),
-            old_name=old_name,
-            old_technician_id=old_technician_id,
+            changes=changes
         )
 
         return room

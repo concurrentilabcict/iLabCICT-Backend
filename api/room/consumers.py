@@ -3,39 +3,59 @@ import json
 from channels.db import database_sync_to_async
 
 @database_sync_to_async
-def get_initial_room():
+def get_initial_room(include=''):
     from api.room.services import RoomService
     from api.room.serializers import RoomReadSerializer
+    from django.conf import settings
 
-    queryset = RoomService.get_all()
+    rooms, next_cursor = RoomService.get_paginated_rooms(include=include)
 
-    return RoomReadSerializer(queryset, many=True).data
+    next_url = None
+
+    if next_cursor:
+        next_url = f'{settings.API_BASE_URL}/api/rooms/?cursor={next_cursor}'
+
+        if 'computers' in include.split(','):
+            next_url += '&include=computers'
+
+    return{
+        'data': RoomReadSerializer(rooms, many=True, context={'include': include}).data,
+        'next': next_url
+    }
 
 @database_sync_to_async
 def get_initial_room_computers(room_id):
     from api.room.services import RoomService
     from api.room.serializers import RoomAndComputerListSerializer
-    room = RoomService.get_computers_room_id(room_id=room_id)
+    from django.conf import settings
 
-    computers = room.initial_computers
-
-    last_computer = computers[-1] if computers else None
-
+    room, next_cursor = RoomService.get_computers_room_id(room_id=room_id)
+    
     return{
-        'room_with_computers': RoomAndComputerListSerializer(room).data,
-        'next_after_id': (
-            last_computer.id
-            if last_computer
+        'room_with_computers': RoomAndComputerListSerializer(
+            room,
+        ).data,
+
+        'next': (
+            f'{settings.API_BASE_URL}/api/rooms/'
+            f'{room_id}/computers/'
+            f'?cursor={next_cursor}'
+            if next_cursor 
             else None
-        ) 
+        )
     }
     
-
 class RoomConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        from urllib.parse import parse_qs
 
         user = self.scope['user']
 
+        query_string = self.scope["query_string"].decode()
+        query_params = parse_qs(query_string)
+
+        include = query_params.get("include", [""])[0]
+       
         if user.is_anonymous:
             await self.close(code=4001)
             return
@@ -47,7 +67,7 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
         await self.accept()
 
-        rooms = await get_initial_room()
+        rooms = await get_initial_room(include=include)
 
         await self.send(text_data=json.dumps({
             'message': 'connected'
@@ -55,7 +75,8 @@ class RoomConsumer(AsyncWebsocketConsumer):
 
         await self.send(text_data=json.dumps({
             'event': 'initial_rooms',
-            'room': rooms
+            'room': rooms['data'],
+            'next': rooms['next']
         }))
 
     async def disconnect(self, close_code):
@@ -123,7 +144,7 @@ class RoomIDAllComputersConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'event': 'initial_room_computers',
             'initial_computers': (room_computers_data['room_with_computers']),
-            'next_after_id': (room_computers_data['next_after_id'])
+            'next_after_id': (room_computers_data['next'])
         }))
 
 

@@ -12,7 +12,9 @@ class RequestHistoryService:
 
         if room_id is not None:
             queryset = queryset.filter(room_id=room_id)
-        
+
+        queryset = queryset.order_by('-date_performed', '-id')
+               
         return queryset
 
    

@@ -2,29 +2,41 @@ from rest_framework.generics import ListAPIView
 from api.audit_logs.serializers import AuditLogsSerializer
 from api.permissions import IsAdmin
 from rest_framework.permissions import IsAuthenticated
-from api.paginations import AuditLogPagination
 from api.audit_logs.services import AuditLogsService
+from django.utils.dateparse import parse_datetime
+from api.audit_logs.models import AuditLogs
+from rest_framework.response import Response
 from django.db.models import Q
+from django.conf import settings
 
 class AuditLogsListView(ListAPIView):
     serializer_class = AuditLogsSerializer
     permission_classes = [IsAuthenticated, IsAdmin]
-    pagination_class = AuditLogPagination
 
-    def get_queryset(self):
-        queryset = AuditLogsService.get_all(user=self.request.user)
+    def get(self, request, *args, **kwargs):
+        cursor = self.request.query_params.get('cursor')
 
-        before_id = self.request.query_params.get('before_id')
-
-        before_created_at = self.request.query_params.get('before_created_at')
-
-        if before_created_at and before_id:
-            queryset = queryset.filter(
-                Q(created_at__lt=before_created_at) |
-                Q(
-                    created_at=before_created_at,
-                    id__lt=before_id
+        try:
+            logs, next_cursor = (
+                AuditLogsService.get_paginated_audit_logs(
+                    user=request.user,
+                    cursor=cursor
                 )
             )
+        except ValueError:
+            return Response(
+                {'detail': 'Invalid cursor.'},
+                status=400
+            )
 
-        return queryset
+        return Response({
+            'results': AuditLogsSerializer(logs, many=True).data,
+            'next': (
+                f'{settings.API_BASE_URL}'
+                f'/api/audit-logs/'
+                f'?cursor={next_cursor}'
+                if next_cursor
+                else None
+            )
+        })
+

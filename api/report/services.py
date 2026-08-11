@@ -18,7 +18,55 @@ from datetime import datetime, time, timedelta
 from django.utils import timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
+from api.cursor import CursorService
+from django.db.models import Q
 class ReportService:
+
+    PAGE_SIZE = 15
+
+    @staticmethod
+    def get_paginated_reports(user, cursor=None):
+        queryset = ReportService.get_all(technician_id=user.id)
+
+        if cursor:
+            cursor_data = CursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None:
+                raise ValueError('Invalid cursor')
+
+            created_at = cursor_data['created_at']
+            report_id = cursor_data['id']
+
+            queryset = queryset.filter(
+                Q(created_at__lt=created_at) |
+                Q(
+                    created_at=created_at,
+                    id__lt=report_id
+                )
+            )
+
+        queryset =  queryset.order_by(
+            '-created_at',
+            '-id'
+        )
+
+        reports = list(
+            queryset[:ReportService.PAGE_SIZE + 1]
+        )
+
+        has_more = len(reports) > ReportService.PAGE_SIZE
+
+        reports = reports[:ReportService.PAGE_SIZE]
+
+        next_cursor = None
+
+        if has_more and reports:
+            next_cursor = CursorService.encode_cursor(
+                reports[-1]
+            )
+
+        return reports, next_cursor
+
     
     @staticmethod
     def get_all(

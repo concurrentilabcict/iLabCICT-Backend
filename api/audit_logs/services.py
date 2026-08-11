@@ -3,8 +3,11 @@ from api.audit_logs.models import AuditLogs
 from api.user.models import User
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync 
-
+from api.cursor import CursorService
+from django.db.models import Q
 class AuditLogsService():
+
+    PAGE_SIZE = 50
 
     @staticmethod
     def get_client_ip(request):
@@ -56,7 +59,7 @@ class AuditLogsService():
 
     @staticmethod
     def get_all(user=None):
-        queryset = AuditLogs.objects.select_related('audit_logs')
+        queryset = AuditLogs.objects.select_related('performed_by')
 
         if user is None:
             return queryset.none()
@@ -65,6 +68,49 @@ class AuditLogsService():
             return queryset.order_by('-created_at', '-id')
 
         return queryset.none()
+
+    @staticmethod
+    def get_paginated_audit_logs(user, cursor=None):
+        queryset = AuditLogsService.get_all(user=user)
+
+        if cursor:
+            cursor_data = CursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None:
+                raise ValueError('Invalid cursor')
+
+            created_at = cursor_data['created_at']
+            logs_id = cursor_data['id']
+
+            queryset = queryset.filter(
+                Q(created_at__lt=created_at) |
+                Q(
+                    created_at=created_at,
+                    id__lt=logs_id
+                )
+            )
+
+        queryset = queryset.order_by(
+            '-created_at',
+            '-id'
+        )
+
+        logs = list(
+            queryset[:AuditLogsService.PAGE_SIZE + 1]
+        )
+
+        has_more = len(logs) > AuditLogsService.PAGE_SIZE
+
+        logs = logs[:AuditLogsService.PAGE_SIZE]
+
+        next_cursor = None
+
+        if has_more and logs:
+            next_cursor = CursorService.encode_cursor(
+                logs[-1]
+            )
+
+        return logs, next_cursor
 
     @staticmethod
     def broadcast_audit_log_event(audit_log):

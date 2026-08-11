@@ -6,10 +6,20 @@ from channels.db import database_sync_to_async
 def get_initial_notifications(user):
     from api.notification.services import NotificationService
     from api.notification.serializers import NotificationSerializer
+    from django.conf import settings
 
-    queryset = NotificationService.get_all(user=user)
+    notifications, next_cursor = NotificationService.get_paginated_notifications(user=user)
 
-    return NotificationSerializer(queryset, many=True).data
+    return {
+        'data': NotificationSerializer(notifications, many=True).data,
+        'next': (
+            f'{settings.API_BASE_URL}'
+            f'/api/notifications/user/'
+            f'?cursor={next_cursor}'
+            if next_cursor
+            else None
+        )
+    }
 
 class NotifcationConsumer(AsyncJsonWebsocketConsumer):
     async def connect(self):

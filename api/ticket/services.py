@@ -6,16 +6,119 @@ from django.db import transaction
 from api.common.utils.date_checker import is_invalid_date_format
 from rest_framework.exceptions import ValidationError
 from api.user.models import User
-from django.db.models import Q
+from django.db.models import Q, Case, When, Value,IntegerField
 from api.notification.models import Notification
 from api.request_history.models import RequestHistory
 from api.ticket.serializers import TicketReadSerializer
 from api.audit_logs.services import AuditLogsService
-
+from api.cursor import TicketCursorService
 class TicketService:
+
+    PAGE_SIZE = 15
+
+    @staticmethod
+    def get_paginated_tickets(user, cursor=None):
+
+        queryset = (
+            Ticket.objects
+            .select_related(
+                'reported_by',
+                'assigned_to',
+                'room',
+                'computer',
+            )
+            .annotate(
+                status_priority=Case(
+                    When(
+                        status=Ticket.TicketStatus.OPEN,
+                        then=Value(1)
+                    ),
+                    When(
+                        status=Ticket.TicketStatus.ONGOING,
+                        then=Value(2)
+                    ),
+                    When(
+                        status=Ticket.TicketStatus.RESOLVED,
+                        then=Value(3)
+                    ),
+                    output_field=IntegerField(),
+                )
+            )
+        )
+
+        queryset = TicketService.filter_for_user(
+            user=user,
+            queryset=queryset
+        )
+
+        if cursor:
+            cursor_data = TicketCursorService.decode_cursor(cursor=cursor)
+
+            if cursor_data is None:
+                raise ValueError('Invalid Cursor.')
+
+            status_priority = cursor_data['status_priority']
+            created_at = cursor_data['created_at']
+            ticket_id = cursor_data['id']
+
+            queryset = queryset.filter(
+            Q(
+                status_priority__gt=status_priority
+            )
+            |
+            Q(
+                status_priority=status_priority,
+                created_at__lt=created_at
+            )
+            |
+            Q(
+                status_priority=status_priority,
+                created_at=created_at,
+                id__lt=ticket_id
+            )
+            )
+
+        queryset = queryset.order_by(
+        'status_priority',
+        '-created_at',
+        '-id',
+        )
+
+        tickets = list(
+            queryset[:TicketService.PAGE_SIZE + 1]
+        )
+
+        has_more = len(tickets) > TicketService.PAGE_SIZE
+
+        tickets = tickets[:TicketService.PAGE_SIZE]
+
+        next_cursor = None
+
+        if has_more and tickets:
+            next_cursor = TicketCursorService.encode_cursor(
+                tickets[-1]
+            )
+
+        return tickets, next_cursor
+            
+
+    @staticmethod
+    def filter_for_user(user, queryset):
+        if user.role == User.UserRole.TECHNICIAN:
+                    queryset = queryset.filter(
+                            Q(assigned_to=user)
+                            | Q(status=Ticket.TicketStatus.OPEN)
+                        )
+        
+        elif user.role == User.UserRole.FACULTY:
+            queryset = queryset.filter(reported_by_id=user.id)
+
+        return queryset
+
 
     @staticmethod
     def get_all(user,
+                queryset,
                 status=None, 
                 technician_id=None, 
                 date=None, 

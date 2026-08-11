@@ -1,4 +1,4 @@
-from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
+from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from api.ticket.models import Ticket
 from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer
 from api.ticket.services import TicketService
@@ -6,6 +6,42 @@ from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasT
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+
+from django.conf import settings
+class TicketListView(ListAPIView):
+    serializer_class = TicketReadSerializer
+    permission_classes = [IsAuthenticated, HasTicketPermission]
+
+    def get(self, request, *args, **kwargs):
+        cursor = request.query_params.get('cursor')
+
+        try: 
+            tickets, next_cursor = (
+                TicketService.get_paginated_tickets(
+                    user=request.user,
+                    cursor=cursor,
+                )
+            )
+        except ValueError:
+            return Response(
+                {'detail': 'Invalid cursor.'},
+                status=400
+            )
+        return Response({
+            'results': TicketReadSerializer(
+                tickets,
+                many=True
+            ).data,
+
+            'next': (
+                f'{settings.API_BASE_URL}'
+                f'/api/tickets/paginated/'
+                f'?cursor={next_cursor}'
+                if next_cursor
+                else None
+            ),
+        })
+
 
 class TicketListCreateView(ListCreateAPIView):
 

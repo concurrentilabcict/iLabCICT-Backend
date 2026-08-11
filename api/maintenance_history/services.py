@@ -38,6 +38,8 @@ class MaintenanceHistoryServices:
         if computer_code is not None:
             queryset = queryset.filter(computer__computer_code=computer_code)
 
+        queryset = queryset.order_by('-date_performed', '-id')
+
         return queryset
 
     @staticmethod
