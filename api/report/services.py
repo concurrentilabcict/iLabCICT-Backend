@@ -26,7 +26,11 @@ class ReportService:
 
     @staticmethod
     def get_paginated_reports(user, cursor=None):
-        queryset = ReportService.get_all(technician_id=user.id)
+
+        if user.role == User.UserRole.ADMIN:
+            queryset = ReportService.get_all()
+        else:
+            queryset = ReportService.get_all(technician_id=user.id)
 
         if cursor:
             cursor_data = CursorService.decode_cursor(cursor=cursor)
