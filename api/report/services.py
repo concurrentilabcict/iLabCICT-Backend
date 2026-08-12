@@ -25,12 +25,18 @@ class ReportService:
     PAGE_SIZE = 15
 
     @staticmethod
-    def get_paginated_reports(user, cursor=None):
+    def get_paginated_reports(user, cursor=None, query_search=None):
 
         if user.role == User.UserRole.ADMIN:
             queryset = ReportService.get_all()
         else:
             queryset = ReportService.get_all(technician_id=user.id)
+
+        if query_search:
+            queryset = ReportService.search_reports(
+                queryset=queryset,
+                query_search=query_search
+            )
 
         if cursor:
             cursor_data = CursorService.decode_cursor(cursor=cursor)
@@ -298,6 +304,22 @@ class ReportService:
                 }
             )
 
+    @staticmethod
+    def search_reports(query_search, queryset):
+        terms = query_search.strip().split()
+
+        for term in terms:
+            queryset = queryset.filter(
+                Q(report_code__icontains=term) |
+                Q(title__icontains=term) |
+                Q(report_code__icontains=term) |
+                Q(technician__first_name__icontains=term) |
+                Q(technician__last_name__icontains=term) |
+                Q(content__ai_content_summary__icontains=term) |
+                Q(created_at__date__icontains=term)
+            )
+
+        return queryset
             
         
 
