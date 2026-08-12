@@ -137,12 +137,14 @@ class RoomAllComputersDetailView(ListAPIView):
         room_id = self.kwargs['pk']
         cursor = self.request.query_params.get('cursor')
         query_search = self.request.query_params.get('q')
+        status = self.request.query_params.get('status')
 
         try:
             rooms, next_cursor = RoomService.get_computers_room_id(
                 cursor=cursor,
                 room_id=room_id,
-                query_search=query_search
+                query_search=query_search,
+                status=status
             )
         except ValueError:
             return Response(
@@ -163,6 +165,9 @@ class RoomAllComputersDetailView(ListAPIView):
 
             if query_search:
                 params['q'] = query_search
+
+            if status:
+                params['status'] = status
 
             next_url = (
                 f'{settings.API_BASE_URL}/api/rooms/'

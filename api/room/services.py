@@ -57,13 +57,22 @@ class RoomService:
         return rooms, next_cursor
 
     @staticmethod
-    def get_computers_room_id(room_id=None, cursor=None, query_search=None):
+    def get_computers_room_id(room_id=None, cursor=None, query_search=None, status=None):
 
         computers_queryset = (
                     Computer.objects
                     .filter(room_id=room_id)
                     .order_by('id')
                 )
+
+        if status and query_search:
+            raise ValidationError('Search and filters cannot be combined.')
+
+        if status:
+            if status not in Computer.ComputerStatus.values:
+                raise ValidationError('Invalid status')
+
+            computers_queryset = computers_queryset.filter(computer_status=status)
         
         if query_search:
             computers_queryset = RoomService.search_computers(

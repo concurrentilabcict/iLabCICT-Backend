@@ -41,10 +41,11 @@ class RoomAndComputerListSerializer(serializers.ModelSerializer):
     total_computers = serializers.IntegerField(read_only=True)
     computers = ComputerListSerializer(many=True, read_only=True, source='initial_computers')
     assigned_custodian = UserMinimalSerializer(read_only=True)
+    assigned_technician = UserMinimalSerializer(read_only=True)
 
     class Meta:
         model = Room
-        fields = ['id', 'room_name', 'assigned_custodian', 'total_computers', 'computers', 'building_name', 'floor_number']
+        fields = ['id', 'room_name', 'assigned_custodian', 'total_computers', 'computers', 'building_name', 'floor_number', 'assigned_technician']
     
 class RoomMinimalSerializer(serializers.ModelSerializer):
     class Meta:
