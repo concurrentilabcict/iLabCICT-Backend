@@ -18,8 +18,14 @@ class RepairLogService:
     PAGE_SIZE = 15
 
     @staticmethod
-    def get_paginated_repair_logs(user, cursor= None):
+    def get_paginated_repair_logs(user, cursor= None, query_search=None):
         queryset = RepairLogService.get_all(user=user)
+
+        if query_search:
+            queryset = RepairLogService.search_repair_logs(
+                queryset=queryset,
+                query_search=query_search
+            )
 
         if cursor:
             cursor_data = CursorService.decode_cursor(cursor=cursor)
@@ -165,5 +171,18 @@ class RepairLogService:
                     'repair_log': repair_log
                 }
             )
+
+    @staticmethod
+    def search_repair_logs(query_search, queryset):
+        terms = query_search.strip().split()
+
+        for term in terms:
+            queryset = queryset.filter(
+                Q(repair_log_code__icontains=term) |
+                Q(title__icontains=term) |
+                Q(repair_notes__icontains=term)
+            )
+
+        return queryset
 
 
