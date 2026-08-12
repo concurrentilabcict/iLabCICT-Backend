@@ -49,6 +49,7 @@ class RoomListCreateView(ListCreateAPIView):
         status = request.query_params.get('status')
         room_name = request.query_params.get('room')
         building_name = request.query_params.get('building')
+        date = request.query_params.get('date')
 
         try:
             rooms, next_cursor = RoomService.get_paginated_rooms(
@@ -57,7 +58,8 @@ class RoomListCreateView(ListCreateAPIView):
                 query_search=query_search,
                 status=status,
                 room_name=room_name,
-                building_name=building_name
+                building_name=building_name,
+                date=date
             )
         except ValueError:
             return Response(
@@ -88,6 +90,9 @@ class RoomListCreateView(ListCreateAPIView):
 
             if building_name:
                 params['building'] = building_name 
+
+            if date:
+                params['date'] = date
 
             next_url = (
                 f'{settings.API_BASE_URL}'
@@ -138,13 +143,15 @@ class RoomAllComputersDetailView(ListAPIView):
         cursor = self.request.query_params.get('cursor')
         query_search = self.request.query_params.get('q')
         status = self.request.query_params.get('status')
+        date = self.request.query_params.get('date')
 
         try:
             rooms, next_cursor = RoomService.get_computers_room_id(
                 cursor=cursor,
                 room_id=room_id,
                 query_search=query_search,
-                status=status
+                status=status,
+                date=date
             )
         except ValueError:
             return Response(
@@ -168,6 +175,9 @@ class RoomAllComputersDetailView(ListAPIView):
 
             if status:
                 params['status'] = status
+
+            if date:
+                params['date'] = date
 
             next_url = (
                 f'{settings.API_BASE_URL}/api/rooms/'

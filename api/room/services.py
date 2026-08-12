@@ -8,12 +8,13 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
 from api.room.serializers import RoomReadSerializer
 from api.cursor import SingleCursorService
+from api.common.utils.date_checker import is_invalid_date_format
 class RoomService:
 
     PAGE_SIZE=15
 
     @staticmethod
-    def get_paginated_rooms(cursor=None, include="", query_search=None, status=None, room_name=None, building_name=None):
+    def get_paginated_rooms(cursor=None, include="", query_search=None, status=None, room_name=None, building_name=None, date=None):
         queryset = RoomService.get_all(
             query_search=query_search,
             status=status,
@@ -57,7 +58,7 @@ class RoomService:
         return rooms, next_cursor
 
     @staticmethod
-    def get_computers_room_id(room_id=None, cursor=None, query_search=None, status=None):
+    def get_computers_room_id(room_id=None, cursor=None, query_search=None, status=None, date=None):
 
         computers_queryset = (
                     Computer.objects
@@ -73,6 +74,12 @@ class RoomService:
                 raise ValidationError('Invalid status')
 
             computers_queryset = computers_queryset.filter(computer_status=status)
+
+        if date:
+            if is_invalid_date_format(date):
+                raise ValidationError('Date format must be in YYYY-MM-DD')
+
+            computers_queryset = computers_queryset.filter(created_at__date=date)
         
         if query_search:
             computers_queryset = RoomService.search_computers(
@@ -133,13 +140,15 @@ class RoomService:
                 building=None,
                 room=None,
                 include="",
-                query_search=None):
+                query_search=None,
+                date=None):
         
         RoomService.validate_filters(
             status=status,
             building=building,
             room=room,
-            query_search=query_search
+            query_search=query_search,
+            date=date
             )
 
         queryset = (Room.objects
@@ -168,10 +177,13 @@ class RoomService:
         if room is not None:
             queryset = queryset.filter(room_name=room)
 
+        if date is not None:
+            queryset = queryset.filter(created_at__date=date)
+
         return queryset
     
     @staticmethod
-    def validate_filters(status,building,room, query_search=None):
+    def validate_filters(status,building,room, query_search=None, date=None):
         allowed_room_statuses = Room.RoomStatus.values
         allowed_building_names = Room.BuildingName.values
 
@@ -186,6 +198,9 @@ class RoomService:
         
         if isinstance(room, bool):
             raise ValidationError('Invalid room name')
+
+        if is_invalid_date_format(date) and date is not None:
+            raise ValidationError('Date format must be in YYYY-MM-DD')
 
     @staticmethod
     def log_room_create(room, request):
