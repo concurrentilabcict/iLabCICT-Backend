@@ -17,7 +17,7 @@ class TicketService:
     PAGE_SIZE = 15
 
     @staticmethod
-    def get_paginated_tickets(user, cursor=None):
+    def get_paginated_tickets(user, cursor=None, query_search=None):
 
         queryset = (
             Ticket.objects
@@ -50,6 +50,12 @@ class TicketService:
             user=user,
             queryset=queryset
         )
+
+        if query_search:
+            queryset = TicketService.search_tickets(
+                query_search=query_search, 
+                queryset=queryset
+            )
 
         if cursor:
             cursor_data = TicketCursorService.decode_cursor(cursor=cursor)
@@ -421,5 +427,27 @@ class TicketService:
                     'ticket': ticket
                 }
             )
+
+    @staticmethod
+    def search_tickets(query_search, queryset):
+        terms = query_search.strip().split()
+
+        for term in terms:
+            queryset = queryset.filter(
+                Q(ticket_code__icontains=term) |
+                Q(title__icontains=term) |
+                Q(type__icontains=term) |
+                Q(complaint_description__icontains=term) |
+                Q(reported_by__first_name__icontains=term) |
+                Q(reported_by__last_name__icontains=term) |
+                Q(assigned_to__first_name__icontains=term) |
+                Q(assigned_to__last_name__icontains=term) |
+                Q(room__building_name__icontains=term) |
+                Q(room__room_name__icontains=term) |
+                Q(computer__computer_code__icontains=term) |
+                Q(status__icontains=term)
+            )
+
+        return queryset    
     
     
