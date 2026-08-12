@@ -12,6 +12,7 @@ import time
 from rest_framework.response import Response
 from django.db import connection
 from django.conf import settings
+from urllib.parse import urlencode 
 
 class RoomListCreateView(ListCreateAPIView):
     def get_serializer_class(self):
@@ -44,11 +45,13 @@ class RoomListCreateView(ListCreateAPIView):
 
     def list(self, request, *args, **kwargs):
         cursor = request.query_params.get('cursor')
+        query_search = request.query_params.get('q')
 
         try:
             rooms, next_cursor = RoomService.get_paginated_rooms(
                 cursor=cursor,
                 include=request.query_params.get('include', ''),
+                query_search=query_search
             )
         except ValueError:
             return Response(
@@ -61,15 +64,25 @@ class RoomListCreateView(ListCreateAPIView):
             many=True
         )
 
-        return Response({
-            'results': serializer.data,
-            'next': (
+        next_url = None
+
+        if next_cursor:
+            params = {
+                'cursor'
+            }
+
+            if query_search:
+                params['q'] = query_search
+
+            next_url = (
                 f'{settings.API_BASE_URL}'
                 f'/api/rooms/'
-                f'?cursor={next_cursor}'
-                if next_cursor
-                else None
+                f'?{urlencode(params)}'
             ) 
+
+        return Response({
+            'results': serializer.data,
+            'next': next_url
         })
     
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
@@ -108,11 +121,13 @@ class RoomAllComputersDetailView(ListAPIView):
     def list(self, request, *args, **kwargs):
         room_id = self.kwargs['pk']
         cursor = self.request.query_params.get('cursor')
+        query_search = self.request.query_params.get('q')
 
         try:
             rooms, next_cursor = RoomService.get_computers_room_id(
                 cursor=cursor,
                 room_id=room_id,
+                query_search=query_search
             )
         except ValueError:
             return Response(
@@ -124,18 +139,26 @@ class RoomAllComputersDetailView(ListAPIView):
             rooms
         )
 
-        return Response({
-            'results': serializer.data,
-            'next': (
+        next_url = None
+
+        if next_cursor:
+            params={
+                'cursor': next_cursor
+            }
+
+            if query_search:
+                params['q'] = query_search
+
+            next_url = (
                 f'{settings.API_BASE_URL}/api/rooms/'
                 f'{room_id}/computers/'
-                f'?cursor={next_cursor}'
-                if next_cursor 
-                else None
+                f'?{urlencode(params)}'
             ) 
+
+        return Response({
+            'results': serializer.data,
+            'next': next_url
         })
-
-
     
 class RoomWithComputerCodeDetailView(RetrieveAPIView):
     serializer_class = ComputerReadSerializer

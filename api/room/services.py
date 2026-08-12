@@ -13,13 +13,16 @@ class RoomService:
     PAGE_SIZE=15
 
     @staticmethod
-    def get_paginated_rooms(cursor=None, include= ""):
+    def get_paginated_rooms(cursor=None, include="", query_search=None):
         queryset = (Room.objects
-            .select_related('assigned_custodian')
+            .select_related('assigned_custodian','assigned_technician')
             .annotate(computer_count=Count('computers', distinct=True),
                         computer_count_with_active_issues=Count(
                         'computers',
-                        filter=Q(computers__tickets__status=Ticket.TicketStatus.ONGOING),
+                        filter=Q(computers__tickets__status__in=[
+                                Ticket.TicketStatus.OPEN,
+                                Ticket.TicketStatus.ONGOING,
+                            ]),
                         distinct=True
                         ))
             .order_by('id')
@@ -27,6 +30,12 @@ class RoomService:
 
         if "computers" in include.split(","):
             queryset = queryset.prefetch_related("computers")
+
+        if query_search:
+            queryset = RoomService.search_rooms(
+                query_search=query_search,
+                qeuryset=queryset
+            )
 
         if cursor:
             cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
@@ -57,13 +66,19 @@ class RoomService:
         return rooms, next_cursor
 
     @staticmethod
-    def get_computers_room_id(room_id=None, cursor=None):
+    def get_computers_room_id(room_id=None, cursor=None, query_search=None):
 
         computers_queryset = (
                     Computer.objects
                     .filter(room_id=room_id)
                     .order_by('id')
                 )
+        
+        if query_search:
+            computers_queryset = RoomService.search_computers(
+                querys_search=query_search,
+                queryset=computers_queryset
+            )
         
         if cursor:
             cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
@@ -254,4 +269,35 @@ class RoomService:
                 'room': room
             }
         )
+
+    @staticmethod
+    def search_rooms(query_search, qeuryset):
+        terms = query_search.strip().split()
+
+        for term in terms:
+            qeuryset = qeuryset.filter(
+                Q(room_name__icontains=term) |
+                Q(building_name__icontains=term) |
+                Q(assigned_custodian__first_name__icontains=term) |
+                Q(assigned_custodian__last_name__icontains=term) |
+                Q(assigned_technician__first_name__icontains=term) |
+                Q(assigned_technician__last_name__icontains=term) |
+                Q(floor_number__icontains=term) |
+                Q(status__icontains=term)
+            )
+
+        return qeuryset
+
+    @staticmethod
+    def search_computers(querys_search, queryset):
+        terms = querys_search.strip().split()
+
+        for term in terms:
+            queryset = queryset.filter(
+                Q(computer_code__icontains=term) |
+                Q(computer_status__icontains=term)
+            )
+
+        return queryset
+
         
