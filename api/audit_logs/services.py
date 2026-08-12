@@ -70,9 +70,14 @@ class AuditLogsService():
         return queryset.none()
 
     @staticmethod
-    def get_paginated_audit_logs(user, cursor=None):
+    def get_paginated_audit_logs(user, cursor=None, query_search=None):
         queryset = AuditLogsService.get_all(user=user)
 
+        if query_search:
+            queryset = AuditLogsService.search_audit_logs(
+                queryset=queryset,
+                query_search=query_search
+            )
         if cursor:
             cursor_data = CursorService.decode_cursor(cursor=cursor)
 
@@ -123,3 +128,20 @@ class AuditLogsService():
                 'audit_log': audit_log
             }
         )
+
+    @staticmethod
+    def search_audit_logs(query_search, queryset):
+        terms = query_search.strip().split()
+
+        for term in terms:
+            queryset = queryset.filter(
+                Q(action_title__icontains=term) |
+                Q(action_summary__icontains=term) |
+                Q(created_at__date__icontains=term) |
+                Q(performed_by__first_name__icontains=term) |
+                Q(performed_by__last_name__icontains=term) |
+                Q(metadata__ip_address__icontains=term) |
+                Q(metadata__user_agent__icontains=term) 
+            )
+
+        return queryset
