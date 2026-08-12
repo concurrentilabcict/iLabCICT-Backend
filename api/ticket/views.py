@@ -16,13 +16,19 @@ class TicketListView(ListAPIView):
     def get(self, request, *args, **kwargs):
         cursor = request.query_params.get('cursor')
         query_search = request.query_params.get('q')
+        type = request.query_params.get('type')
+        status = request.query_params.get('status')
+        date = request.query_params.get('date')
 
         try: 
             tickets, next_cursor = (
                 TicketService.get_paginated_tickets(
                     user=request.user,
                     cursor=cursor,
-                    query_search=query_search
+                    query_search=query_search,
+                    status=status,
+                    type=type,
+                    date=date
                 )
             )
         except ValueError:
@@ -40,6 +46,15 @@ class TicketListView(ListAPIView):
             
             if query_search:
                 params['q'] = query_search
+
+            if status:
+                params['status'] = status
+
+            if type:
+                params['type'] = type
+
+            if date:
+                params['date'] = date
 
             next_url = (
                 f'{settings.API_BASE_URL}'

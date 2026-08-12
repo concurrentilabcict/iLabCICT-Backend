@@ -17,7 +17,7 @@ class TicketService:
     PAGE_SIZE = 15
 
     @staticmethod
-    def get_paginated_tickets(user, cursor=None, query_search=None):
+    def get_paginated_tickets(user, cursor=None, query_search=None, status=None, type=None, date=None):
 
         queryset = (
             Ticket.objects
@@ -46,9 +46,13 @@ class TicketService:
             )
         )
 
-        queryset = TicketService.filter_for_user(
+        queryset = TicketService.get_all(
             user=user,
-            queryset=queryset
+            queryset=queryset,
+            query_search=query_search,
+            date=date,
+            type=type,
+            status=status
         )
 
         if query_search:
@@ -128,21 +132,16 @@ class TicketService:
                 status=None, 
                 technician_id=None, 
                 date=None, 
-                type=None):
+                type=None,
+                query_search=None):
         
         TicketService.validate_filters(
             status=status,
             technician_id=technician_id,
             date=date,
-            type=type
+            type=type,
+            query_search=query_search
         )
-
-        queryset = Ticket.objects.select_related(
-            'reported_by',
-            'assigned_to',
-            'room',
-            'computer'
-            )
         
         if user.role == User.UserRole.TECHNICIAN:
             queryset = queryset.filter(
@@ -168,9 +167,14 @@ class TicketService:
         return queryset
     
     @staticmethod
-    def validate_filters(status,technician_id,date,type):
+    def validate_filters(status,technician_id=None,date=None,type=None, query_search=None):
         allowed_ticket_statuses = Ticket.TicketStatus.values
         allowed_ticket_types = Ticket.TicketType.values
+
+        if query_search and (status or type or date):
+            raise ValidationError(
+                'Search and filters cannot be combined.'
+            )
 
         if status and status not in allowed_ticket_statuses:
             raise ValidationError('Invalid ticket status')
