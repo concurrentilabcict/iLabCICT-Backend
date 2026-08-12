@@ -182,8 +182,7 @@ class RepairLogService:
                 Q(title__icontains=term) |
                 Q(repair_notes__icontains=term) |
                 Q(technician__first_name__icontains=term) |
-                Q(technician__last_name__icontains=term) |
-                Q(created_at__icontains=term)
+                Q(technician__last_name__icontains=term)
             )
 
         return queryset

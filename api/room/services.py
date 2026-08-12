@@ -13,23 +13,14 @@ class RoomService:
     PAGE_SIZE=15
 
     @staticmethod
-    def get_paginated_rooms(cursor=None, include="", query_search=None):
-        queryset = (Room.objects
-            .select_related('assigned_custodian','assigned_technician')
-            .annotate(computer_count=Count('computers', distinct=True),
-                        computer_count_with_active_issues=Count(
-                        'computers',
-                        filter=Q(computers__tickets__status__in=[
-                                Ticket.TicketStatus.OPEN,
-                                Ticket.TicketStatus.ONGOING,
-                            ]),
-                        distinct=True
-                        ))
-            .order_by('id')
-            )
-
-        if "computers" in include.split(","):
-            queryset = queryset.prefetch_related("computers")
+    def get_paginated_rooms(cursor=None, include="", query_search=None, status=None, room_name=None, building_name=None):
+        queryset = RoomService.get_all(
+            query_search=query_search,
+            status=status,
+            room=room_name,
+            building=building_name,
+            include=include
+        )
 
         if query_search:
             queryset = RoomService.search_rooms(
@@ -132,22 +123,28 @@ class RoomService:
     def get_all(status=None,
                 building=None,
                 room=None,
-                include=""):
+                include="",
+                query_search=None):
         
         RoomService.validate_filters(
             status=status,
             building=building,
-            room=room
+            room=room,
+            query_search=query_search
             )
 
         queryset = (Room.objects
-                    .select_related('assigned_custodian')
+                    .select_related('assigned_custodian','assigned_technician')
                     .annotate(computer_count=Count('computers', distinct=True),
-                              computer_count_with_active_issues=Count(
+                                computer_count_with_active_issues=Count(
                                 'computers',
-                                filter=Q(computers__tickets__status=Ticket.TicketStatus.ONGOING),
+                                filter=Q(computers__tickets__status__in=[
+                                        Ticket.TicketStatus.OPEN,
+                                        Ticket.TicketStatus.ONGOING,
+                                    ]),
                                 distinct=True
-                              ))
+                                ))
+                    .order_by('id')
                     )
         
         if "computers" in include.split(","):
@@ -165,9 +162,12 @@ class RoomService:
         return queryset
     
     @staticmethod
-    def validate_filters(status,building,room):
+    def validate_filters(status,building,room, query_search=None):
         allowed_room_statuses = Room.RoomStatus.values
         allowed_building_names = Room.BuildingName.values
+
+        if query_search and (status or building or room):
+            raise ValidationError('Search and filters cannot be combined.')
 
         if status and status not in allowed_room_statuses:
             raise ValidationError('Invalid room status')

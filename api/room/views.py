@@ -46,12 +46,18 @@ class RoomListCreateView(ListCreateAPIView):
     def list(self, request, *args, **kwargs):
         cursor = request.query_params.get('cursor')
         query_search = request.query_params.get('q')
+        status = request.query_params.get('status')
+        room_name = request.query_params.get('room')
+        building_name = request.query_params.get('building')
 
         try:
             rooms, next_cursor = RoomService.get_paginated_rooms(
                 cursor=cursor,
                 include=request.query_params.get('include', ''),
-                query_search=query_search
+                query_search=query_search,
+                status=status,
+                room_name=room_name,
+                building_name=building_name
             )
         except ValueError:
             return Response(
@@ -73,6 +79,15 @@ class RoomListCreateView(ListCreateAPIView):
 
             if query_search:
                 params['q'] = query_search
+
+            if status:
+                params['status'] = status
+
+            if room_name:
+                params['room'] = room_name
+
+            if building_name:
+                params['building'] = building_name 
 
             next_url = (
                 f'{settings.API_BASE_URL}'
