@@ -25,12 +25,14 @@ class ReportService:
     PAGE_SIZE = 15
 
     @staticmethod
-    def get_paginated_reports(user, cursor=None, query_search=None):
+    def get_paginated_reports(user, cursor=None, query_search=None, technician_id=None, status=None, date=None):
 
-        if user.role == User.UserRole.ADMIN:
-            queryset = ReportService.get_all()
-        else:
-            queryset = ReportService.get_all(technician_id=user.id)
+        queryset = ReportService.get_all(
+            technician_id=technician_id,
+            status=status,
+            date=date,
+            query_search=query_search
+        )
 
         if query_search:
             queryset = ReportService.search_reports(
@@ -82,12 +84,14 @@ class ReportService:
     def get_all(
         technician_id=None,
         date=None,
-        status=None):
+        status=None,
+        query_search=None):
 
         ReportService.validate_filters(
             technician_id=technician_id,
             date=date,
-            status=status
+            status=status,
+            query_search=query_search
         )
         
         queryset = Report.objects.all()
@@ -104,8 +108,11 @@ class ReportService:
         return queryset
     
     @staticmethod
-    def validate_filters(technician_id,date,status):
+    def validate_filters(technician_id,date,status,query_search=None):
         allowed_report_statuses = Report.ReportStatus.values
+
+        if query_search and (technician_id or date or status):
+            raise ValidationError('Search and filters cannot be combined.')
 
         if status and status not in allowed_report_statuses:
             raise ValidationError('Invalid report status.')

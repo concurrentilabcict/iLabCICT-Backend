@@ -20,13 +20,19 @@ class ReportListCreateView(ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         cursor = request.query_params.get('cursor')
         query_search = request.query_params.get('q')
+        date = request.query_params.get('date')
+        technician_id = request.query_params.get('technician_id')
+        status = request.query_params.get('status')
 
         try:
             reports, next_cursor = (
                 ReportService.get_paginated_reports(
                     user=request.user,
                     cursor=cursor,
-                    query_search=query_search
+                    query_search=query_search,
+                    date=date,
+                    technician_id=technician_id,
+                    status=status
                 )
             )
         except ValueError:
@@ -44,6 +50,15 @@ class ReportListCreateView(ListCreateAPIView):
 
             if query_search:
                 params['q'] = query_search
+
+            if date:
+                params['date'] = date
+
+            if status:
+                params['status'] = status
+
+            if technician_id:
+                params['technician_id'] = technician_id
 
             next_url = (
                 f'{settings.API_BASE_URL}'
