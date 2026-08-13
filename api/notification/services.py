@@ -13,8 +13,8 @@ class NotificationService():
     PAGE_SIZE=30
 
     @staticmethod
-    def get_paginated_notifications(user, cursor=None):
-        queryset = NotificationService.get_all(user=user)
+    def get_paginated_notifications(user, cursor=None,status=None):
+        queryset = NotificationService.get_all(user=user,status=status)
 
         if cursor:
             cursor_data = CursorService.decode_cursor(cursor=cursor)
@@ -59,13 +59,11 @@ class NotificationService():
 
     @staticmethod
     def get_all(user=None,
-                type=None,
                 status=None,
-                date=None):
+                ):
         
         NotificationService.validate_filters(
             status=status,
-            date=date
         )
 
         queryset = Notification.objects.select_related('recipient_id')
@@ -96,14 +94,8 @@ class NotificationService():
                 )
             )
 
-        if type is not None: 
-            queryset = queryset.filter(type=type)
-        
         if status is not None:
             queryset = queryset.filter(status=status)
-
-        if date is not None:
-            queryset = queryset.filter(created_at__date=date)
 
         if user is None:
             queryset = queryset.none()
@@ -111,15 +103,13 @@ class NotificationService():
         return queryset
     
     @staticmethod
-    def validate_filters(status,date):
+    def validate_filters(status):
         allowed_notification_status = Notification.NotificationStatus.values
 
         if status and status not in allowed_notification_status:
             raise ValidationError('Invalid notification status')
         
-        if is_invalid_date_format(date) and date is not None:
-            raise ValidationError('Date format must be in YYYY-MM-DD')
-    
+        
     @staticmethod
     def create_new_ticket_notification(recipient_id, title, entity, role, event):
 
