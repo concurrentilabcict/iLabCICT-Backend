@@ -92,7 +92,9 @@ class TicketListCreateView(ListCreateAPIView):
             status=self.request.query_params.get('status'),
             technician_id=self.request.query_params.get('technician-id'),
             type=self.request.query_params.get('type'),
-            date=self.request.query_params.get('date')
+            date=self.request.query_params.get('date'),
+            queryset=None,
+            query_search=None,
         )
     
     def create(self, request, *args, **kwargs):
