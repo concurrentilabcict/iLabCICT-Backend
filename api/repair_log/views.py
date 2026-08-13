@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician
 from django.conf import settings
 from rest_framework.response import Response
+from urllib.parse import urlencode
 class RepairLogListCreateView(ListCreateAPIView):
 
     def get_permissions(self):
@@ -16,12 +17,18 @@ class RepairLogListCreateView(ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         cursor = self.request.query_params.get('cursor')
+        query_search= self.request.query_params.get('q')
+        date = self.request.query_params.get('date')
+        technician_id = self.request.query_params.get('technician_id')
 
         try:
             repair_log, next_cursor = (
                 RepairLogService.get_paginated_repair_logs(
                     user=request.user,
-                    cursor=cursor
+                    cursor=cursor,
+                    query_search=query_search,
+                    technician_id=technician_id,
+                    date=date
                 )
             )
         except ValueError:
@@ -30,17 +37,32 @@ class RepairLogListCreateView(ListCreateAPIView):
                 status=400
             )
 
+        next_url = None
+
+        if next_cursor:
+            params = {
+                'cursor': next_cursor
+            }
+
+            if query_search:
+                params['q'] = query_search
+
+            if date:
+                params['date'] = date
+
+            
+            if technician_id:
+                params['technician_id'] = technician_id
+
+            next_url = (f'{settings.API_BASE_URL}'
+                        f'/api/repair-logs/'
+                        f'?{urlencode(params)}')
+
         return Response({
             'results': MainRepairLogReadSerializer(
                 repair_log, many=True
             ).data,
-            'next': (
-                f'{settings.API_BASE_URL}'
-                f'/api/repair-logs/'
-                f'?cursor={next_cursor}'
-                if next_cursor
-                else None
-            )
+            'next': next_url
         })
 
     

@@ -8,25 +8,26 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
 from api.room.serializers import RoomReadSerializer
 from api.cursor import SingleCursorService
+from api.common.utils.date_checker import is_invalid_date_format
 class RoomService:
 
     PAGE_SIZE=15
 
     @staticmethod
-    def get_paginated_rooms(cursor=None, include= ""):
-        queryset = (Room.objects
-            .select_related('assigned_custodian')
-            .annotate(computer_count=Count('computers', distinct=True),
-                        computer_count_with_active_issues=Count(
-                        'computers',
-                        filter=Q(computers__tickets__status=Ticket.TicketStatus.ONGOING),
-                        distinct=True
-                        ))
-            .order_by('id')
-            )
+    def get_paginated_rooms(cursor=None, include="", query_search=None, status=None, room_name=None, building_name=None, date=None):
+        queryset = RoomService.get_all(
+            query_search=query_search,
+            status=status,
+            room=room_name,
+            building=building_name,
+            include=include
+        )
 
-        if "computers" in include.split(","):
-            queryset = queryset.prefetch_related("computers")
+        if query_search:
+            queryset = RoomService.search_rooms(
+                query_search=query_search,
+                qeuryset=queryset
+            )
 
         if cursor:
             cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
@@ -57,13 +58,34 @@ class RoomService:
         return rooms, next_cursor
 
     @staticmethod
-    def get_computers_room_id(room_id=None, cursor=None):
+    def get_computers_room_id(room_id=None, cursor=None, query_search=None, status=None, date=None):
 
         computers_queryset = (
                     Computer.objects
                     .filter(room_id=room_id)
                     .order_by('id')
                 )
+
+        if status and query_search:
+            raise ValidationError('Search and filters cannot be combined.')
+
+        if status:
+            if status not in Computer.ComputerStatus.values:
+                raise ValidationError('Invalid status')
+
+            computers_queryset = computers_queryset.filter(computer_status=status)
+
+        if date:
+            if is_invalid_date_format(date):
+                raise ValidationError('Date format must be in YYYY-MM-DD')
+
+            computers_queryset = computers_queryset.filter(created_at__date=date)
+        
+        if query_search:
+            computers_queryset = RoomService.search_computers(
+                querys_search=query_search,
+                queryset=computers_queryset
+            )
         
         if cursor:
             cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
@@ -117,22 +139,30 @@ class RoomService:
     def get_all(status=None,
                 building=None,
                 room=None,
-                include=""):
+                include="",
+                query_search=None,
+                date=None):
         
         RoomService.validate_filters(
             status=status,
             building=building,
-            room=room
+            room=room,
+            query_search=query_search,
+            date=date
             )
 
         queryset = (Room.objects
-                    .select_related('assigned_custodian')
+                    .select_related('assigned_custodian','assigned_technician')
                     .annotate(computer_count=Count('computers', distinct=True),
-                              computer_count_with_active_issues=Count(
+                                computer_count_with_active_issues=Count(
                                 'computers',
-                                filter=Q(computers__tickets__status=Ticket.TicketStatus.ONGOING),
+                                filter=Q(computers__tickets__status__in=[
+                                        Ticket.TicketStatus.OPEN,
+                                        Ticket.TicketStatus.ONGOING,
+                                    ]),
                                 distinct=True
-                              ))
+                                ))
+                    .order_by('id')
                     )
         
         if "computers" in include.split(","):
@@ -147,12 +177,18 @@ class RoomService:
         if room is not None:
             queryset = queryset.filter(room_name=room)
 
+        if date is not None:
+            queryset = queryset.filter(created_at__date=date)
+
         return queryset
     
     @staticmethod
-    def validate_filters(status,building,room):
+    def validate_filters(status,building,room, query_search=None, date=None):
         allowed_room_statuses = Room.RoomStatus.values
         allowed_building_names = Room.BuildingName.values
+
+        if query_search and (status or building or room):
+            raise ValidationError('Search and filters cannot be combined.')
 
         if status and status not in allowed_room_statuses:
             raise ValidationError('Invalid room status')
@@ -162,6 +198,9 @@ class RoomService:
         
         if isinstance(room, bool):
             raise ValidationError('Invalid room name')
+
+        if is_invalid_date_format(date) and date is not None:
+            raise ValidationError('Date format must be in YYYY-MM-DD')
 
     @staticmethod
     def log_room_create(room, request):
@@ -254,4 +293,35 @@ class RoomService:
                 'room': room
             }
         )
+
+    @staticmethod
+    def search_rooms(query_search, qeuryset):
+        terms = query_search.strip().split()
+
+        for term in terms:
+            qeuryset = qeuryset.filter(
+                Q(room_name__icontains=term) |
+                Q(building_name__icontains=term) |
+                Q(assigned_custodian__first_name__icontains=term) |
+                Q(assigned_custodian__last_name__icontains=term) |
+                Q(assigned_technician__first_name__icontains=term) |
+                Q(assigned_technician__last_name__icontains=term) |
+                Q(floor_number__icontains=term) |
+                Q(status__icontains=term)
+            )
+
+        return qeuryset
+
+    @staticmethod
+    def search_computers(querys_search, queryset):
+        terms = querys_search.strip().split()
+
+        for term in terms:
+            queryset = queryset.filter(
+                Q(computer_code__icontains=term) |
+                Q(computer_status__icontains=term)
+            )
+
+        return queryset
+
         

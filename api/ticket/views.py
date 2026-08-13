@@ -6,20 +6,29 @@ from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasT
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
+from urllib.parse import urlencode
 from django.conf import settings
+
 class TicketListView(ListAPIView):
     serializer_class = TicketReadSerializer
     permission_classes = [IsAuthenticated, HasTicketPermission]
 
     def get(self, request, *args, **kwargs):
         cursor = request.query_params.get('cursor')
+        query_search = request.query_params.get('q')
+        type = request.query_params.get('type')
+        status = request.query_params.get('status')
+        date = request.query_params.get('date')
 
         try: 
             tickets, next_cursor = (
                 TicketService.get_paginated_tickets(
                     user=request.user,
                     cursor=cursor,
+                    query_search=query_search,
+                    status=status,
+                    type=type,
+                    date=date
                 )
             )
         except ValueError:
@@ -27,19 +36,39 @@ class TicketListView(ListAPIView):
                 {'detail': 'Invalid cursor.'},
                 status=400
             )
+
+        next_url = None
+
+        if next_cursor:
+            params = {
+                'cursor': next_cursor
+            }
+            
+            if query_search:
+                params['q'] = query_search
+
+            if status:
+                params['status'] = status
+
+            if type:
+                params['type'] = type
+
+            if date:
+                params['date'] = date
+
+            next_url = (
+                f'{settings.API_BASE_URL}'
+                f'/api/tickets/paginated/'
+                f'?{urlencode(params)}'
+                )
+
         return Response({
             'results': TicketReadSerializer(
                 tickets,
                 many=True
             ).data,
 
-            'next': (
-                f'{settings.API_BASE_URL}'
-                f'/api/tickets/paginated/'
-                f'?cursor={next_cursor}'
-                if next_cursor
-                else None
-            ),
+            'next': next_url
         })
 
 

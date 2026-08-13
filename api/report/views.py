@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician
 from rest_framework.response import Response
 from django.conf import settings
+from urllib.parse import urlencode
 
 class ReportListCreateView(ListCreateAPIView):
     serializer_class = ReportSerializer
@@ -18,12 +19,20 @@ class ReportListCreateView(ListCreateAPIView):
 
     def get(self, request, *args, **kwargs):
         cursor = request.query_params.get('cursor')
+        query_search = request.query_params.get('q')
+        date = request.query_params.get('date')
+        technician_id = request.query_params.get('technician_id')
+        status = request.query_params.get('status')
 
         try:
             reports, next_cursor = (
                 ReportService.get_paginated_reports(
                     user=request.user,
-                    cursor=cursor
+                    cursor=cursor,
+                    query_search=query_search,
+                    date=date,
+                    technician_id=technician_id,
+                    status=status
                 )
             )
         except ValueError:
@@ -32,22 +41,40 @@ class ReportListCreateView(ListCreateAPIView):
                 status=400
             )
 
+        next_url = None
+
+        if next_cursor:
+            params = {
+                'cursor': next_cursor
+            }
+
+            if query_search:
+                params['q'] = query_search
+
+            if date:
+                params['date'] = date
+
+            if status:
+                params['status'] = status
+
+            if technician_id:
+                params['technician_id'] = technician_id
+
+            next_url = (
+                f'{settings.API_BASE_URL}'
+                f'/api/reports/'
+                f'?{urlencode(params)}'
+            )
+
         return Response({
             'results': ReportSerializer(
                 reports, many=True
             ).data,
 
-            'next': (
-                f'{settings.API_BASE_URL}'
-                f'/api/reports/'
-                f'?cursor={next_cursor}'
-                if next_cursor
-                else None
-            )
+            'next': next_url
         })
 
 
-    
 class ReportDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Report.objects.all()
     serializer_class = ReportSerializer

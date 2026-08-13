@@ -7,6 +7,7 @@ from api.permissions import IsNotificationOwner
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from django.conf import settings
+from urllib.parse import urlencode
 
 class NotificationListView(ListAPIView):
     serializer_class = NotificationSerializer
@@ -15,12 +16,14 @@ class NotificationListView(ListAPIView):
 
     def get(self, request, *args, **kwargs):
         cursor = request.query_params.get('cursor')
+        status = request.query_params.get('status')
 
         try:
             notifications, next_cursor = (
                 NotificationService.get_paginated_notifications(
                     user=request.user,
-                    cursor=cursor
+                    cursor=cursor,
+                    status=status
                 )
             )
         except ValueError:
@@ -29,18 +32,28 @@ class NotificationListView(ListAPIView):
                 status=400
             )
 
+        next_url = None
+
+        if next_cursor:
+            params = {
+                'cursor': next_cursor
+            }
+
+            if status:
+                params['status'] = status
+
+            next_url = (
+                f'{settings.API_BASE_URL}'
+                f'/api/notifications/user/'
+                f'?{urlencode(params)}'
+            )
+
         return Response({
             'results': NotificationSerializer(
                 notifications, many=True
             ).data,
 
-            'next': (
-                f'{settings.API_BASE_URL}'
-                f'/api/notifications/user'
-                f'?cursor={next_cursor}'
-                if next_cursor
-                else None
-            )
+            'next': next_url
         })
 
     def get_queryset(self):

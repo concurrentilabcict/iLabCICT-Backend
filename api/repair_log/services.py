@@ -18,8 +18,17 @@ class RepairLogService:
     PAGE_SIZE = 15
 
     @staticmethod
-    def get_paginated_repair_logs(user, cursor= None):
-        queryset = RepairLogService.get_all(user=user)
+    def get_paginated_repair_logs(user, cursor= None, query_search=None, technician_id=None, date=None):
+        queryset = RepairLogService.get_all(user=user,
+                                            technician_id=technician_id,
+                                            date=date,
+                                            query_search=query_search)
+
+        if query_search:
+            queryset = RepairLogService.search_repair_logs(
+                queryset=queryset,
+                query_search=query_search
+            )
 
         if cursor:
             cursor_data = CursorService.decode_cursor(cursor=cursor)
@@ -64,18 +73,23 @@ class RepairLogService:
     def get_all(
         user,
         technician_id=None,
-        date=None):
+        date=None,
+        query_search=None):
 
         RepairLogService.validate_filters(
             technician_id=technician_id,
-            date=date
+            date=date,
+            query_search=query_search
             )
 
         queryset = RepairLog.objects.select_related('ticket',
                                                     'ticket__reported_by',
                                                     'ticket__assigned_to',
                                                     'ticket__room',
-                                                    'ticket__computer',)
+                                                    'ticket__computer')
+        
+        if user.role == User.UserRole.ADMIN and technician_id:
+            queryset = queryset.filter(technician_id=technician_id)
 
         if user.role == User.UserRole.TECHNICIAN:
             queryset = queryset.filter(technician_id=user.id)
@@ -86,7 +100,10 @@ class RepairLogService:
         return queryset.order_by('-created_at', '-id')
     
     @staticmethod
-    def validate_filters(technician_id,date):
+    def validate_filters(technician_id,date,query_search=None):
+
+        if query_search and (technician_id or date):
+            raise ValidationError('Search and filters cannot be combined.')
         
         if technician_id is not None:
             try:
@@ -165,5 +182,20 @@ class RepairLogService:
                     'repair_log': repair_log
                 }
             )
+
+    @staticmethod
+    def search_repair_logs(query_search, queryset):
+        terms = query_search.strip().split()
+
+        for term in terms:
+            queryset = queryset.filter(
+                Q(repair_log_code__icontains=term) |
+                Q(title__icontains=term) |
+                Q(repair_notes__icontains=term) |
+                Q(technician__first_name__icontains=term) |
+                Q(technician__last_name__icontains=term)
+            )
+
+        return queryset
 
 
