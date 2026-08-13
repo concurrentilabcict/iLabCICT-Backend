@@ -26,7 +26,9 @@ class RepairLogListCreateView(ListCreateAPIView):
                 RepairLogService.get_paginated_repair_logs(
                     user=request.user,
                     cursor=cursor,
-                    query_search=query_search
+                    query_search=query_search,
+                    technician_id=technician_id,
+                    date=date
                 )
             )
         except ValueError:
