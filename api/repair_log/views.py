@@ -18,6 +18,8 @@ class RepairLogListCreateView(ListCreateAPIView):
     def get(self, request, *args, **kwargs):
         cursor = self.request.query_params.get('cursor')
         query_search= self.request.query_params.get('q')
+        date = self.request.query_params.get('date')
+        technician_id = self.request.query_params.get('technician_id')
 
         try:
             repair_log, next_cursor = (
@@ -42,6 +44,13 @@ class RepairLogListCreateView(ListCreateAPIView):
 
             if query_search:
                 params['q'] = query_search
+
+            if date:
+                params['date'] = date
+
+            
+            if technician_id:
+                params['technician_id'] = technician_id
 
             next_url = (f'{settings.API_BASE_URL}'
                         f'/api/repair-logs/'
