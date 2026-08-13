@@ -234,7 +234,7 @@ class TicketService:
         groups = {
             f'tickets_user_{ticket.reported_by_id}',
             'tickets_technicians',
-            'tickets_admins',
+            'tickets_admin',
         }
 
         TicketService.send_ticket_event(
