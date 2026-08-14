@@ -278,6 +278,22 @@ class UserService:
         )
 
         return profile, stats
+
+    @staticmethod
+    def send_welcome_email(user, temp_password=None):
+        if temp_password is None:
+            return
+
+        try:
+            EmailService.send_welcome_email(
+                recipient_email=user.email,
+                recipient_username=user.username,
+                recipient_fullname=user.first_name,
+                temp_password=temp_password
+            )
+
+        except requests.HTTPError as e:
+            raise
        
     @staticmethod
     def send_reset_email(user, request):
