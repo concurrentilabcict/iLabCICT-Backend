@@ -138,6 +138,12 @@ class RoomAllComputersDetailView(ListAPIView):
     serializer_class = RoomAndComputerListSerializer
     permission_classes = [IsAuthenticated, IsStaff]
 
+    def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Room.objects.none()
+
+        return Room.objects.none()
+
     def list(self, request, *args, **kwargs):
         room_id = self.kwargs['pk']
         cursor = self.request.query_params.get('cursor')
@@ -196,6 +202,9 @@ class RoomWithComputerCodeDetailView(RetrieveAPIView):
     permission_classes = [IsAuthenticated, IsStaff]
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Computer.objects.none()
+
         computer_code = self.kwargs['uk']
         room_id = self.kwargs['pk']
 

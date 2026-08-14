@@ -7,9 +7,8 @@ from datetime import timedelta
 from rest_framework_simplejwt.exceptions import TokenError
 from api.audit_logs.services import AuditLogsService
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-
+from django.utils.crypto import get_random_string
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True, required=False)
     user_code = serializers.CharField(read_only=True)
 
     class Meta:
@@ -19,7 +18,6 @@ class UserSerializer(serializers.ModelSerializer):
             "user_code",
             "username",
             "email",
-            "password",
             "first_name",
             "last_name",
             "role",
@@ -30,33 +28,37 @@ class UserSerializer(serializers.ModelSerializer):
         ]
 
     def create(self, validated_data):
-        password = validated_data.pop("password")
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
-    
-    def update(self, instance, validated_data):
-        password = validated_data.pop("password", None)
-        request = self.context['request']
-        user_name = request.user.get_full_name()
-       
-        if password:
+        validated_data.pop("password", None)
 
-            AuditLogsService.log(
+        temp_password = get_random_string(length=12)
+        request = self.context['request']
+        user = User(**validated_data)
+        user.set_password(temp_password)
+        user.save()
+
+        AuditLogsService.log(
                 request=request,
                 performed_by=request.user,
-                action_title='Unauthorized change password attempt',
-                action_summary='Unauthorized change password attempt',
+                action_title='New user created!',
+                action_summary= f'{request.user.get_full_name()} created a new user.',
                 metadata={
-                    'result': 'blocked',
-                    'field': 'password',
-                    'endpoint': request.path,
+                    'result': 'successful',
+                    'user_id': user.id,
+                    'user_role': user.role
                 }
             )
 
-            raise serializers.ValidationError('Password not authorized to be updated.')
+        UserService.send_welcome_email(
+            user=user,
+            temp_password=temp_password
+        )
 
+        return user
+    
+    def update(self, instance, validated_data):
+        request = self.context['request']
+        user_name = request.user.get_full_name()
+       
         changes = {}
 
         for field in ['first_name', 'last_name', 'email', 'profile_image']:
