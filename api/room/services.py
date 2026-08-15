@@ -14,7 +14,7 @@ class RoomService:
     PAGE_SIZE=15
 
     @staticmethod
-    def get_paginated_rooms(cursor=None, include="", query_search=None, status=None, room_name=None, building_name=None, date=None):
+    def get_rooms(cursor=None, include="", query_search=None, status=None, room_name=None, building_name=None, date=None):
         queryset = RoomService.get_all(
             query_search=query_search,
             status=status,
@@ -28,34 +28,7 @@ class RoomService:
                 query_search=query_search,
                 qeuryset=queryset
             )
-
-        if cursor:
-            cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
-
-            if cursor_data is None:
-                raise ValueError('Invalid cursor.')
-
-            room_id = cursor_data['id']
-
-            queryset = queryset.filter(
-                id__gt=room_id
-            )
-
-        rooms = list(
-            queryset[:RoomService.PAGE_SIZE + 1]
-        )
-
-        has_more = len(rooms) > RoomService.PAGE_SIZE
-
-        rooms = rooms[:RoomService.PAGE_SIZE]
-
-        next_cursor = None
-        if has_more and rooms:
-            next_cursor = SingleCursorService.encode_cursor(
-                rooms[-1]
-            )
-
-        return rooms, next_cursor
+        return queryset
 
     @staticmethod
     def get_computers_room_id(room_id=None, cursor=None, query_search=None, status=None, date=None):

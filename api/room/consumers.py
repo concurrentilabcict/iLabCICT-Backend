@@ -6,21 +6,11 @@ from channels.db import database_sync_to_async
 def get_initial_room(include=''):
     from api.room.services import RoomService
     from api.room.serializers import RoomReadSerializer
-    from django.conf import settings
 
-    rooms, next_cursor = RoomService.get_paginated_rooms(include=include)
-
-    next_url = None
-
-    if next_cursor:
-        next_url = f'{settings.API_BASE_URL}/api/rooms/?cursor={next_cursor}'
-
-        if 'computers' in include.split(','):
-            next_url += '&include=computers'
+    rooms = RoomService.get_rooms(include=include)
 
     return{
         'data': RoomReadSerializer(rooms, many=True, context={'include': include}).data,
-        'next': next_url
     }
 
 @database_sync_to_async
@@ -76,7 +66,6 @@ class RoomConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'event': 'initial_rooms',
             'room': rooms['data'],
-            'next': rooms['next']
         }))
 
     async def disconnect(self, close_code):

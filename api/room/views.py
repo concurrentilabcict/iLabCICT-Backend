@@ -52,7 +52,7 @@ class RoomListCreateView(ListCreateAPIView):
         date = request.query_params.get('date')
 
         try:
-            rooms, next_cursor = RoomService.get_paginated_rooms(
+            rooms = RoomService.get_rooms(
                 cursor=cursor,
                 include=request.query_params.get('include', ''),
                 query_search=query_search,
@@ -72,37 +72,8 @@ class RoomListCreateView(ListCreateAPIView):
             many=True
         )
 
-        next_url = None
-
-        if next_cursor:
-            params = {
-                'cursor'
-            }
-
-            if query_search:
-                params['q'] = query_search
-
-            if status:
-                params['status'] = status
-
-            if room_name:
-                params['room'] = room_name
-
-            if building_name:
-                params['building'] = building_name 
-
-            if date:
-                params['date'] = date
-
-            next_url = (
-                f'{settings.API_BASE_URL}'
-                f'/api/rooms/'
-                f'?{urlencode(params)}'
-            ) 
-
         return Response({
             'results': serializer.data,
-            'next': next_url
         })
     
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
