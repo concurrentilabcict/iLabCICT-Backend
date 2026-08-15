@@ -37,12 +37,12 @@ class TicketListView(ListAPIView):
                 status=400
             )
 
-        return Response({
-            'results': TicketReadSerializer(
+        return Response(
+            TicketReadSerializer(
                 tickets,
                 many=True
             ).data
-        })
+        )
 
 
 class TicketListCreateView(ListCreateAPIView):
@@ -58,17 +58,6 @@ class TicketListCreateView(ListCreateAPIView):
             return TicketWriteSerializer
         
         return TicketReadSerializer
-    
-    def get_queryset(self):
-        return TicketService.get_all(
-            user=self.request.user,
-            status=self.request.query_params.get('status'),
-            technician_id=self.request.query_params.get('technician-id'),
-            type=self.request.query_params.get('type'),
-            date=self.request.query_params.get('date'),
-            queryset=None,
-            query_search=None,
-        )
     
     def create(self, request, *args, **kwargs):
 
@@ -86,6 +75,37 @@ class TicketListCreateView(ListCreateAPIView):
         return Response(
             TicketReadSerializer(ticket).data,
             status=status.HTTP_201_CREATED)
+
+    def get(self, request, *args, **kwargs):
+            cursor = request.query_params.get('cursor')
+            query_search = request.query_params.get('q')
+            type = request.query_params.get('type')
+            status = request.query_params.get('status')
+            date = request.query_params.get('date')
+    
+            try: 
+                tickets = (
+                    TicketService.get_tickets(
+                        user=request.user,
+                        cursor=cursor,
+                        query_search=query_search,
+                        status=status,
+                        type=type,
+                        date=date
+                    )
+                )
+            except ValueError:
+                return Response(
+                    {'detail': 'Invalid cursor.'},
+                    status=400
+                )
+    
+            return Response(
+                TicketReadSerializer(
+                    tickets,
+                    many=True
+                ).data
+            )
 
 class TicketDetailView(RetrieveUpdateDestroyAPIView):
 
