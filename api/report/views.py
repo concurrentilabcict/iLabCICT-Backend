@@ -6,8 +6,6 @@ from api.report.services import ReportService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician
 from rest_framework.response import Response
-from django.conf import settings
-from urllib.parse import urlencode
 
 class ReportListCreateView(ListCreateAPIView):
     serializer_class = ReportSerializer
@@ -25,8 +23,8 @@ class ReportListCreateView(ListCreateAPIView):
         status = request.query_params.get('status')
 
         try:
-            reports, next_cursor = (
-                ReportService.get_paginated_reports(
+            reports = (
+                ReportService.get_reports(
                     user=request.user,
                     cursor=cursor,
                     query_search=query_search,
@@ -41,37 +39,11 @@ class ReportListCreateView(ListCreateAPIView):
                 status=400
             )
 
-        next_url = None
-
-        if next_cursor:
-            params = {
-                'cursor': next_cursor
-            }
-
-            if query_search:
-                params['q'] = query_search
-
-            if date:
-                params['date'] = date
-
-            if status:
-                params['status'] = status
-
-            if technician_id:
-                params['technician_id'] = technician_id
-
-            next_url = (
-                f'{settings.API_BASE_URL}'
-                f'/api/reports/'
-                f'?{urlencode(params)}'
-            )
 
         return Response({
             'results': ReportSerializer(
                 reports, many=True
             ).data,
-
-            'next': next_url
         })
 
 

@@ -20,8 +20,6 @@ class MaintenanceHistoryListView(ListAPIView):
             date=self.request.query_params.get('date')
         )
 
-    pagination_class = MaintenanceHistoryPagination
-
 class MaintenanceHistoryDetailView(RetrieveAPIView):
     queryset = MaintenanceHistory.objects.all()
     serializer_class = MaintenanceHistorySerializer

@@ -21,8 +21,8 @@ class TicketListView(ListAPIView):
         date = request.query_params.get('date')
 
         try: 
-            tickets, next_cursor = (
-                TicketService.get_paginated_tickets(
+            tickets = (
+                TicketService.get_tickets(
                     user=request.user,
                     cursor=cursor,
                     query_search=query_search,
@@ -37,38 +37,11 @@ class TicketListView(ListAPIView):
                 status=400
             )
 
-        next_url = None
-
-        if next_cursor:
-            params = {
-                'cursor': next_cursor
-            }
-            
-            if query_search:
-                params['q'] = query_search
-
-            if status:
-                params['status'] = status
-
-            if type:
-                params['type'] = type
-
-            if date:
-                params['date'] = date
-
-            next_url = (
-                f'{settings.API_BASE_URL}'
-                f'/api/tickets/paginated/'
-                f'?{urlencode(params)}'
-                )
-
         return Response({
             'results': TicketReadSerializer(
                 tickets,
                 many=True
-            ).data,
-
-            'next': next_url
+            ).data
         })
 
 

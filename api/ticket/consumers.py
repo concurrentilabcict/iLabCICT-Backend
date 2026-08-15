@@ -6,23 +6,14 @@ from channels.db import database_sync_to_async
 def get_initial_tickets(user):
     from api.ticket.services import TicketService
     from api.ticket.serializers import TicketReadSerializer
-    from django.conf import settings
 
-    tickets, next_cursor = (TicketService.get_paginated_tickets(user=user))
+    tickets = TicketService.get_tickets(user=user)
 
     return {
         'ticket': TicketReadSerializer(
             tickets,
             many=True
         ).data,
-
-        'next': (
-            f'{settings.API_BASE_URL}'
-            f'/api/tickets/paginated/'
-            f'?cursor={next_cursor}'
-            if next_cursor
-            else None
-        )
     }
 
 class TicketConsumer(AsyncWebsocketConsumer):

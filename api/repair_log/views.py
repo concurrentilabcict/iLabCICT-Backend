@@ -22,8 +22,8 @@ class RepairLogListCreateView(ListCreateAPIView):
         technician_id = self.request.query_params.get('technician_id')
 
         try:
-            repair_log, next_cursor = (
-                RepairLogService.get_paginated_repair_logs(
+            repair_log = (
+                RepairLogService.get_repair_logs(
                     user=request.user,
                     cursor=cursor,
                     query_search=query_search,
@@ -37,32 +37,11 @@ class RepairLogListCreateView(ListCreateAPIView):
                 status=400
             )
 
-        next_url = None
-
-        if next_cursor:
-            params = {
-                'cursor': next_cursor
-            }
-
-            if query_search:
-                params['q'] = query_search
-
-            if date:
-                params['date'] = date
-
-            
-            if technician_id:
-                params['technician_id'] = technician_id
-
-            next_url = (f'{settings.API_BASE_URL}'
-                        f'/api/repair-logs/'
-                        f'?{urlencode(params)}')
 
         return Response({
             'results': MainRepairLogReadSerializer(
                 repair_log, many=True
-            ).data,
-            'next': next_url
+            ).data
         })
 
     
