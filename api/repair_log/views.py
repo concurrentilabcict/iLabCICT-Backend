@@ -38,11 +38,11 @@ class RepairLogListCreateView(ListCreateAPIView):
             )
 
 
-        return Response({
-            'results': MainRepairLogReadSerializer(
+        return Response(
+            MainRepairLogReadSerializer(
                 repair_log, many=True
             ).data
-        })
+        )
 
     
     def get_serializer_class(self):

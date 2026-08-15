@@ -72,9 +72,9 @@ class RoomListCreateView(ListCreateAPIView):
             many=True
         )
 
-        return Response({
-            'results': serializer.data,
-        })
+        return Response(
+            serializer.data,
+        )
     
 class RoomDetailView(RetrieveUpdateDestroyAPIView):
     queryset = (Room.objects
@@ -140,9 +140,9 @@ class RoomAllComputersDetailView(ListAPIView):
             rooms
         )
 
-        return Response({
-            'results': serializer.data,
-        })
+        return Response(
+           serializer.data,
+        )
     
 class RoomWithComputerCodeDetailView(RetrieveAPIView):
     serializer_class = ComputerReadSerializer

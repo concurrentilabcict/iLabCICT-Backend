@@ -40,11 +40,11 @@ class ReportListCreateView(ListCreateAPIView):
             )
 
 
-        return Response({
-            'results': ReportSerializer(
+        return Response(
+            ReportSerializer(
                 reports, many=True
             ).data,
-        })
+        )
 
 
 class ReportDetailView(RetrieveUpdateDestroyAPIView):
