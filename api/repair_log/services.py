@@ -18,7 +18,7 @@ class RepairLogService:
     PAGE_SIZE = 15
 
     @staticmethod
-    def get_paginated_repair_logs(user, cursor= None, query_search=None, technician_id=None, date=None):
+    def get_repair_logs(user, cursor= None, query_search=None, technician_id=None, date=None):
         queryset = RepairLogService.get_all(user=user,
                                             technician_id=technician_id,
                                             date=date,
@@ -30,44 +30,13 @@ class RepairLogService:
                 query_search=query_search
             )
 
-        if cursor:
-            cursor_data = CursorService.decode_cursor(cursor=cursor)
-
-            if cursor_data is None: 
-                raise ValueError('Invalid cursor')
-
-            created_at = cursor_data['created_at']
-            repair_log_id = cursor_data['id']
-
-            queryset = queryset.filter(
-                Q(created_at__lt=created_at) |
-                Q(
-                    created_at=created_at,
-                    id__lt=repair_log_id
-                )
-            )
 
         queryset = queryset.order_by(
             '-created_at',
             '-id'
         )
 
-        repair_logs = list(
-            queryset[:RepairLogService.PAGE_SIZE + 1]
-        )
-
-        has_more = len(repair_logs) > RepairLogService.PAGE_SIZE
-
-        repair_logs = repair_logs[:RepairLogService.PAGE_SIZE]
-
-        next_cursor = None
-
-        if has_more and repair_logs:
-            next_cursor = CursorService.encode_cursor(
-                repair_logs[-1]
-            )
-
-        return repair_logs, next_cursor
+        return queryset
     
     @staticmethod
     def get_all(
