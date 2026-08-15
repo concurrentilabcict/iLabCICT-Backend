@@ -123,7 +123,7 @@ class RoomAllComputersDetailView(ListAPIView):
         date = self.request.query_params.get('date')
 
         try:
-            rooms, next_cursor = RoomService.get_computers_room_id(
+            rooms = RoomService.get_computers_room_id(
                 cursor=cursor,
                 room_id=room_id,
                 query_search=query_search,
@@ -140,31 +140,8 @@ class RoomAllComputersDetailView(ListAPIView):
             rooms
         )
 
-        next_url = None
-
-        if next_cursor:
-            params={
-                'cursor': next_cursor
-            }
-
-            if query_search:
-                params['q'] = query_search
-
-            if status:
-                params['status'] = status
-
-            if date:
-                params['date'] = date
-
-            next_url = (
-                f'{settings.API_BASE_URL}/api/rooms/'
-                f'{room_id}/computers/'
-                f'?{urlencode(params)}'
-            ) 
-
         return Response({
             'results': serializer.data,
-            'next': next_url
         })
     
 class RoomWithComputerCodeDetailView(RetrieveAPIView):

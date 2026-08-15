@@ -17,22 +17,13 @@ def get_initial_room(include=''):
 def get_initial_room_computers(room_id):
     from api.room.services import RoomService
     from api.room.serializers import RoomAndComputerListSerializer
-    from django.conf import settings
 
-    room, next_cursor = RoomService.get_computers_room_id(room_id=room_id)
+    room = RoomService.get_computers_room_id(room_id=room_id)
     
     return{
         'room_with_computers': RoomAndComputerListSerializer(
             room,
         ).data,
-
-        'next': (
-            f'{settings.API_BASE_URL}/api/rooms/'
-            f'{room_id}/computers/'
-            f'?cursor={next_cursor}'
-            if next_cursor 
-            else None
-        )
     }
     
 class RoomConsumer(AsyncWebsocketConsumer):
@@ -133,7 +124,6 @@ class RoomIDAllComputersConsumer(AsyncWebsocketConsumer):
         await self.send(text_data=json.dumps({
             'event': 'initial_room_computers',
             'initial_computers': (room_computers_data['room_with_computers']),
-            'next_after_id': (room_computers_data['next'])
         }))
 
 

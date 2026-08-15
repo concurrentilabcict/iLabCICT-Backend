@@ -59,21 +59,6 @@ class RoomService:
                 querys_search=query_search,
                 queryset=computers_queryset
             )
-        
-        if cursor:
-            cursor_data = SingleCursorService.decode_cursor(cursor=cursor)
-
-            if cursor_data is None:
-                raise ValueError('Invalid cursor.')
-
-            after_id = cursor_data['id']
-
-            computers_queryset = Computer.objects.filter(
-                room_id=room_id,
-                id__gt=after_id
-            ).order_by('id')
-
-        computers_queryset = computers_queryset[:RoomService.PAGE_SIZE + 1]
 
         queryset = (Room.objects
                     .select_related('assigned_custodian')
@@ -84,28 +69,15 @@ class RoomService:
                             to_attr='initial_computers'
                         ) 
                     )
-                    .annotate(total_computer=Count('computers'))
+                    .annotate(total_computers=Count('computers'))
                     .filter(id=room_id))
 
         room = queryset.first()
 
         if room is None:
-            return None, None
+            return None
 
-        computers = room.initial_computers
-        has_more = len(computers) > RoomService.PAGE_SIZE
-        computers = computers[:RoomService.PAGE_SIZE]
-
-        room.initial_computers = computers
-
-        next_cursor = None
-
-        if has_more and computers:
-            next_cursor = SingleCursorService.encode_cursor(
-                computers[-1]
-            )
-
-        return room, next_cursor
+        return room
 
 
     @staticmethod
