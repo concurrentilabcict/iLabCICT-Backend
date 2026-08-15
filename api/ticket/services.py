@@ -17,7 +17,7 @@ class TicketService:
     PAGE_SIZE = 15
 
     @staticmethod
-    def get_paginated_tickets(user, cursor=None, query_search=None, status=None, type=None, date=None):
+    def get_tickets(user, cursor=None, query_search=None, status=None, type=None, date=None):
 
         queryset = (
             Ticket.objects
@@ -61,55 +61,13 @@ class TicketService:
                 queryset=queryset
             )
 
-        if cursor:
-            cursor_data = TicketCursorService.decode_cursor(cursor=cursor)
-
-            if cursor_data is None:
-                raise ValueError('Invalid Cursor.')
-
-            status_priority = cursor_data['status_priority']
-            created_at = cursor_data['created_at']
-            ticket_id = cursor_data['id']
-
-            queryset = queryset.filter(
-            Q(
-                status_priority__gt=status_priority
-            )
-            |
-            Q(
-                status_priority=status_priority,
-                created_at__lt=created_at
-            )
-            |
-            Q(
-                status_priority=status_priority,
-                created_at=created_at,
-                id__lt=ticket_id
-            )
-            )
-
         queryset = queryset.order_by(
         'status_priority',
         '-created_at',
         '-id',
         )
 
-        tickets = list(
-            queryset[:TicketService.PAGE_SIZE + 1]
-        )
-
-        has_more = len(tickets) > TicketService.PAGE_SIZE
-
-        tickets = tickets[:TicketService.PAGE_SIZE]
-
-        next_cursor = None
-
-        if has_more and tickets:
-            next_cursor = TicketCursorService.encode_cursor(
-                tickets[-1]
-            )
-
-        return tickets, next_cursor
+        return queryset
             
 
     @staticmethod
