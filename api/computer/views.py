@@ -111,26 +111,16 @@ class ComputerCodeDetailView(RetrieveAPIView):
             )
         )
 
-        paginator = MaintenanceHistoryPagination()
-
-        paginated_history = paginator.paginate_queryset(
-            maintenance_queryset,
-            request
-        )
-
         serializer = self.get_serializer(computer)
 
         data = serializer.data
 
-        data['maintenance_history'] = {
-            'count': paginator.page.paginator.count,
-            'next': paginator.get_next_link(),
-            'previous': paginator.get_previous_link(),
-            'results': MaintenanceHistoryComputerSerializer(
-                paginated_history,
-                many=True
-            ).data
-        }
+        data['maintenance_history'] = (
+        MaintenanceHistoryComputerSerializer(
+            maintenance_queryset,
+            many=True
+        ).data
+    )
 
         return Response(data)
 

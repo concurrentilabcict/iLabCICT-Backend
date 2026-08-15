@@ -10,7 +10,6 @@ class RequestHistoryListView(ListAPIView):
         return RequestHistoryService.get_all(room_id=self.request.query_params.get("room-id"))
     serializer_class = RequestHistorySerializer
     permission_classes = [IsAuthenticated, IsStaff]
-    pagination_class = RequestHistoryPagination
 
 class RequestHistoryDetailView(RetrieveAPIView):
     queryset = RequestHistory.objects.all()
