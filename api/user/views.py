@@ -90,6 +90,18 @@ class AvailableCustodianListView(ListAPIView):
             ).distinct()
 
         return  queryset
+
+class AvailableTechnicianListView(ListAPIView):
+    serializer_class = UserMinimalSerializer
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+    
+            queryset = User.objects.filter(
+                    role='technician'
+            )
+    
+            return  queryset
     
 
 class ForgotPasswordAPIView(APIView):
@@ -97,7 +109,7 @@ class ForgotPasswordAPIView(APIView):
     throttle_classes=[ResetPasswordThrottle]
 
     def post(self, request):
-        serializer = ForgotPasswordSerializer(data=request.data)
+        serializer = ForgotPasswordSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
 
         UserService.send_reset_email(serializer.user, request)
