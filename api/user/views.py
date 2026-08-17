@@ -126,7 +126,7 @@ class ResetPasswordWithTokenAPIView(APIView):
     throttle_classes=[ResetPasswordThrottle]
 
     def post(self, request):
-        serializer = ResetPasswordWithTokenSerializer(data=request.data)
+        serializer = ResetPasswordWithTokenSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
         UserService.reset_password(
