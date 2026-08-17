@@ -317,6 +317,7 @@ class UserService:
             )
 
             AuditLogsService.log(
+                performed_by=user,
                 request=request,
                 action_title='Password reset requested',
                 action_summary=f'{user.get_full_name()} requested a password reset.',
