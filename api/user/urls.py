@@ -1,5 +1,5 @@
 from django.urls import path
-from api.user.views import UserListCreateView, UserDetailView, UserUpdatePassword, AvailableCustodianListView, ForgotPasswordAPIView, ResetPasswordWithTokenAPIView
+from api.user.views import UserListCreateView, UserDetailView, UserUpdatePassword, AvailableCustodianListView, ForgotPasswordAPIView, ResetPasswordWithTokenAPIView, AvailableTechnicianListView
 
 urlpatterns = [
     # GET all users, CREATE one user
@@ -9,6 +9,7 @@ urlpatterns = [
     path('<int:pk>/', UserDetailView.as_view()),
     path('reset-password/<int:pk>/', UserUpdatePassword.as_view()),
     path('available-custodian/', AvailableCustodianListView.as_view()),
+    path('available-technician/', AvailableTechnicianListView.as_view()),
     path('forgot-password/send-email/', ForgotPasswordAPIView.as_view()),
     path('forgot-password/reset-password/',ResetPasswordWithTokenAPIView.as_view()),
 ]
