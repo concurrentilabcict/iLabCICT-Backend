@@ -33,6 +33,7 @@ DEBUG = True
 
 ALLOWED_HOSTS = [
     "ilabcict-backend.onrender.com",
+    "ilab-cict-backend.onrender.com",
     "127.0.0.1",
     "localhost",
 ]
