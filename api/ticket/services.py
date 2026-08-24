@@ -17,6 +17,38 @@ class TicketService:
     PAGE_SIZE = 15
 
     @staticmethod
+    def get_tickets_per_computer():
+
+        queryset = (
+            Ticket.objects
+            .select_related(
+                'reported_by',
+                'assigned_to',
+            )
+            .filter(
+                status__in=[
+                    Ticket.TicketStatus.OPEN,
+                    Ticket.TicketStatus.ONGOING,
+                ]
+            )
+            .annotate(
+                status_priority=Case(
+                    When(
+                        status=Ticket.TicketStatus.OPEN,
+                        then=Value(1)
+                    ),  
+                    When(
+                        status=Ticket.TicketStatus.ONGOING,
+                        then=Value(2)
+                    ),
+                    output_field=IntegerField(),
+                )
+            ).order_by('status_priority', '-created_at')
+        )
+
+        return queryset
+
+    @staticmethod
     def get_tickets(user, cursor=None, query_search=None, status=None, type=None, date=None):
 
         queryset = (
@@ -32,7 +64,7 @@ class TicketService:
                     When(
                         status=Ticket.TicketStatus.OPEN,
                         then=Value(1)
-                    ),
+                    ),  
                     When(
                         status=Ticket.TicketStatus.ONGOING,
                         then=Value(2)

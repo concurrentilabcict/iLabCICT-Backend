@@ -5,6 +5,14 @@ from api.room.serializers import RoomMinimalSerializer
 from api.user.serializers import UserMinimalSerializer
 from django.db import transaction
 
+class TicketComputerSerializer(serializers.ModelSerializer):
+    reported_by = UserMinimalSerializer(read_only=True)
+    assigned_to = UserMinimalSerializer(read_only=True)
+
+    class Meta:
+        model = Ticket
+        fields= ['id','reported_by', 'assigned_to', 'created_at', 'status', 'title', 'complaint_description']
+
 class TicketReadSerializer(serializers.ModelSerializer):
     ticket_code = serializers.CharField(read_only=True)
 
