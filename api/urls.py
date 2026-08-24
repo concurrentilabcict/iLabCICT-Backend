@@ -7,6 +7,7 @@ from drf_yasg import openapi
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from api.user_push_token.views import UserPushTokenAPIView
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -30,6 +31,7 @@ class PingView(APIView):
 urlpatterns = [
     path("auth/login/", CustomTokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("auth/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
+    path('auth/push-token/', UserPushTokenAPIView.as_view(), name='push_token'),
 
     path('users/', include('api.user.urls')),
 
