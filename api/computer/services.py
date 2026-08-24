@@ -4,12 +4,25 @@ from rest_framework.exceptions import ValidationError
 from api.audit_logs.services import AuditLogsService
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync 
+from api.ticket.services import TicketService
+from django.db.models import Prefetch
  
 class ComputerService:
 
     @staticmethod
     def get_computer_with_mainentance_history(include=None, computer_code=None):
-        queryset = Computer.objects.select_related('room').filter(computer_code=computer_code)
+        ticket_queryset = TicketService.get_tickets_per_computer()
+        
+        queryset = (Computer.objects
+            .select_related('room')
+            .prefetch_related(
+                Prefetch(
+                    'tickets',
+                    queryset=ticket_queryset,
+                    to_attr='assigned_tickets'
+                )
+            )
+            )
 
         if "maintenance-history" in include.split(","):
             queryset = queryset.prefetch_related('maintenance_history', 
@@ -24,12 +37,15 @@ class ComputerService:
     def get_all(filters):
         queryset = Computer.objects.select_related('room')
 
+        
+
         ComputerService.validate_filters(filters)
 
         queryset = ComputerService.filter_per_computer_code(queryset, filters)
         queryset = ComputerService.filter_active(queryset, filters)
         queryset = ComputerService.filter_all_peripherals(queryset, filters)
         queryset = ComputerService.filter_peripheral_status(queryset, filters)
+
 
         include = filters.include or ""
 

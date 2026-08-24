@@ -69,8 +69,10 @@ class ComputerMinimalSerializer(serializers.ModelSerializer):
 
 
 class ComputerReadSerializer(serializers.ModelSerializer):
+    from api.ticket.serializers import TicketComputerSerializer
     room = RoomMinimalSerializer(read_only=True)
     maintenance_history = MaintenanceHistoryComputerSerializer(many=True)
+    assigned_tickets = TicketComputerSerializer(many=True, read_only=True)
 
     class Meta:
         model = Computer
