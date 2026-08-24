@@ -26,7 +26,7 @@ class UserPushTokenAPIView(APIView):
 
         UserPushTokenService.register_push_token(
             user=request.user,
-            push_token=serializer.validated_data["push_token"]
+            push_token=serializer.validated_data["expo_push_token"]
         )
 
         return Response(

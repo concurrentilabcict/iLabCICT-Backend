@@ -11,7 +11,6 @@ class UserPushTokenService:
             }
         )
 
-
     @staticmethod
     def get_push_tokens(user):
         return UserPushToken.objects.filter(user=user)
