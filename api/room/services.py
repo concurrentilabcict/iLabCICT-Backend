@@ -9,6 +9,11 @@ from asgiref.sync import async_to_sync
 from api.room.serializers import RoomReadSerializer
 from api.cursor import SingleCursorService
 from api.common.utils.date_checker import is_invalid_date_format
+from datetime import date, datetime
+from decimal import Decimal
+from uuid import UUID
+
+from django.db.models import Model
 class RoomService:
 
     PAGE_SIZE=15
@@ -178,6 +183,36 @@ class RoomService:
         return room
 
     @staticmethod
+    def serialize_change_value(value):
+
+        if value is None:
+            return None
+
+        if isinstance(value, Model):
+            return {
+                'id': value.pk,
+                'name': (
+                    value.get_full_name()
+                    if hasattr(value, 'get_full_name')
+                    else str(value)
+                )
+            }
+
+        if isinstance(value, (datetime, date)):
+            return value.isoformat()
+        
+        if isinstance(value, Decimal):
+            return str(value)
+
+        if isinstance(value, UUID):
+            return str(value)
+
+        if isinstance(value, (str, int, float, bool)):
+            return value
+        
+        return str(value)
+
+    @staticmethod
     def log_room_update(room,
                         request,
                         changes):
@@ -210,8 +245,8 @@ class RoomService:
 
         for field in old_values:
             changes[field] = {
-                'old': old_values[field],
-                'new': getattr(room, field)
+                'old': RoomService.serialize_change_value(old_values[field]),
+                'new': RoomService.serialize_change_value(getattr(room, field))
             }
 
         RoomService.broacast_room_event(
