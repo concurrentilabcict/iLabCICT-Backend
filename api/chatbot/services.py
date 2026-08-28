@@ -136,11 +136,10 @@ class ChatbotService:
     def call_ai(messages):
 
         groq_models = [
-            "llama-3.3-70b-versatile",       
-            "openai/gpt-oss-120b",           
-            "qwen/qwen3-32b",                
-            "meta-llama/llama-4-scout-17b-16e-instruct",  
-            "llama-3.1-8b-instant", 
+            "openai/gpt-oss-120b",
+            "qwen/qwen3.6-27b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
         ]
 
         client = groq.Groq(api_key=settings.GROQ_API_KEY)
@@ -153,6 +152,9 @@ class ChatbotService:
                 )
 
                 return completion.choices[0].message.content
+            except groq.NotFoundError as e:
+                print(f"Model unavailable: {model} - {e}")
+                continue
             except groq.RateLimitError:
                 print(f"Rate Limit Exceeded on model: {model}")
                 continue
