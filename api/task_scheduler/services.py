@@ -104,7 +104,9 @@ class TaskSchedulerService:
     def update_schedule(serializer, request):
         schedule = serializer.instance
 
-        old_schedule = schedule.schedule
+        old_frequency = schedule.frequency
+        old_execution_time = schedule.execution_time
+        old_weekday = schedule.weekday
         old_next_execution = schedule.next_execution
         old_enabled = schedule.enabled
 
@@ -134,12 +136,33 @@ class TaskSchedulerService:
                 metadata={
                     "task_scheduler_id": schedule.id,
                     "updated_fields": list(updated_fields),
-                    "old_schedule": old_schedule,
-                    "new_schedule": schedule.schedule,
+
+                    "old_frequency": old_frequency,
+                    "new_frequency": schedule.frequency,
+
+                    "old_execution_time": (
+                        old_execution_time.isoformat()
+                        if old_execution_time else None
+                    ),
+                    "new_execution_time": (
+                        schedule.execution_time.isoformat()
+                        if schedule.execution_time else None
+                    ),
+
+                    "old_weekday": old_weekday,
+                    "new_weekday": schedule.weekday,
+
                     "old_enabled": old_enabled,
                     "new_enabled": schedule.enabled,
-                    "old_next_execution": old_next_execution,
-                    "new_next_execution": schedule.next_execution,
+
+                    "old_next_execution": (
+                        old_next_execution.isoformat()
+                        if old_next_execution else None
+                    ),
+                    "new_next_execution": (
+                        schedule.next_execution.isoformat()
+                        if schedule.next_execution else None
+                    ),
                 },
             )
 
