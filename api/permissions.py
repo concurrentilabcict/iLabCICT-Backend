@@ -13,7 +13,12 @@ class IsProfileOwner(BasePermission):
             return obj.id == request.user.id
         
 class IsNotificationOwner(BasePermission):
+    
     def has_object_permission(self, request, view, obj):
+
+        print("NOTIFICATION RECIPIENT:", obj.recipient_id)
+        print("REQUEST USER:", request.user)
+        print("REQUEST USER ID:", request.user.id)
 
         if obj.recipient_id is not None:
             return obj.recipient_id == request.user.id
