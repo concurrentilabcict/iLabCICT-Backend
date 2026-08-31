@@ -18,29 +18,42 @@ class Report(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
-        
-        if self.pk and Report.objects.filter(pk=self.pk).exists():
-            raise ValueError("Report Entried are immutable and cannot be updated")
+
+        if self.pk:
+            existing = Report.objects.get(pk=self.pk)
+
+            immutable_fields = [
+                "technician_id",
+                "report_code",
+                "title",
+                "content",
+                "created_at",
+            ]
+
+            for field in immutable_fields:
+                if getattr(existing, field) != getattr(self, field):
+                    raise ValueError(
+                        "Report entries are immutable and cannot be updated"
+                    )
 
         if self.report_code:
             return super().save(*args, **kwargs)
-        else:
-            MAX_RETRIES = 5
 
-            for _ in range(MAX_RETRIES):
-                try:
-                    with transaction.atomic():
+        MAX_RETRIES = 5
 
-                        self.report_code = generate_entity_code(
-                            model=Report,
-                            field_name="report_code",
-                            prefix="RP",
-                        )
+        for _ in range(MAX_RETRIES):
+            try:
+                with transaction.atomic():
 
-                        return super().save(*args, **kwargs)
-                except IntegrityError:
-                    self.report_code = None
+                    self.report_code = generate_entity_code(
+                        model=Report,
+                        field_name="report_code",
+                        prefix="RP",
+                    )
 
-            raise IntegrityError("Failed to generate unique report code")
-        
-    
+                    return super().save(*args, **kwargs)
+
+            except IntegrityError:
+                self.report_code = None
+
+        raise IntegrityError("Failed to generate unique report code")
