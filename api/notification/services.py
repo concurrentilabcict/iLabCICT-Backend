@@ -8,6 +8,8 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from api.notification.serializers import NotificationSerializer
 from api.cursor import CursorService
+
+from api.user_push_token.services import UserPushTokenService
 class NotificationService():
 
     PAGE_SIZE=30
@@ -111,14 +113,13 @@ class NotificationService():
         
         
     @staticmethod
-    def create_new_ticket_notification(recipient_id, title, entity, role, event):
-
+    def create_new_ticket_notification(recipient, title, entity, role, event, body=None):
         notification = None
         channel_layer = get_channel_layer()
 
         if role == User.UserRole.FACULTY:
             notification = Notification.objects.create(
-                recipient_id_id=recipient_id,
+                recipient_id_id=recipient.id,
                 entity_id=entity.id,
                 entity_type = Notification.NotificationEntityTypes.TICKET,
                 event_type = event,
@@ -129,10 +130,10 @@ class NotificationService():
                 },
                 status=Notification.NotificationStatus.UNREAD
                         )
- 
+
         elif role == User.UserRole.TECHNICIAN:
             notification = Notification.objects.create(
-                recipient_id_id=recipient_id,
+                recipient_id_id=recipient.id if recipient is not None else None,
                 entity_id=entity.id,
                 entity_type = Notification.NotificationEntityTypes.TICKET,
                 event_type = event,
@@ -144,8 +145,24 @@ class NotificationService():
                 status=Notification.NotificationStatus.UNREAD
                         )
 
+        if recipient is None:
+            technicians = User.objects.filter(role='technician')
+            UserPushTokenService.send_notification_to_users(
+                users=technicians,
+                title=title,
+                body=body,
+                extra_data={'ticket_id': entity.id}
+            )
+        else:
+            UserPushTokenService.send_notification_to_users(
+                users=recipient,
+                title=title,
+                body=body,
+                extra_data={'ticket_id': entity.id}
+            )
+
         NotificationService.send_notification_ticket_channels(
-            recipient_id=recipient_id,
+            recipient_id=recipient.id if recipient is not None else None,
             role=role,
             data=NotificationSerializer(notification).data,
             channel_layer=channel_layer
@@ -209,7 +226,6 @@ class NotificationService():
     @staticmethod
     def create_new_report_notification(recipient_id, title, entity):
         channel_layer = get_channel_layer()
-        
 
         notification = Notification.objects.create(
             recipient_id=recipient_id,

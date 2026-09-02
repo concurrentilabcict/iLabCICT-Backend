@@ -118,11 +118,12 @@ class RepairLogService:
         ticket.status = Ticket.TicketStatus.RESOLVED
 
         NotificationService.create_new_ticket_notification(
-            recipient_id=ticket.reported_by_id,
+            recipient=ticket.reported_by,
             title='Report Ticket Resolved!',
             entity=ticket,
             event=Notification.NotificationEventTypes.UNICAST_FACULTY,
-            role=User.UserRole.FACULTY
+            role=User.UserRole.FACULTY,
+            body=f'Your Report Ticket {ticket.ticket_code} was marked as {ticket.status.title()}'
         )
 
         ticket.save()

@@ -3,6 +3,7 @@ from api.user_push_token.serializers import UserPushTokenSerializer
 from rest_framework.permissions import IsAuthenticated
 from api.user_push_token.services import UserPushTokenService
 from rest_framework.response import Response
+
 from rest_framework import status
 class UserPushTokenAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -35,6 +36,13 @@ class UserPushTokenAPIView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+    def delete(self, request):
+        token = request.data.get('expo_push_token')
+        UserPushTokenService.delete_push_tokens(user=request.user, token=token)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 
     
     
