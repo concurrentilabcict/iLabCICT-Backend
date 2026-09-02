@@ -200,11 +200,12 @@ class TicketService:
         )
 
         NotificationService.create_new_ticket_notification(
-            recipient_id=None,
+            recipient=None,
             title='New Ticket Created!',
             entity=ticket,
             role= User.UserRole.TECHNICIAN,
-            event=Notification.NotificationEventTypes.MULTICAST_TECHNICIAN
+            event=Notification.NotificationEventTypes.MULTICAST_TECHNICIAN,
+            body=f'Ticket {ticket.ticket_code} has been created by {ticket.reported_by.get_full_name()}'
         )
 
         AuditLogsService.log(
@@ -301,21 +302,23 @@ class TicketService:
     @staticmethod
     def handle_ticket_reassigned(ticket, technician, request, instance):
         NotificationService.create_new_ticket_notification(
-                        recipient_id=ticket.reported_by_id,
+                        recipient=ticket.reported_by,
                         title='Ticket reassigned!',
                         entity=ticket,
                         event=Notification.NotificationEventTypes.UNICAST_FACULTY,
-                        role= User.UserRole.FACULTY
+                        role= User.UserRole.FACULTY,
+                        body=f'Ticket {ticket.ticket_code} was reassigned to {ticket.assigned_to.get_full_name()}'
                             )
         NotificationService.update_ticket_technician_recipient(
             entity_id=ticket.id,
         )
         NotificationService.create_new_ticket_notification(
-            recipient_id=ticket.assigned_to_id,
+            recipient=ticket.assigned_to,
             title='Ticket assigned to You',
             entity=ticket,
             event=Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
-            role = User.UserRole.TECHNICIAN
+            role = User.UserRole.TECHNICIAN,
+            body=f'Ticket {ticket.ticket_code} has been reassigned to you.'
         )
         AuditLogsService.log(
             request=request,
@@ -334,12 +337,13 @@ class TicketService:
     def handle_resolved_request_tickets(ticket, technician, request):
 
         NotificationService.create_new_ticket_notification(
-                            recipient_id=ticket.reported_by_id,
+                            recipient=ticket.reported_by,
                             title='Request ticket resolved!',
                             entity=ticket,
                             event=Notification.NotificationEventTypes.UNICAST_FACULTY,
-                            role= User.UserRole.FACULTY
-                                )
+                            role= User.UserRole.FACULTY,
+                            body=f'Your Request Ticket {ticket.ticket_code} was marked as {ticket.status.title()}'
+                            )
         request_history = RequestHistory.objects.create(
             room=ticket.room,
             technician=ticket.assigned_to,
@@ -365,11 +369,12 @@ class TicketService:
     def handle_ticket_status_change(ticket, technician, instance, request):
 
         NotificationService.create_new_ticket_notification(
-            recipient_id=ticket.reported_by_id,
+            recipient=ticket.reported_by,
             title='Ticket status updated!',
             entity=ticket,
             event=Notification.NotificationEventTypes.UNICAST_FACULTY,
-            role= User.UserRole.FACULTY
+            role= User.UserRole.FACULTY,
+            body=f'Ticket {ticket.ticket_code} status updated to {ticket.status.title()}'
                 )
 
         AuditLogsService.log(
