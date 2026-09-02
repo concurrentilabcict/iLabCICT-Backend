@@ -224,11 +224,11 @@ class NotificationService():
         
 
     @staticmethod
-    def create_new_report_notification(recipient_id, title, entity):
+    def create_new_report_notification(recipient, title, entity, body=None):
         channel_layer = get_channel_layer()
 
         notification = Notification.objects.create(
-            recipient_id=recipient_id,
+            recipient_id=recipient.id if recipient is not None else None,
             entity_id=entity.id,
             entity_type = Notification.NotificationEntityTypes.WEEKLY_REPORT,
             event_type = Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
@@ -240,8 +240,15 @@ class NotificationService():
             status=Notification.NotificationStatus.UNREAD
             )
 
+        UserPushTokenService.send_notification_to_users(
+            users=recipient.id if recipient is not None else None,
+            title=title,
+            body=body,
+            extra_data={'report_id': entity.id}
+        )
+
         async_to_sync(channel_layer.group_send)(
-            f'notification_user_{recipient_id}',
+            f'notification_user_{recipient.id if recipient is not None else None}',
             {
                 'type': 'notification_created',
                 'notification_id': NotificationSerializer(notification).data,

@@ -134,7 +134,8 @@ class ReportService:
         NotificationService.create_new_report_notification(
             recipient_id=report.technician_id,
             title='New Weekly Report!',
-            entity=report
+            entity=report,
+            body=f'{report.title} has been generated!'
         )
 
         groups = {
