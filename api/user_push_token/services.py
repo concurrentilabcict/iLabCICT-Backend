@@ -70,3 +70,8 @@ class UserPushTokenService:
     @staticmethod
     def get_push_tokens(user):
         return UserPushToken.objects.filter(user=user)
+
+    @staticmethod
+    def delete_push_tokens(user, token):
+        UserPushToken.objects.filter(user=user, expo_push_token=token).delete()
+        
