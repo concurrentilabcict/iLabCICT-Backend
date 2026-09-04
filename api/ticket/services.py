@@ -298,17 +298,32 @@ class TicketService:
 
         return ticket
 
-
     @staticmethod
     def handle_ticket_reassigned(ticket, technician, request, instance):
-        NotificationService.create_new_ticket_notification(
-                        recipient=ticket.reported_by,
-                        title='Ticket reassigned!',
-                        entity=ticket,
-                        event=Notification.NotificationEventTypes.UNICAST_FACULTY,
-                        role= User.UserRole.FACULTY,
-                        body=f'Ticket {ticket.ticket_code} was reassigned to {ticket.assigned_to.get_full_name()}'
-                            )
+
+        if instance.assigned_to_id != ticket.assigned_to_id:
+            NotificationService.create_new_ticket_notification(
+                            recipient=ticket.reported_by,
+                            title='Ticket reassigned!',
+                            entity=ticket,
+                            event=Notification.NotificationEventTypes.UNICAST_FACULTY,
+                            role= User.UserRole.FACULTY,
+                            body=f'Ticket {ticket.ticket_code} was reassigned to {ticket.assigned_to.get_full_name()}'
+                                )
+
+            AuditLogsService.log(
+                        request=request,
+                        performed_by=technician,
+                        action_title='Ticket reassigned',
+                        action_summary=f'{technician.get_full_name()} claimed a ticket.',
+                        metadata={
+                            'ticket_id': ticket.id,
+                            'status': ticket.status,
+                            'old_assigned_to_id': instance.assigned_to_id,
+                            'new_assigned_to_id': ticket.assigned_to_id
+                        }
+                    )
+            
         NotificationService.update_ticket_technician_recipient(
             entity_id=ticket.id,
         )
@@ -320,18 +335,9 @@ class TicketService:
             role = User.UserRole.TECHNICIAN,
             body=f'Ticket {ticket.ticket_code} has been reassigned to you.'
         )
-        AuditLogsService.log(
-            request=request,
-            performed_by=technician,
-            action_title='Ticket reassigned',
-            action_summary=f'{technician.get_full_name()} claimed a ticket.',
-            metadata={
-                'ticket_id': ticket.id,
-                'status': ticket.status,
-                'old_assigned_to_id': instance.assigned_to_id,
-                'new_assigned_to_id': ticket.assigned_to_id
-            }
-        )
+        
+  
+    
 
     @staticmethod
     def handle_resolved_request_tickets(ticket, technician, request):
