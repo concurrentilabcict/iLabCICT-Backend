@@ -126,7 +126,8 @@ class NotificationService():
                 title=title,
                 activity_summary={
                     'actor': entity.assigned_to.get_full_name(),
-                    'entity_title': entity.title  
+                    'entity_title': entity.title,
+                    'message': body  
                 },
                 status=Notification.NotificationStatus.UNREAD
                         )
@@ -140,7 +141,8 @@ class NotificationService():
                 title=title,
                 activity_summary={
                     'actor': entity.reported_by.get_full_name(),
-                    'entity_title': entity.title  
+                    'entity_title': entity.title,
+                    'message': body  
                 },
                 status=Notification.NotificationStatus.UNREAD
                         )
@@ -235,7 +237,8 @@ class NotificationService():
             title=title,
             activity_summary={
                 'actor': entity.technician.get_full_name(),
-                'entity_title': entity.title  
+                'entity_title': entity.title,
+                'message': body
             },
             status=Notification.NotificationStatus.UNREAD
             )
