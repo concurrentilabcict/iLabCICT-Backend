@@ -131,12 +131,16 @@ class ReportService:
             status = Report.ReportStatus.UNREAD
         )
 
+        print(report.technician)
+
         NotificationService.create_new_report_notification(
             recipient=report.technician,
             title='New Weekly Report!',
             entity=report,
             body=f'{report.title} has been generated!'
         )
+
+        print(report)
 
         groups = {
             f'reports_user_{report.technician_id}',
@@ -195,12 +199,11 @@ class ReportService:
             }
         
         groq_models = [
-            "llama-3.3-70b-versatile",       
-            "openai/gpt-oss-120b",           
-            "qwen/qwen3-32b",                
-            "meta-llama/llama-4-scout-17b-16e-instruct",  
-            "llama-3.1-8b-instant",         
-        ]
+                    "openai/gpt-oss-120b",
+                    "qwen/qwen3.6-27b",
+                    "openai/gpt-oss-20b",
+                    "qwen/qwen3.8-27b",
+                ]
 
         summary_prompt = load_prompt('summary-report.md')
 
@@ -260,6 +263,9 @@ class ReportService:
             datetime.combine(end_time, time.max)
         )
 
+        print(f"start: {start_datetime}")
+        print(f"end: {end_datetime}")
+
         for technician_id in technician_id_list:
             try:
                 ReportService.generate_report_content(
@@ -269,6 +275,12 @@ class ReportService:
                 )
             except Exception as e:
                 print(f"Failed for technician {technician_id}: {e}")
+
+
+    def test_generate():
+        ReportService.generate()
+
+        return "Report Created Successfully!"
 
 
     @staticmethod

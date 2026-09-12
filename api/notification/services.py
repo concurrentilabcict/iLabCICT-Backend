@@ -230,7 +230,7 @@ class NotificationService():
         channel_layer = get_channel_layer()
 
         notification = Notification.objects.create(
-            recipient_id=recipient.id if recipient is not None else None,
+            recipient_id_id=recipient.id if recipient is not None else None,
             entity_id=entity.id,
             entity_type = Notification.NotificationEntityTypes.WEEKLY_REPORT,
             event_type = Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
@@ -244,7 +244,7 @@ class NotificationService():
             )
 
         UserPushTokenService.send_notification_to_users(
-            users=recipient.id if recipient is not None else None,
+            users=recipient if recipient is not None else None,
             title=title,
             body=body,
             extra_data={'report_id': entity.id}
