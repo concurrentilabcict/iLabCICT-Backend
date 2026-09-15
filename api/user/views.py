@@ -5,11 +5,13 @@ from api.user.serializers import UserSerializer, CustomTokenObtainPairSerializer
 from api.user.services import UserService
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated,AllowAny
 from api.permissions import IsAdmin, IsProfileOwner
 from api.throttle import LoginThrottle, ResetPasswordThrottle
 from rest_framework.views import APIView
-from api.user.serializers import ForgotPasswordSerializer, ResetPasswordWithTokenSerializer
+from api.otp_code.services import OTPCodeService
+from api.user.serializers import ForgotPasswordSerializer, ResetPasswordWithTokenSerializer, VerifyOTPSerializer, ResetOTPPasswordSerializer
 
 from rest_framework_simplejwt.views import TokenObtainPairView
 
@@ -140,4 +142,78 @@ class ResetPasswordWithTokenAPIView(APIView):
                 "detail": "Password reset successful."
             },
             status=status.HTTP_200_OK,
+        )
+
+class ForgotPasswordOTPAPIView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes=[ResetPasswordThrottle]
+
+    def post(self, request):
+        serializer = ForgotPasswordSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        user = serializer.validated_data['user']
+
+        if user:
+            UserService.send_otp_reset_email(user=user,request=request)
+
+        return Response({
+            'message': 'If that email is associated with an account, '
+               'a password reset code has been sent.'
+        })
+
+
+class VerifyOTPAPIView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ResetPasswordThrottle]
+
+    def post (self, request):
+        serializer = VerifyOTPSerializer(data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+        code = serializer.validated_data['code']
+
+        user = User.objects.filter(
+            email=email,
+            is_active=True
+        ).first()
+
+        if not user:
+            raise ValidationError("Invalid or expired code.")
+
+        reset_token = OTPCodeService.verify_code(
+            user=user,
+            code=code
+            )
+
+        return Response({
+            "message": "Code verified successfully.",
+            "reset_token": reset_token
+        })
+
+class OTPResetPasswordAPIView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = [ResetPasswordThrottle]
+
+    def post(self, request):
+        serialializer = ResetOTPPasswordSerializer(data=request.data, context={'request': request})
+
+        serialializer.is_valid(raise_exception=True)
+
+        reset_token = serialializer.validated_data['reset_token']
+        new_password = serialializer.validated_data['new_password']
+
+        OTPCodeService.reset_password(
+            reset_token=reset_token,
+            new_password=new_password,
+            request=request
+        )
+
+        return Response(
+            {
+                "message": "Password reset successfully."
+            },
+            status=status.HTTP_200_OK
         )

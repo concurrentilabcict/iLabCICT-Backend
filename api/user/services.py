@@ -14,6 +14,7 @@ from api.email import EmailService
 import requests
 from api.audit_logs.services import AuditLogsService
 from zoneinfo import ZoneInfo
+from api.otp_code.services import OTPCodeService
 class UserService:
 
     @staticmethod
@@ -294,6 +295,43 @@ class UserService:
 
         except requests.HTTPError as e:
             raise
+
+    @staticmethod
+    def send_otp_reset_email(user, request):
+
+        reset, code, time = OTPCodeService.create_reset_code(user=user)
+
+        try:
+            EmailService.send_otp_email(
+                recipient_email=user.email,
+                recipient_first_name=user.first_name,
+                code=code,
+                time=time
+            )
+
+            AuditLogsService.log(
+                request=request,
+                performed_by=user,
+                action_title='Requested OTP for password reset',
+                action_summary=f'{user.get_full_name()} requested an OTP for password reset',
+                metadata={
+                    'status': 'successful'
+                }
+            )
+
+        except requests.HTTPError as e:
+            AuditLogsService.log(
+                request=request,
+                performed_by=user,
+                action_title='OTP Password reset error',
+                action_summary=f'{user.get_full_name()} requested an OTP for password reset',
+                metadata={
+                    'status': 'unsuccessful',
+                    'error': str(e)
+                }
+            )
+            raise
+
        
     @staticmethod
     def send_reset_email(user, request):

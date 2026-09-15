@@ -4,6 +4,8 @@ from django.conf import settings
 class EmailService:
     BASE_PASSWORD_RESET_URL = 'https://i-lab-cict-email-service.vercel.app/api/send-email'
     BASE_WELCOME_URL = 'https://i-lab-cict-email-service.vercel.app/api/send-welcome-email'
+    BASE_OTP_PASSWORD_RESET_URL = 'https://i-lab-cict-email-service.vercel.app/api/send-otp-email'
+
 
     @staticmethod
     def send_password_reset_email(
@@ -59,6 +61,34 @@ class EmailService:
         except requests.RequestException as e:
             print(f"Failed to send welcome email: {e}")
             return False
+
+    @staticmethod
+    def send_otp_email(
+        *,
+        recipient_email,
+        recipient_first_name,
+        code,
+        time
+    ):
+        headers = {
+                    "X-API-Key": settings.EMAIL_API_KEY,
+                    "Content-Type": "application/json",
+                }
+
+        payload = {
+            'email': recipient_email,
+            'first_name': recipient_first_name,
+            'otp': code,
+            'time': time
+        }
+
+        try:
+            response = requests.post(EmailService.BASE_OTP_PASSWORD_RESET_URL, json=payload, headers=headers)
+            response.raise_for_status()
+            return True
+        except requests.RequestException as e:
+            print(f"Failed to send welcome email: {e}")
+            return False 
 
 
 
