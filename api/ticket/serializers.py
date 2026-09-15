@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from api.ticket.models import Ticket
-from api.computer.serializers import ComputerMinimalSerializer
+
 from api.room.serializers import RoomMinimalSerializer
 from api.user.serializers import UserMinimalSerializer
 from django.db import transaction
@@ -14,6 +14,7 @@ class TicketComputerSerializer(serializers.ModelSerializer):
         fields= ['id','reported_by', 'assigned_to', 'created_at', 'status', 'title', 'complaint_description']
 
 class TicketReadSerializer(serializers.ModelSerializer):
+    from api.computer.serializers import ComputerMinimalSerializer
     ticket_code = serializers.CharField(read_only=True)
 
     reported_by = UserMinimalSerializer(read_only=True)
@@ -70,6 +71,12 @@ class TicketWriteSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('Report Tickets cannot be completed manually')
 
         return attrs
+
+class ArchiveTicketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Ticket
+        fields=[]
     
 class MinimalTicketSerializer(serializers.ModelSerializer):
 

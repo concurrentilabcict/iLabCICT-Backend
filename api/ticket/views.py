@@ -1,6 +1,7 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
+from rest_framework.views import APIView
 from api.ticket.models import Ticket
-from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer
+from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer, ArchiveTicketSerializer
 from api.ticket.services import TicketService
 from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasTicketPermission
 from rest_framework.permissions import IsAuthenticated
@@ -8,6 +9,7 @@ from rest_framework.response import Response
 from rest_framework import status
 from urllib.parse import urlencode
 from django.conf import settings
+
 
 class TicketListView(ListAPIView):
     serializer_class = TicketReadSerializer
@@ -107,6 +109,33 @@ class TicketListCreateView(ListCreateAPIView):
                 ).data
             )
 
+class ReassignAdminTicketView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = TicketWriteSerializer
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+class ArchiveAdminTicketView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        serializer = ArchiveTicketSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        TicketService.admin_archive_ticket(
+            pk=pk,
+            request=request
+        )
+
+        return Response(
+            {
+                "detail": "Ticket Archived Successfully."
+            },
+            status=status.HTTP_200_OK
+        )
+
+
 class TicketDetailView(RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
@@ -151,7 +180,6 @@ class TicketDetailView(RetrieveUpdateDestroyAPIView):
             'room',
             'computer'
         )
-    
  
     def perform_destroy(self, instance):
         TicketService.delete_ticket(instance)

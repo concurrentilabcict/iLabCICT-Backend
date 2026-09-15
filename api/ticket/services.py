@@ -132,6 +132,8 @@ class TicketService:
             type=type,
             query_search=query_search
         )
+
+        queryset = queryset.exclude(status=Ticket.TicketStatus.ARCHIVED)
         
         if user.role == User.UserRole.TECHNICIAN:
             queryset = queryset.filter(
@@ -235,6 +237,54 @@ class TicketService:
         )
 
         return ticket
+
+  
+    @staticmethod
+    @transaction.atomic
+    def admin_archive_ticket(pk, request):
+
+        channel_layer = get_channel_layer()
+
+        ticket = Ticket.objects.get(id=pk)
+        ticket.status = Ticket.TicketStatus.ARCHIVED
+        ticket.save()
+
+        groups = {
+            'tickets_admin',
+            f'tickets_user_{ticket.reported_by_id}',
+            f'tickets_user_{ticket.assigned_to_id}'
+        }
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title='Admin Archived Ticket',
+            action_summary=f'Admin Archived Ticket {ticket.ticket_code}',
+            metadata={
+                'ticket_id': ticket.id
+            }
+        )
+
+        def broadcast():
+            for group in groups:
+                async_to_sync(channel_layer.group_send)(
+                    group,
+                    {
+                        'type': 'ticket_archived',
+                        'ticket_id': ticket.id,
+                    }
+                )
+
+        transaction.on_commit(broadcast)
+
+
+
+    @staticmethod
+    def admin_reassign_ticket(technician_id, request, pk):
+        Ticket.objects.filter(id=pk, status=Ticket.TicketStatus.OPEN).update(assigned_to_id=technician_id)
+
+        # add audit logs 
+        # add notification for faculty and technician
     
     @staticmethod
     def update_ticket(instance, validated_data, technician, request):
@@ -398,7 +448,7 @@ class TicketService:
     @staticmethod
     def handle_ticket_broadcast(reassigned, ticket):
         groups = {
-            'tickets_admins',
+            'tickets_admin',
             f'tickets_user_{ticket.reported_by_id}'
         }
 
@@ -417,8 +467,6 @@ class TicketService:
             event_type="ticket_updated",
             ticket=TicketReadSerializer(ticket).data,
         )
-
-    
 
     @staticmethod
     def send_ticket_event(groups, event_type, ticket):
