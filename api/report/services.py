@@ -246,7 +246,38 @@ class ReportService:
                 "status": "unsuccessful"
                 }
 
-    def generate():
+
+    def generate_monthly():
+        technician_id_list = list(User.objects.filter(
+            role=User.UserRole.TECHNICIAN
+        ).values_list("id", flat=True))
+
+        end_time = timezone.localdate()
+
+        start_time = end_time.replace(day=1)
+
+        start_datetime = timezone.make_aware(
+            datetime.combine(start_time, time.min)
+        )
+
+        end_datetime = timezone.make_aware(
+            datetime.combine(end_time, time.max)
+        )
+
+        print(f"start: {start_datetime}")
+        print(f"start: {end_datetime}")
+
+        for technician_id in technician_id_list:
+            try:
+                ReportService.generate_report_content(
+                    start_date=start_datetime,
+                    end_date=end_datetime,
+                    assigned_id=technician_id
+                )
+            except Exception as e:
+                print(f"Failed for technician {technician_id}: {e}")
+
+    def generate_weekly():
         technician_id_list = list(User.objects.filter(
             role=User.UserRole.TECHNICIAN
         ).values_list("id", flat=True))
