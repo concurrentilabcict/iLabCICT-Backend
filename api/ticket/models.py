@@ -10,6 +10,7 @@ class Ticket(models.Model):
         OPEN = "open", "open"
         RESOLVED = 'resolved', 'resolved'
         ONGOING = "ongoing", "ongoing"
+        ARCHIVED = "archived", "archived" 
         
     class TicketType(models.TextChoices):
         REPORT = "report", "report"

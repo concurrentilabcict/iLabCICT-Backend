@@ -1,5 +1,5 @@
 from django.urls import path
-from api.user.views import UserListCreateView, UserDetailView, UserUpdatePassword, AvailableCustodianListView, ForgotPasswordAPIView, ResetPasswordWithTokenAPIView, AvailableTechnicianListView
+from api.user.views import UserListCreateView, UserDetailView, UserUpdatePassword, AvailableCustodianListView, ForgotPasswordAPIView, ResetPasswordWithTokenAPIView, AvailableTechnicianListView, ForgotPasswordOTPAPIView, VerifyOTPAPIView, OTPResetPasswordAPIView
 
 urlpatterns = [
     # GET all users, CREATE one user
@@ -12,4 +12,7 @@ urlpatterns = [
     path('available-technician/', AvailableTechnicianListView.as_view()),
     path('forgot-password/send-email/', ForgotPasswordAPIView.as_view()),
     path('forgot-password/reset-password/',ResetPasswordWithTokenAPIView.as_view()),
+    path('forgot-password/otp/send-email/', ForgotPasswordOTPAPIView.as_view()),
+    path('forgot-password/otp/verify-otp/', VerifyOTPAPIView.as_view()),
+    path('forgot-password/otp/reset-password/', OTPResetPasswordAPIView.as_view()),
 ]

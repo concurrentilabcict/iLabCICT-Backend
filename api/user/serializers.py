@@ -8,6 +8,7 @@ from rest_framework_simplejwt.exceptions import TokenError
 from api.audit_logs.services import AuditLogsService
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.utils.crypto import get_random_string
+from django.contrib.auth.password_validation import validate_password
 class UserSerializer(serializers.ModelSerializer):
     user_code = serializers.CharField(read_only=True)
 
@@ -210,9 +211,11 @@ class UserUpdatePasswordSerializer(serializers.ModelSerializer):
 class ForgotPasswordSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
-    def validate_email(self, value):
+    def validate(self, attrs):
+        email = attrs['email'].strip().lower()
+
         user = User.objects.filter(
-            email=value,
+            email=email,
             is_active=True
         ).first()
 
@@ -223,19 +226,26 @@ class ForgotPasswordSerializer(serializers.Serializer):
                 request=request,
                 performed_by=None,
                 action_title='Invalid password reset attempt',
-                action_summary=f"Password reset requested for an unknown or inactive account: {value}.",
+                action_summary=(
+                    'Password reset requested for an unknown '
+                    'or inactive account.'
+                ),
                 metadata={
                     'result': 'unsuccessful',
-                    'email': value,
+                    'email': email,
                 }
             )
 
-            raise serializers.ValidationError(
-                "No active account found."
-            )
+            attrs['user'] = None
+            attrs['email'] = email
 
-        self.user = user
-        return value
+            return attrs
+
+        attrs['user'] = user
+        attrs['email'] = email
+
+        return attrs
+
 
 
     
@@ -306,3 +316,19 @@ class ResetPasswordWithTokenSerializer(serializers.Serializer):
         attrs["user"] = user
 
         return attrs
+
+
+class VerifyOTPSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    code = serializers.CharField(min_length = 6, max_length = 6)
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+class ResetOTPPasswordSerializer(serializers.Serializer):
+    reset_token = serializers.CharField()
+
+    new_password = serializers.CharField(
+        write_only=True,
+        validators=[validate_password]
+    )

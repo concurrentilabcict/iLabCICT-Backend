@@ -1,11 +1,12 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
-
+from rest_framework.views import APIView
 from api.report.models import Report
 from api.report.serializers import ReportSerializer
 from api.report.services import ReportService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician
 from rest_framework.response import Response
+from api.permissions import HasSchedulerToken
 
 class ReportListCreateView(ListCreateAPIView):
     serializer_class = ReportSerializer
@@ -52,4 +53,19 @@ class ReportDetailView(RetrieveUpdateDestroyAPIView):
     serializer_class = ReportSerializer
 
     permission_classes = [IsAuthenticated, IsAdmin | IsTechnician]
+
+class GenerateReportTest(APIView):
+    authentication_classes = []
+    permission_classes = [HasSchedulerToken]
+
+    def get(self, request):
+        res = ReportService.test_generate()
+
+        return Response({
+            "detail": "Scheduler executed successfully",
+            "message": res
+        })
+
+
+
 

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from api.ticket.models import Ticket
-from api.computer.serializers import ComputerMinimalSerializer
+
 from api.room.serializers import RoomMinimalSerializer
 from api.user.serializers import UserMinimalSerializer
 from django.db import transaction
@@ -14,6 +14,7 @@ class TicketComputerSerializer(serializers.ModelSerializer):
         fields= ['id','reported_by', 'assigned_to', 'created_at', 'status', 'title', 'complaint_description']
 
 class TicketReadSerializer(serializers.ModelSerializer):
+    from api.computer.serializers import ComputerMinimalSerializer
     ticket_code = serializers.CharField(read_only=True)
 
     reported_by = UserMinimalSerializer(read_only=True)
@@ -62,14 +63,30 @@ class TicketWriteSerializer(serializers.ModelSerializer):
             if computer is not None and ticket_type == Ticket.TicketType.REQUEST:
                 raise serializers.ValidationError('Request ticket cannot contain computer data')
 
+            if current_status == Ticket.TicketStatus.ARCHIVED:
+                raise serializers.ValidationError('Archived Tickets cannot be modified')
+
             if current_status == Ticket.TicketStatus.RESOLVED:
                 raise serializers.ValidationError('Completed Tickets cannot be modified')
             elif current_status == Ticket.TicketStatus.ONGOING and new_status == Ticket.TicketStatus.OPEN:
                 raise serializers.ValidationError('Ongoing tickets cannot be reverted to Open.')
             elif new_status == Ticket.TicketStatus.RESOLVED and current_ticket_type == Ticket.TicketType.REPORT:
                 raise serializers.ValidationError('Report Tickets cannot be completed manually')
+            
 
         return attrs
+
+class ArchiveTicketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Ticket
+        fields=[]
+
+class ReassignTicketAdminSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Ticket
+        fields=['assigned_to']
     
 class MinimalTicketSerializer(serializers.ModelSerializer):
 

@@ -21,7 +21,10 @@ class TaskSchedulerService:
         for schedule in schedules:
 
             if schedule.type == "report":
-                ReportService.generate()
+                if schedule.frequency == TaskScheduler.FrequencyValues.WEEKLY:
+                    ReportService.generate_weekly()
+                elif schedule.frequency == TaskScheduler.FrequencyValues.MONTHLY:
+                    ReportService.generate_monthly()
 
             schedule.last_execution = now
             schedule.next_execution = TaskSchedulerService.calculate_next_exec(schedule=schedule)
@@ -70,6 +73,27 @@ class TaskSchedulerService:
 
             if next_execution <= now:
                 next_execution += timedelta(days=7)
+
+        elif schedule.frequency == TaskScheduler.FrequencyValues.MONTHLY:
+            next_execution = now.replace(
+                day=1,
+                hour=execution_time.hour,
+                minute=execution_time.minute,
+                second=0,
+                microsecond=0
+            )
+
+            if next_execution <= now:
+
+                if now.month == 12:
+                    next_execution = next_execution.replace(
+                        year=now.year+1,
+                        month=1
+                    )
+                else:
+                    next_execution = next_execution.replace(
+                        month=now.month+1
+                    )
 
         else:
             raise ValueError("Unsupported frequency")
