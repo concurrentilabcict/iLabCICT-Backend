@@ -1,7 +1,7 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from rest_framework.views import APIView
 from api.ticket.models import Ticket
-from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer, ArchiveTicketSerializer
+from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer, ArchiveTicketSerializer, ReassignTicketAdminSerializer
 from api.ticket.services import TicketService
 from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasTicketPermission
 from rest_framework.permissions import IsAuthenticated
@@ -111,10 +111,26 @@ class TicketListCreateView(ListCreateAPIView):
 
 class ReassignAdminTicketView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
-    serializer_class = TicketWriteSerializer
 
-    def update(self, request, *args, **kwargs):
-        instance = self.get_object()
+    def post(self, request, pk):
+        serializer = ReassignTicketAdminSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        technician = serializer.validated_data['assigned_to']
+
+        TicketService.admin_reassign_ticket(
+            technician_id=technician.id,
+            request=request,
+            pk=pk
+        )
+
+        return Response(
+            {
+                'detail': "Ticket reassigned successfully."
+            },
+            status=status.HTTP_200_OK
+        )
+    
 
 class ArchiveAdminTicketView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
@@ -130,7 +146,7 @@ class ArchiveAdminTicketView(APIView):
 
         return Response(
             {
-                "detail": "Ticket Archived Successfully."
+                "detail": "Ticket archived successfully."
             },
             status=status.HTTP_200_OK
         )

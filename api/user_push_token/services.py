@@ -21,8 +21,6 @@ class UserPushTokenService:
             .values_list('expo_push_token', flat=True)
         )
 
-        print(tokens)
-
         if not tokens:
             return False
 

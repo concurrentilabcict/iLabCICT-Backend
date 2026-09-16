@@ -280,11 +280,76 @@ class TicketService:
 
 
     @staticmethod
+    @transaction.atomic
     def admin_reassign_ticket(technician_id, request, pk):
-        Ticket.objects.filter(id=pk, status=Ticket.TicketStatus.OPEN).update(assigned_to_id=technician_id)
 
-        # add audit logs 
-        # add notification for faculty and technician
+        ticket = Ticket.objects.get(id=pk)
+
+        if ticket.status != Ticket.TicketStatus.OPEN:
+            raise ValidationError({
+                "detail": "Only Open tickets can be reassigned."
+            }) 
+
+
+        group_admin_faculty = {
+            'tickets_admin',
+            f'tickets_user_{ticket.reported_by_id}',
+        }
+
+        previous_technician_id = ticket.assigned_to_id
+
+        ticket.assigned_to_id = technician_id
+        ticket.save()
+
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title='Admin reassigned ticket',
+            action_summary=f'Admin has reassigned ticket {ticket.ticket_code} to {ticket.assigned_to.get_full_name()}',
+            metadata={
+                'ticket_id': ticket.id,
+                'old_assigned_to_id': previous_technician_id,
+                'new_assigned_to_id': technician_id
+            }
+        )
+
+        NotificationService.create_new_ticket_notification(
+            recipient=ticket.reported_by,
+            title='Ticket reassigned!',
+            entity=ticket,
+            event=Notification.NotificationEventTypes.UNICAST_FACULTY,
+            role= User.UserRole.FACULTY,
+            body=f'Ticket {ticket.ticket_code} was reassigned to {ticket.assigned_to.get_full_name()}'
+                )
+
+        if previous_technician_id is None:
+            NotificationService.update_ticket_technician_recipient(
+                        entity_id=ticket.id,
+                    )
+
+        TicketService.send_ticket_event(
+            groups=['tickets_technicians'],
+            event_type="ticket_reassigned",
+            ticket=TicketReadSerializer(ticket).data,
+        )
+            
+        NotificationService.create_new_ticket_notification(
+            actor='Admin',
+            recipient=ticket.assigned_to,
+            title='Ticket assigned to You',
+            entity=ticket,
+            event=Notification.NotificationEventTypes.UNICAST_TECHNICIAN,
+            role = User.UserRole.TECHNICIAN,
+            body=f'Ticket {ticket.ticket_code} has been reassigned to you.'
+        )
+
+        TicketService.send_ticket_event(
+            groups=list(group_admin_faculty),
+            event_type='ticket_updated',
+            ticket=TicketReadSerializer(ticket).data
+        )
+
     
     @staticmethod
     def update_ticket(instance, validated_data, technician, request):

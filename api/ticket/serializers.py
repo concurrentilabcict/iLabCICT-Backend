@@ -63,12 +63,16 @@ class TicketWriteSerializer(serializers.ModelSerializer):
             if computer is not None and ticket_type == Ticket.TicketType.REQUEST:
                 raise serializers.ValidationError('Request ticket cannot contain computer data')
 
+            if current_status == Ticket.TicketStatus.ARCHIVED:
+                raise serializers.ValidationError('Archived Tickets cannot be modified')
+
             if current_status == Ticket.TicketStatus.RESOLVED:
                 raise serializers.ValidationError('Completed Tickets cannot be modified')
             elif current_status == Ticket.TicketStatus.ONGOING and new_status == Ticket.TicketStatus.OPEN:
                 raise serializers.ValidationError('Ongoing tickets cannot be reverted to Open.')
             elif new_status == Ticket.TicketStatus.RESOLVED and current_ticket_type == Ticket.TicketType.REPORT:
                 raise serializers.ValidationError('Report Tickets cannot be completed manually')
+            
 
         return attrs
 
@@ -77,6 +81,12 @@ class ArchiveTicketSerializer(serializers.ModelSerializer):
     class Meta:
         model=Ticket
         fields=[]
+
+class ReassignTicketAdminSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Ticket
+        fields=['assigned_to']
     
 class MinimalTicketSerializer(serializers.ModelSerializer):
 
