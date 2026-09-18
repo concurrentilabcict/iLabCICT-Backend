@@ -157,6 +157,24 @@ class TicketService:
             queryset = queryset.filter(type=type)
         
         return queryset
+
+    @staticmethod
+    def get_all_archived():
+        queryset = (Ticket.objects.select_related(
+                        'reported_by',
+                        'assigned_to',
+                        'room',
+                        'computer',
+                    )
+                    .filter(status=Ticket.TicketStatus.ARCHIVED)
+                    .order_by(
+                        '-created_at',
+                        '-id'
+                    ))
+        return queryset
+        
+        
+
     
     @staticmethod
     def validate_filters(status,technician_id=None,date=None,type=None, query_search=None):
