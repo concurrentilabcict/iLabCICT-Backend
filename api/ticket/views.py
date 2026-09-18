@@ -130,6 +130,15 @@ class ReassignAdminTicketView(APIView):
             },
             status=status.HTTP_200_OK
         )
+
+class GetAllArchivedTickets(ListAPIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    serializer_class = TicketReadSerializer
+
+    def get_queryset(self):
+        return TicketService.get_all_archived()
+
+
     
 
 class ArchiveAdminTicketView(APIView):
