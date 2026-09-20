@@ -67,5 +67,7 @@ urlpatterns = [
 
     path('scheduler/', include('api.task_scheduler.urls')),
 
+    path('templates/', include('api.printable_template.urls')),
+
     path('audit-logs/', include('api.audit_logs.urls')),
 ]
