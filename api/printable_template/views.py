@@ -1,6 +1,7 @@
 import cloudinary.uploader
 
 from rest_framework.views import APIView
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -9,6 +10,46 @@ from api.printable_template.models import PrintableTemplate
 from api.printable_template.serializers import PrintableTemplateSerializer, PrintableTemplateReadSerializer
 
 from api.permissions import IsAdmin, IsStaff
+
+class PrintableTemplateListView(ListAPIView):
+    permission_classes = [IsAuthenticated,
+            IsAdmin]
+    serializer_class = PrintableTemplateReadSerializer
+    queryset = PrintableTemplate.objects.all()
+
+class PrintableTemplateDeleteView(APIView):
+    permission_classes = [
+        IsAuthenticated,
+        IsAdmin,
+    ]
+
+    def delete(self, request, template_name):
+        template = PrintableTemplate.objects.filter(
+            name=template_name
+        ).first()
+
+        if not template:
+            return Response(
+                {
+                    "detail": "Printable template not found."
+                },
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if template.cloudinary_public_id:
+            cloudinary.uploader.destroy(
+                template.cloudinary_public_id,
+                resource_type="image",
+            )
+
+        template.delete()
+
+        return Response(
+            {
+                "detail": "Printable template deleted successfully."
+            },
+            status=status.HTTP_204_NO_CONTENT,
+        )
 
 class PrintableTemplateUploadView(APIView):
     permission_classes = [
