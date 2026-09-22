@@ -75,6 +75,14 @@ class ArchiveTicketSerializer(serializers.ModelSerializer):
         model=Ticket
         fields=[]
 
+    def validate(self, attrs):
+        if self.instance.status != Ticket.TicketStatus.OPEN:
+            raise serializers.ValidationError({
+                "detail": "Only open tickets can be archived."
+            })
+
+        return attrs
+
 class ReassignTicketAdminSerializer(serializers.ModelSerializer):
 
     class Meta:
