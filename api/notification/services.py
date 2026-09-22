@@ -223,6 +223,32 @@ class NotificationService():
                 'notification_id': notification.id,
             }
         )
+
+    @staticmethod
+    def mark_as_read(user, pk):
+        channel_layer = get_channel_layer()
+
+        notification = Notification.objects.get(id=pk)
+
+        if user.id in notification.read_by:
+            return
+
+        notification.read_by.append(user.id)
+        notification.save(update_fields=["read_by"])
+
+        serializer = NotificationSerializer(
+            notification,
+            context={"user": user}
+        )
+
+        async_to_sync(channel_layer.group_send)(
+            f"notification_user_{user.id}",
+            {
+                "type": "notification_updated",
+                "notification": serializer.data,
+            }
+        )
+
         
 
     @staticmethod

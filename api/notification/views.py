@@ -1,11 +1,13 @@
 
 from rest_framework.generics import ListAPIView, ListAPIView, RetrieveUpdateAPIView
+from rest_framework.views import APIView
 from api.notification.models import Notification
 from api.notification.serializers import NotificationSerializer
 from api.notification.services import NotificationService
 from api.permissions import IsNotificationOwner
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework import status
 from django.conf import settings
 from urllib.parse import urlencode
 
@@ -69,4 +71,28 @@ class NotificationDetailView(RetrieveUpdateAPIView):
     serializer_class = NotificationSerializer
 
     permission_classes = [IsAuthenticated, IsNotificationOwner]
+
+class NotificationReadView(APIView):
+    permission_classes = [IsAuthenticated, IsNotificationOwner]
+
+    def post(self, request, pk):
+        try:
+            NotificationService.mark_as_read(
+                user=request.user,
+                pk=pk
+            )
+            return Response(
+                {"detail": "Notification marked as read."},
+                status=status.HTTP_200_OK
+            )
+        except Notification.DoesNotExist:
+            return Response(
+                {"detail": "Notification not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        
+        
+
+
    
