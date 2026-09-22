@@ -16,6 +16,8 @@ class MaintenanceHistory(models.Model):
     technician = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
     repair_log = models.ForeignKey(RepairLog, on_delete=models.CASCADE, related_name='maintenanc_history_repair', null=True)
 
+    is_archived = models.BooleanField(default=False)
+
     maintenance_type = models.CharField(max_length=20, choices=MaintenanceTypes)
     maintenance_notes = models.TextField()
     date_performed = models.DateTimeField(auto_now_add=True)

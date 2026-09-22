@@ -153,3 +153,15 @@ class RoomIDAllComputersConsumer(AsyncWebsocketConsumer):
             'event': 'computer_updated',
             'computer': event['computer']
         }))
+
+    async def computer_archived(self, event):
+        await self.send(text_data=json.dumps({
+            'event': 'computer_archived',
+            'computer': event['computer_id']
+        }))
+
+    async def computer_unarchived(self, event):
+        await self.send(text_data=json.dumps({
+            'event': 'computer_unarchived',
+            'computer': event['computer']
+        }))

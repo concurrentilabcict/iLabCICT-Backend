@@ -1,11 +1,12 @@
 from django.urls import path
-from api.ticket.views import TicketDetailView, TicketListCreateView, TicketListView,ArchiveAdminTicketView,ReassignAdminTicketView, GetAllArchivedTickets
+from api.ticket.views import TicketDetailView, TicketListCreateView, TicketListView,ArchiveTicketView,ReassignAdminTicketView, GetAllArchivedTickets, UnarchiveTicketView
 
 urlpatterns = [
     path('', TicketListCreateView.as_view()),
     path('<int:pk>/', TicketDetailView.as_view()),
     path('paginated/', TicketListView.as_view()),
-    path('<int:pk>/archive/', ArchiveAdminTicketView.as_view()),
+    path('<int:pk>/archive/', ArchiveTicketView.as_view()),
+    path('<int:pk>/unarchive/', UnarchiveTicketView.as_view()),
     path('<int:pk>/reassign/', ReassignAdminTicketView.as_view()),
     path('archive/',GetAllArchivedTickets.as_view())
 

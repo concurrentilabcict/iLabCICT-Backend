@@ -1,4 +1,5 @@
-from django.db.models import Q
+from django.db.models import Q,Subquery
+from django.db import transaction
 from api.computer.models import Computer
 from rest_framework.exceptions import ValidationError
 from api.audit_logs.services import AuditLogsService
@@ -6,8 +7,123 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync 
 from api.ticket.services import TicketService
 from django.db.models import Prefetch
- 
+
 class ComputerService:
+
+    @staticmethod
+    def get_all_archived():
+        return Computer.objects.filter(is_archived=True)
+
+    @staticmethod
+    @transaction.atomic
+    def archive_computer(computer_id, request):
+        from api.ticket.models import Ticket
+        from api.maintenance_history.models import MaintenanceHistory
+        from api.repair_log.models import RepairLog
+
+        channel_layer = get_channel_layer()
+        
+        computer = (
+            Computer.objects
+            .select_for_update()
+            .get(pk=computer_id)
+        )
+
+        room = computer.room
+
+        if computer.is_archived:
+            return computer
+
+        computer.is_archived=True
+        computer.save(update_fields=['is_archived'])
+
+        ticket_ids = Ticket.objects.filter(
+            computer_id=computer_id
+        ).values("id")
+
+        repair_log_ids = RepairLog.objects.filter(
+            ticket_id__in=ticket_ids
+        ).values("id")
+
+        MaintenanceHistory.objects.filter(
+            repair_log_id__in=repair_log_ids
+        ).update(is_archived=True)
+
+        RepairLog.objects.filter(
+            id__in=repair_log_ids
+        ).update(is_archived=True)
+
+        Ticket.objects.filter(
+            id__in=ticket_ids
+        ).update(is_archived=True)
+
+        #put auditlogs and event
+
+        def broadcast():
+            async_to_sync(channel_layer.group_send)(
+                f'room_{room.id}',
+                {
+                    'type': 'computer_archived',
+                    'computer_id': computer.id
+                }
+            )
+
+        transaction.on_commit(broadcast)
+
+    @staticmethod
+    @transaction.atomic
+    def unarchive_computer(computer_id, request):
+        from api.ticket.models import Ticket
+        from api.maintenance_history.models import MaintenanceHistory
+        from api.repair_log.models import RepairLog
+        computer = (
+            Computer.objects
+            .select_for_update()
+            .get(pk=computer_id)
+        )
+
+        channel_layer = get_channel_layer()
+
+        room = computer.room
+        if not computer.is_archived:
+            return computer
+
+        computer.is_archived=False
+        computer.save(update_fields=['is_archived'])
+
+        ticket_ids = Ticket.objects.filter(
+            computer_id=computer_id
+        ).values('id')
+
+        repair_log_ids = RepairLog.objects.filter(
+            ticket_id__in=ticket_ids
+        )
+
+        MaintenanceHistory.objects.filter(
+            repair_log_id__in=repair_log_ids
+        ).update(is_archived=False)
+
+        RepairLog.objects.filter(
+            ticket_id__in=ticket_ids
+        ).update(is_archived=False)
+
+        Ticket.objects.filter(
+            computer_id=computer_id
+        ).update(is_archived=False)
+
+
+        def broadcast():
+            from api.computer.serializers import ComputerDefaultSerializer
+            serializer = ComputerDefaultSerializer(computer)
+            async_to_sync(channel_layer.group_send)(
+                f'room_{room.id}',
+                {
+                    'type': 'computer_unarchived',
+                    'computer': serializer.data
+                }
+            )
+
+        transaction.on_commit(broadcast)
 
     @staticmethod
     def get_computer_with_mainentance_history(include=None, computer_code=None):
@@ -225,6 +341,7 @@ class ComputerService:
                 'computer': serialized_computer
             }
         )
+
 
 #---------------------------------------------old method-----------------------------------------------------------
     @staticmethod

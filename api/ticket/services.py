@@ -3,6 +3,7 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
 from api.notification.services import NotificationService
 from django.db import transaction
+from django.db.models import Subquery
 from api.common.utils.date_checker import is_invalid_date_format
 from rest_framework.exceptions import ValidationError
 from api.user.models import User
@@ -11,6 +12,9 @@ from api.notification.models import Notification
 from api.request_history.models import RequestHistory
 from api.ticket.serializers import TicketReadSerializer
 from api.audit_logs.services import AuditLogsService
+from api.repair_log.models import RepairLog
+from api.maintenance_history.models import MaintenanceHistory
+from api.request_history.models import RequestHistory
 from api.cursor import TicketCursorService
 class TicketService:
 
@@ -166,7 +170,7 @@ class TicketService:
                         'room',
                         'computer',
                     )
-                    .filter(status=Ticket.TicketStatus.ARCHIVED)
+                    .filter(is_archived=True)
                     .order_by(
                         '-created_at',
                         '-id'
@@ -256,16 +260,114 @@ class TicketService:
 
         return ticket
 
-  
+    @staticmethod
+    def unarchive_request_ticket_related(pk, request):
+        RequestHistory.objects.filter(
+            ticket_id=pk
+        ).update(is_archived=False)
+
+    @staticmethod
+    def unarchive_report_ticket_related(pk, request):
+        repair_log_id = RepairLog.objects.filter(
+            ticket_id=pk
+        ).values('id')
+
+        MaintenanceHistory.objects.filter(
+            repair_log_id__in=repair_log_id
+        ).update(is_archived=False)
+
+        RepairLog.objects.filter(
+            ticket_id=pk
+        ).update(is_archived=False)
+
+        #add logs 
+
+    @staticmethod
+    def archive_report_ticket_related(pk, request):
+        repair_log_id = RepairLog.objects.filter(
+            ticket_id=pk
+        ).values('id')
+
+        MaintenanceHistory.objects.filter(
+            repair_log_id__in=repair_log_id
+        ).update(is_archived=True)
+
+        RepairLog.objects.filter(
+            ticket_id=pk
+        ).update(is_archived=True)
+
+        #add logs 
+
+
+    @staticmethod
+    def archive_request_ticket_related(pk, request):
+        RequestHistory.objects.filter(
+            ticket_id=pk
+        ).update(is_archived=True)
+
     @staticmethod
     @transaction.atomic
-    def admin_archive_ticket(pk, request):
+    def unarchive_ticket(pk, request):
 
         channel_layer = get_channel_layer()
 
         ticket = Ticket.objects.get(id=pk)
-        ticket.status = Ticket.TicketStatus.ARCHIVED
-        ticket.save()
+
+        groups = {
+                    'tickets_admin',
+                    f'tickets_user_{ticket.reported_by_id}',
+                    f'tickets_user_{ticket.assigned_to_id}'
+                }
+
+        ticket.is_archived = False
+        ticket.save(update_fields=["is_archived"])
+
+        
+        if ticket.type == Ticket.TicketType.REPORT:
+            TicketService.unarchive_report_ticket_related(
+                pk=pk,
+                request=request
+            )
+        elif ticket.type == Ticket.TicketType.REQUEST:
+            TicketService.unarchive_request_ticket_related(
+                pk=pk,
+                request=request
+            )
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title='Unarchived Ticket',
+            action_summary=f'Unarchived Ticket {ticket.ticket_code}',
+            metadata={
+                'ticket_id': ticket.id
+            }
+        )
+
+        def broadcast():
+            serializer = TicketReadSerializer(ticket)
+
+            for group in groups:
+                async_to_sync(channel_layer.group_send)(
+                    group,
+                    {
+                        'type': 'ticket_unarchived',
+                        'ticket': serializer.data,
+                    }
+                )
+
+        transaction.on_commit(broadcast)
+
+    
+    @staticmethod
+    @transaction.atomic
+    def archive_ticket(pk, request):
+
+        channel_layer = get_channel_layer()
+
+        ticket = Ticket.objects.get(id=pk)
+        ticket.is_archived = True
+        ticket.save(update_fields=["is_archived"])
 
         groups = {
             'tickets_admin',
@@ -273,11 +375,22 @@ class TicketService:
             f'tickets_user_{ticket.assigned_to_id}'
         }
 
+        if ticket.type == Ticket.TicketType.REPORT:
+            TicketService.archive_report_ticket_related(
+                pk=pk,
+                request=request
+            )
+        elif ticket.type == Ticket.TicketType.REQUEST:
+            TicketService.archive_request_ticket_related(
+                pk=pk,
+                request=request
+            )
+
         AuditLogsService.log(
             request=request,
             performed_by=request.user,
-            action_title='Admin Archived Ticket',
-            action_summary=f'Admin Archived Ticket {ticket.ticket_code}',
+            action_title='Archived Ticket',
+            action_summary=f'Archived Ticket {ticket.ticket_code}',
             metadata={
                 'ticket_id': ticket.id
             }
@@ -377,12 +490,11 @@ class TicketService:
         reassigned = (
             Ticket.objects
             .filter(
-                id=instance.id,
-                status=Ticket.TicketStatus.OPEN
+                id=instance.id
             )
             .update(
+                status = status,
                 assigned_to=technician,
-                status=Ticket.TicketStatus.ONGOING
             )
         )
 

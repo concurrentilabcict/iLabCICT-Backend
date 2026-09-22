@@ -1,13 +1,57 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
 from api.computer.models import Computer
-from api.computer.serializers import ComputerReadSerializer, ComputerWriteSerializer
+from api.computer.serializers import ComputerReadSerializer, ComputerWriteSerializer, ArchiveComputerSerializer
 from api.computer.services import ComputerService
-from api.permissions import IsAdmin, IsTechnician, IsStaff
+from api.permissions import IsAdmin, IsTechnician, IsStaff, IsAdminOrTechnician
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
 from rest_framework.response import Response
 from api.maintenance_history.models import MaintenanceHistory
 from api.paginations import MaintenanceHistoryPagination
+from rest_framework.views import APIView
+
+
+class ArchiveComputerView(APIView):
+    def post(self, request, pk):
+        serializer = ArchiveComputerSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        ComputerService.archive_computer(
+            computer_id=pk,
+            request=request
+        )
+
+        return Response(
+            {
+                'detail': 'Computer archived successfully.'
+            },
+            status=status.HTTP_200_OK
+        )
+
+class UnarchiveComputerView(APIView):
+    def post(self, request, pk):
+        serializer = ArchiveComputerSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        ComputerService.unarchive_computer(
+                    computer_id=pk,
+                    request=request
+                )
+        
+        return Response(
+            {
+                'detail': 'Computer unarchived successfully.'
+            },
+            status=status.HTTP_200_OK
+        )
+
+class AllArchivedComputerView(ListAPIView):
+    permission_classes = [IsAuthenticated,IsAdminOrTechnician]
+    serializer_class = ComputerReadSerializer
+
+    def get_queryset(self):
+        return ComputerService.get_all_archived()
+
 class ComputerListCreateView(ListCreateAPIView):
 
     def get_serializer_class(self):

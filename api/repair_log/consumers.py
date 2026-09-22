@@ -88,3 +88,15 @@ class RepairLogConsumer(AsyncWebsocketConsumer):
             'event': 'repair_log_created',
             'repair_log': event['repair_log']
         }))
+
+    async def repair_log_archived(self, event):
+        await self.send(text_data=json.dumps({
+            'event': 'repair_log_archived',
+            'repair_log': event['repair_log_id']
+        }))
+
+    async def repair_log_unarchived(self, event):
+        await self.send(text_data=json.dumps({
+            'event': 'repair_log_unarchived',
+            'repair_log': event['repair_log']
+        }))

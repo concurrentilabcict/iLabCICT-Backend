@@ -1,7 +1,7 @@
 from django.db import models, transaction, IntegrityError
 from api.room.models import Room
 from api.common.utils.entity_code import generate_entity_code
-
+from api.common.utils.local_code import generate_pc_local_code
 class Computer(models.Model):
     class PeripheralStatus(models.TextChoices):
         NONE = "none", "none"
@@ -27,6 +27,10 @@ class Computer(models.Model):
     computer_status = models.CharField(max_length=20, choices=ComputerStatus.choices, default=ComputerStatus.ACTIVE)
     motherboard = models.CharField(max_length=100)
 
+    is_archived = models.BooleanField(default=False)
+    computer_number = models.CharField(max_length=20, default=None,  null=True,
+    blank=True)
+
     # peripherals
     monitor_status = models.CharField(max_length=20, choices=PeripheralStatus.choices, default=PeripheralStatus.NONE)
     mouse_status = models.CharField(max_length=20, choices=PeripheralStatus.choices, default=PeripheralStatus.NONE)
@@ -35,6 +39,14 @@ class Computer(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["room", "computer_number"],
+                name="unique_computer_number_per_room",
+            )
+        ]
 
     def save(self, *args, **kwargs):
         if self.computer_code:
@@ -51,8 +63,14 @@ class Computer(models.Model):
                             prefix="PC"
                         )
 
+                        self.computer_number = generate_pc_local_code(
+                            model=Computer,
+                            room=self.room
+                        )
+
                         return super().save(*args, **kwargs)
                 except IntegrityError:
                     self.computer_code = None
+                    self.computer_number = None
                     
-            raise IntegrityError("Failed to generate unique computer code")
+            raise IntegrityError("Failed to generate unique computer code and computer number")

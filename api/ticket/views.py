@@ -3,7 +3,7 @@ from rest_framework.views import APIView
 from api.ticket.models import Ticket
 from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer, ArchiveTicketSerializer, ReassignTicketAdminSerializer
 from api.ticket.services import TicketService
-from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasTicketPermission
+from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasTicketPermission, IsAdminOrFaculty
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
@@ -141,14 +141,14 @@ class GetAllArchivedTickets(ListAPIView):
 
     
 
-class ArchiveAdminTicketView(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin]
+class ArchiveTicketView(APIView):
+    permission_classes = [IsAuthenticated, IsAdminOrFaculty]
 
     def post(self, request, pk):
         serializer = ArchiveTicketSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
-        TicketService.admin_archive_ticket(
+        TicketService.archive_ticket(
             pk=pk,
             request=request
         )
@@ -160,6 +160,24 @@ class ArchiveAdminTicketView(APIView):
             status=status.HTTP_200_OK
         )
 
+class UnarchiveTicketView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request, pk):
+        serializer = ArchiveTicketSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        TicketService.unarchive_ticket(
+            pk=pk,
+            request=request
+        )
+
+        return Response(
+            {
+                "detail": "Ticket unarchived successfully."
+            },
+            status=status.HTTP_200_OK
+        )
 
 class TicketDetailView(RetrieveUpdateDestroyAPIView):
 
