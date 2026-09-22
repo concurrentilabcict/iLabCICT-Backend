@@ -70,7 +70,9 @@ class NotificationService():
 
         queryset = Notification.objects.select_related('recipient_id')
 
-        queryset = queryset.exclude(status=Notification.NotificationStatus.ARCHIVED)
+        queryset = Notification.objects.exclude(
+            archived_by__contains=[user.id]
+        )
 
         if user.role == User.UserRole.FACULTY:
             queryset = queryset.filter(
@@ -213,8 +215,8 @@ class NotificationService():
         if notification is None:
             return
 
-        notification.status = Notification.NotificationStatus.ARCHIVED
-        notification.save(update_fields=["status"])
+        #notification.is_archived=True
+        #notification.save(update_fields=["is_archived"])
 
         async_to_sync(channel_layer.group_send)(
             'notification_technicians',
@@ -249,6 +251,25 @@ class NotificationService():
             }
         )
 
+    @staticmethod
+    def archive_notification(user, pk):
+        channel_layer = get_channel_layer()
+
+        notification = Notification.objects.get(id=pk)
+
+        if user.id in notification.archived_by:
+            return
+
+        notification.archived_by.append(user.id)
+        notification.save(update_fields=["archived_by"])
+
+        async_to_sync(channel_layer.group_send)(
+            f"notification_user_{user.id}",
+            {
+                "type": "notification_archived",
+                "notification_id": notification.id,
+            }
+        )
         
 
     @staticmethod

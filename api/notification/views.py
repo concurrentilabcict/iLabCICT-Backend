@@ -67,10 +67,13 @@ class NotificationListView(ListAPIView):
         )
 
 class NotificationDetailView(RetrieveUpdateAPIView):
-    queryset = Notification.objects.all()
     serializer_class = NotificationSerializer
-
     permission_classes = [IsAuthenticated, IsNotificationOwner]
+
+    def get_queryset(self):
+        return Notification.objects.exclude(
+            archived_by__contains=[self.request.user.id]
+        )
 
 class NotificationReadView(APIView):
     permission_classes = [IsAuthenticated, IsNotificationOwner]
@@ -90,6 +93,25 @@ class NotificationReadView(APIView):
                 {"detail": "Notification not found."},
                 status=status.HTTP_404_NOT_FOUND
             )
+
+class NotificationArchiveView(APIView):
+    permission_classes = [IsAuthenticated, IsNotificationOwner]
+
+    def post(self, request, pk):
+        try:
+            NotificationService.archive_notification(user=request.user, pk=pk)
+            return Response(
+                    {"detail": "Notification archived succesfully."},
+                    status=status.HTTP_200_OK
+                )
+        except:
+            return Response(
+                    {"detail": "Notification not found."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+
+
 
         
         
