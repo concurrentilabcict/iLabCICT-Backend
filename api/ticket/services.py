@@ -263,48 +263,92 @@ class TicketService:
 
     @staticmethod
     def unarchive_request_ticket_related(pk, request):
+        request_history_ids = list(
+            RequestHistory.objects
+            .filter(ticket_id=pk)
+            .values_list("id", flat=True)
+        )
+
         RequestHistory.objects.filter(
-            ticket_id=pk
+            id__in=request_history_ids
         ).update(is_archived=False)
+
+        return {
+            "affected_request_history_ids": request_history_ids,
+        }
+
 
     @staticmethod
     def unarchive_report_ticket_related(pk, request):
-        repair_log_id = RepairLog.objects.filter(
-            ticket_id=pk
-        ).values('id')
+        repair_log_ids = list(
+            RepairLog.objects
+            .filter(ticket_id=pk)
+            .values_list("id", flat=True)
+        )
+
+        maintenance_history_ids = list(
+            MaintenanceHistory.objects
+            .filter(repair_log_id__in=repair_log_ids)
+            .values_list("id", flat=True)
+        )
 
         MaintenanceHistory.objects.filter(
-            repair_log_id__in=repair_log_id
+            id__in=maintenance_history_ids
         ).update(is_archived=False)
 
         RepairLog.objects.filter(
-            ticket_id=pk
+            id__in=repair_log_ids
         ).update(is_archived=False)
 
-        #add logs 
+        return {
+            "affected_repair_log_ids": repair_log_ids,
+            "affected_maintenance_history_ids": maintenance_history_ids,
+        }
+
 
     @staticmethod
     def archive_report_ticket_related(pk, request):
-        repair_log_id = RepairLog.objects.filter(
-            ticket_id=pk
-        ).values('id')
+        repair_log_ids = list(
+            RepairLog.objects
+            .filter(ticket_id=pk)
+            .values_list("id", flat=True)
+        )
+
+        maintenance_history_ids = list(
+            MaintenanceHistory.objects
+            .filter(repair_log_id__in=repair_log_ids)
+            .values_list("id", flat=True)
+        )
 
         MaintenanceHistory.objects.filter(
-            repair_log_id__in=repair_log_id
+            id__in=maintenance_history_ids
         ).update(is_archived=True)
 
         RepairLog.objects.filter(
-            ticket_id=pk
+            id__in=repair_log_ids
         ).update(is_archived=True)
 
-        #add logs 
+        return {
+            "affected_repair_log_ids": repair_log_ids,
+            "affected_maintenance_history_ids": maintenance_history_ids,
+        }
 
 
     @staticmethod
     def archive_request_ticket_related(pk, request):
+        request_history_ids = list(
+            RequestHistory.objects
+            .filter(ticket_id=pk)
+            .values_list("id", flat=True)
+        )
+
         RequestHistory.objects.filter(
-            ticket_id=pk
+            id__in=request_history_ids
         ).update(is_archived=True)
+
+        return {
+            "affected_request_history_ids": request_history_ids,
+        }
 
     @staticmethod
     @transaction.atomic
@@ -325,12 +369,12 @@ class TicketService:
 
         
         if ticket.type == Ticket.TicketType.REPORT:
-            TicketService.unarchive_report_ticket_related(
+            affected = TicketService.unarchive_report_ticket_related(
                 pk=pk,
                 request=request
             )
         elif ticket.type == Ticket.TicketType.REQUEST:
-            TicketService.unarchive_request_ticket_related(
+            affected = TicketService.unarchive_request_ticket_related(
                 pk=pk,
                 request=request
             )
@@ -341,7 +385,8 @@ class TicketService:
             action_title='Unarchived Ticket',
             action_summary=f'Unarchived Ticket {ticket.ticket_code}',
             metadata={
-                'ticket_id': ticket.id
+                'ticket_id': ticket.id,
+                **affected
             }
         )
 
@@ -377,12 +422,12 @@ class TicketService:
         }
 
         if ticket.type == Ticket.TicketType.REPORT:
-            TicketService.archive_report_ticket_related(
+            affected = TicketService.archive_report_ticket_related(
                 pk=pk,
                 request=request
             )
         elif ticket.type == Ticket.TicketType.REQUEST:
-            TicketService.archive_request_ticket_related(
+            affected = TicketService.archive_request_ticket_related(
                 pk=pk,
                 request=request
             )
@@ -393,7 +438,8 @@ class TicketService:
             action_title='Archived Ticket',
             action_summary=f'Archived Ticket {ticket.ticket_code}',
             metadata={
-                'ticket_id': ticket.id
+                'ticket_id': ticket.id,
+                **affected
             }
         )
 

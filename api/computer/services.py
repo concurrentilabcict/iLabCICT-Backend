@@ -20,8 +20,6 @@ class ComputerService:
         from api.ticket.models import Ticket
         from api.maintenance_history.models import MaintenanceHistory
         from api.repair_log.models import RepairLog
-
-        channel_layer = get_channel_layer()
         
         computer = (
             Computer.objects
@@ -37,16 +35,26 @@ class ComputerService:
         computer.is_archived=True
         computer.save(update_fields=['is_archived'])
 
-        ticket_ids = Ticket.objects.filter(
-            computer_id=computer_id
-        ).values("id")
+        ticket_ids = list(
+                    Ticket.objects
+                    .filter(computer_id=computer_id)
+                    .values_list("id", flat=True)
+                )
+        
+        repair_log_ids = list(
+            RepairLog.objects
+            .filter(ticket_id__in=ticket_ids)
+            .values_list("id", flat=True)
+        )
 
-        repair_log_ids = RepairLog.objects.filter(
-            ticket_id__in=ticket_ids
-        ).values("id")
+        maintenance_history_ids = list(
+            MaintenanceHistory.objects
+            .filter(repair_log_id__in=repair_log_ids)
+            .values_list("id", flat=True)
+        )
 
         MaintenanceHistory.objects.filter(
-            repair_log_id__in=repair_log_ids
+            id__in=maintenance_history_ids
         ).update(is_archived=True)
 
         RepairLog.objects.filter(
@@ -57,9 +65,24 @@ class ComputerService:
             id__in=ticket_ids
         ).update(is_archived=True)
 
-        #put auditlogs and event
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title="Archived computer",
+            action_summary=(
+                f"{request.user.get_full_name()} "
+                f"archived a computer"
+            ),
+            metadata={
+                "computer_id": computer_id,
+                "affected_ticket_ids": ticket_ids,
+                "affected_repair_log_ids": repair_log_ids,
+                "affected_maintenance_history_ids": maintenance_history_ids,
+            }
+        )
 
         def broadcast():
+            channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
                 f'room_{room.id}',
                 {
@@ -76,44 +99,71 @@ class ComputerService:
         from api.ticket.models import Ticket
         from api.maintenance_history.models import MaintenanceHistory
         from api.repair_log.models import RepairLog
+
         computer = (
             Computer.objects
             .select_for_update()
             .get(pk=computer_id)
         )
 
-        channel_layer = get_channel_layer()
 
-        room = computer.room
         if not computer.is_archived:
             return computer
 
-        computer.is_archived=False
-        computer.save(update_fields=['is_archived'])
+        computer.is_archived = False
+        computer.save(update_fields=["is_archived"])
 
-        ticket_ids = Ticket.objects.filter(
-            computer_id=computer_id
-        ).values('id')
+        room = computer.room
 
-        repair_log_ids = RepairLog.objects.filter(
-            ticket_id__in=ticket_ids
+        ticket_ids = list(
+            Ticket.objects
+            .filter(computer_id=computer_id)
+            .values_list("id", flat=True)
+        )
+
+        repair_log_ids = list(
+            RepairLog.objects
+            .filter(ticket_id__in=ticket_ids)
+            .values_list("id", flat=True)
+        )
+
+        maintenance_history_ids = list(
+            MaintenanceHistory.objects
+            .filter(repair_log_id__in=repair_log_ids)
+            .values_list("id", flat=True)
         )
 
         MaintenanceHistory.objects.filter(
-            repair_log_id__in=repair_log_ids
+            id__in=maintenance_history_ids
         ).update(is_archived=False)
 
         RepairLog.objects.filter(
-            ticket_id__in=ticket_ids
+            id__in=repair_log_ids
         ).update(is_archived=False)
 
         Ticket.objects.filter(
-            computer_id=computer_id
+            id__in=ticket_ids
         ).update(is_archived=False)
 
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title="Unarchived computer",
+            action_summary=(
+                f"{request.user.get_full_name()} "
+                f"unarchived a computer"
+            ),
+            metadata={
+                "computer_id": computer_id,
+                "affected_ticket_ids": ticket_ids,
+                "affected_repair_log_ids": repair_log_ids,
+                "affected_maintenance_history_ids": maintenance_history_ids,
+            }
+        )
 
         def broadcast():
             from api.computer.serializers import ComputerDefaultSerializer
+            channel_layer = get_channel_layer()
             serializer = ComputerDefaultSerializer(computer)
             async_to_sync(channel_layer.group_send)(
                 f'room_{room.id}',
