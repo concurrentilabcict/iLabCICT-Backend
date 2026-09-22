@@ -11,7 +11,7 @@ def get_initial_notifications(user):
     notifications, next_cursor = NotificationService.get_paginated_notifications(user=user)
 
     return {
-        'data': NotificationSerializer(notifications, many=True).data,
+        'data': NotificationSerializer(notifications, many=True, context={"user": user}).data,
         'next': (
             f'{settings.API_BASE_URL}'
             f'/api/notifications/user/'

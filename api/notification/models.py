@@ -31,6 +31,8 @@ class Notification(models.Model):
     title = models.CharField(max_length=100, null=True, blank=True)
     activity_summary = models.JSONField(default=dict,null=True, blank=True)
     status = models.CharField(max_length=20, choices=NotificationStatus, null=True, blank=True)
+    read_by = models.JSONField(default=list)
+    is_archived=models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
 

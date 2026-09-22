@@ -15,9 +15,13 @@ class IsProfileOwner(BasePermission):
 class IsNotificationOwner(BasePermission):
     
     def has_object_permission(self, request, view, obj):
+        if request.user.role == User.UserRole.ADMIN:
+            return True
 
         if obj.recipient_id_id is not None:
             return obj.recipient_id_id == request.user.id
+
+        return False
 
 class IsAdminOrTechnician(BasePermission):
     def has_permission(self, request, view):
