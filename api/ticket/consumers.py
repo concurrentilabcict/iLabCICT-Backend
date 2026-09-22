@@ -118,3 +118,9 @@ class TicketConsumer(AsyncWebsocketConsumer):
             'event': 'ticket_archived',
             'ticket': event['ticket_id']
         }))
+
+    async def ticket_unarchived(self, event):
+        await self.send(text_data=json.dumps({
+            'event': 'ticket_unarchived',
+            'ticket': event['ticket']
+        }))

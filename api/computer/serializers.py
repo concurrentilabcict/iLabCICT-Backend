@@ -11,6 +11,7 @@ from api.audit_logs.services import AuditLogsService
 
 class ComputerWriteSerializer(serializers.ModelSerializer):
     computer_code = serializers.CharField(read_only=True)
+    computer_number = serializers.CharField(read_only=True)
     quantity = serializers.IntegerField(write_only=True)
 
     class Meta:
@@ -94,6 +95,11 @@ class ComputerDefaultSerializer(serializers.ModelSerializer):
     class Meta:
         model = Computer
         fields = '__all__'
+
+class ArchiveComputerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Computer
+        fields = []
 
 
 

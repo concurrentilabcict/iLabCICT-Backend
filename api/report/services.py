@@ -100,9 +100,10 @@ class ReportService:
             raise ValidationError('Date format must be in YYYY-MM-DD.')
     
     @staticmethod
-    def generate_report_content(start_date, end_date, assigned_id):
+    def generate_report_content(start_date, end_date, assigned_id, frequency=None):
 
-        repair_logs = ReportService.get_repair_logs_by_week(start_date, end_date, assigned_id)
+        repair_logs = RepairLog.objects.filter(created_at__range=(start_date, end_date), technician_id=assigned_id, is_archived=False)
+        
         if not repair_logs.exists():
            return None
         
@@ -120,7 +121,19 @@ class ReportService:
 
         assigned_id = assigned_id
         technician_name = UserService.get_user_full_name(assigned_id)
-        title = f"Weekly Report {start_date.strftime("%Y-%m-%d")}-{end_date.strftime("%Y-%m-%d")}"
+
+        if frequency == 'weekly':
+            title = (
+                f"Weekly Report "
+                f"({start_date.strftime('%b')} {start_date.day}, {start_date.year} – "
+                f"{end_date.strftime('%b')} {end_date.day}, {end_date.year})"
+            )
+        elif frequency == 'monthly':
+            title = (
+                f"Monthly Report "
+                f"({start_date.strftime('%b')} {start_date.day}, {start_date.year} – "
+                f"{end_date.strftime('%b')} {end_date.day}, {end_date.year})"
+            )
 
         formatted_report = ReportService.format_report_response(repair_log_count, summarized_report['value'], technician_name)
 
@@ -166,18 +179,21 @@ class ReportService:
     
     
     def count_repair_log_per_day(repair_logs):
-        counted_logs = repair_logs.annotate(
-            date=TruncDate('created_at')
-        ).values('date').annotate(
-            count=Count('id')
-        ).order_by('date')
+        counted_logs = (
+            repair_logs
+            .annotate(date=TruncDate("created_at"))
+            .values("date")
+            .annotate(count=Count("id"))
+            .order_by("date")
+        )
 
         summary = {}
 
         for entry in counted_logs:
-            date_str = entry['date'].strftime('%m-%d-%Y')
-            summary[date_str] = entry['count']
-        
+            date = entry["date"]
+            date_str = f"{date.strftime('%b')} {date.day}, {date.year}"
+            summary[date_str] = entry["count"]
+
         return summary
 
     
@@ -252,6 +268,8 @@ class ReportService:
             role=User.UserRole.TECHNICIAN
         ).values_list("id", flat=True))
 
+        print(technician_id_list)
+
         end_time = timezone.localdate()
 
         start_time = end_time.replace(day=1)
@@ -265,14 +283,15 @@ class ReportService:
         )
 
         print(f"start: {start_datetime}")
-        print(f"start: {end_datetime}")
+        print(f"end: {end_datetime}")
 
         for technician_id in technician_id_list:
             try:
                 ReportService.generate_report_content(
                     start_date=start_datetime,
                     end_date=end_datetime,
-                    assigned_id=technician_id
+                    assigned_id=technician_id,
+                    frequency='monthly'
                 )
             except Exception as e:
                 print(f"Failed for technician {technician_id}: {e}")
@@ -303,13 +322,14 @@ class ReportService:
                     start_date=start_datetime,
                     end_date=end_datetime,
                     assigned_id=technician_id,
+                    frequency='weekly'
                 )
             except Exception as e:
                 print(f"Failed for technician {technician_id}: {e}")
 
 
     def test_generate():
-        ReportService.generate()
+        ReportService.generate_monthly()
 
         return "Report Created Successfully!"
 

@@ -18,6 +18,14 @@ class IsNotificationOwner(BasePermission):
 
         if obj.recipient_id_id is not None:
             return obj.recipient_id_id == request.user.id
+
+class IsAdminOrTechnician(BasePermission):
+    def has_permission(self, request, view):
+        return (request.user.role == 'admin' or request.user.role == 'technician')
+
+class IsAdminOrFaculty(BasePermission):
+    def has_permission(self, request, view):
+        return (request.user.role == 'admin' or request.user.role == 'faculty')
     
 
 class IsStaff(BasePermission):

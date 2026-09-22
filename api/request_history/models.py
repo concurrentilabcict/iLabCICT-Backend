@@ -10,6 +10,8 @@ class RequestHistory(models.Model):
     date_performed = models.DateTimeField(auto_now_add=True)
     request_history_code = models.CharField(max_length=20, unique=True, null=True)
 
+    is_archived = models.BooleanField(default=False)
+
     ticket = models.ForeignKey(Ticket, on_delete=models.CASCADE, related_name='request_history_ticket', null=True)
 
     def save(self, *args, **kwargs):

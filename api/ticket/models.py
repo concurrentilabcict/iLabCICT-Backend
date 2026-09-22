@@ -10,7 +10,6 @@ class Ticket(models.Model):
         OPEN = "open", "open"
         RESOLVED = 'resolved', 'resolved'
         ONGOING = "ongoing", "ongoing"
-        ARCHIVED = "archived", "archived" 
         
     class TicketType(models.TextChoices):
         REPORT = "report", "report"
@@ -28,6 +27,8 @@ class Ticket(models.Model):
     complaint_description = models.TextField()
     issue_image = models.ImageField(upload_to="tickets/", null=True, blank=True)
     status = models.CharField(max_length=20, choices=TicketStatus.choices, default=TicketStatus.OPEN)
+
+    is_archived = models.BooleanField(default=False)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

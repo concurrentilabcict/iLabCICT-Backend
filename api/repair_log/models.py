@@ -14,6 +14,7 @@ class RepairLog(models.Model):
     repair_notes = models.TextField()
 
     created_at = models.DateTimeField(auto_now_add=True)
+    is_archived = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if self.repair_log_code:
