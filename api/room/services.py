@@ -42,7 +42,9 @@ class RoomService:
                     Computer.objects
                     .filter(room_id=room_id)
                     .order_by('id')
+                    .exclude(is_archived=True)
                 )
+
 
         if status and query_search:
             raise ValidationError('Search and filters cannot be combined.')

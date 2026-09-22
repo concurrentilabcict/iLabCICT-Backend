@@ -8,7 +8,7 @@ class RequestHistoryService:
 
         queryset = RequestHistory.objects.select_related('room',
                                                          'ticket',
-                                                         'technician')
+                                                         'technician').exclude(is_archived=True)
 
         if room_id is not None:
             queryset = queryset.filter(room_id=room_id)

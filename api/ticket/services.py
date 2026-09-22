@@ -137,12 +137,13 @@ class TicketService:
             query_search=query_search
         )
 
-        queryset = queryset.exclude(status=Ticket.TicketStatus.ARCHIVED)
+        queryset = queryset.exclude(is_archived=True)
         
         if user.role == User.UserRole.TECHNICIAN:
             queryset = queryset.filter(
                     Q(assigned_to=user)
                     | Q(status=Ticket.TicketStatus.OPEN)
+                    | Q(status=Ticket.TicketStatus.ONGOING)
                 )
 
         elif user.role == User.UserRole.FACULTY:
