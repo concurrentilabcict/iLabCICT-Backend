@@ -161,7 +161,7 @@ class ArchiveTicketView(APIView):
         )
 
 class UnarchiveTicketView(APIView):
-    permission_classes = [IsAuthenticated, IsAdmin]
+    permission_classes = [IsAuthenticated, IsAdminOrFaculty]
 
     def post(self, request, pk):
         serializer = ArchiveTicketSerializer(data=request.data, context={'request': request})
