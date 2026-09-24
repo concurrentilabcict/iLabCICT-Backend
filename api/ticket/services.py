@@ -137,7 +137,6 @@ class TicketService:
             query_search=query_search
         )
 
-        queryset = queryset.exclude(is_archived=True)
         
         if user.role == User.UserRole.TECHNICIAN:
             queryset = queryset.filter(
