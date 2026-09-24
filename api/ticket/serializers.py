@@ -83,6 +83,20 @@ class ArchiveTicketSerializer(serializers.ModelSerializer):
 
         return attrs
 
+class UnArchiveTicketSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model=Ticket
+        fields=[]
+
+    def validate(self, attrs):
+        if not self.instance.is_archived:
+            raise serializers.ValidationError({
+                "detail": "Only archived tickets can be unarchived."
+            })
+
+        return attrs    
+
 class ReassignTicketAdminSerializer(serializers.ModelSerializer):
 
     class Meta:

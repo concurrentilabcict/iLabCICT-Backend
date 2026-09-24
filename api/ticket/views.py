@@ -1,13 +1,14 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from rest_framework.views import APIView
 from api.ticket.models import Ticket
-from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer, ArchiveTicketSerializer, ReassignTicketAdminSerializer
+from api.ticket.serializers import TicketReadSerializer, TicketWriteSerializer, ArchiveTicketSerializer, ReassignTicketAdminSerializer, UnArchiveTicketSerializer
 from api.ticket.services import TicketService
 from api.permissions import IsAdmin, IsTechnician, IsFacultyReportedTicket, HasTicketPermission, IsAdminOrFaculty
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
 from urllib.parse import urlencode
+from django.shortcuts import get_object_or_404
 from django.conf import settings
 
 
@@ -145,7 +146,8 @@ class ArchiveTicketView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrFaculty]
 
     def post(self, request, pk):
-        serializer = ArchiveTicketSerializer(data=request.data, context={'request': request})
+        ticket = get_object_or_404(Ticket, pk=pk)
+        serializer = ArchiveTicketSerializer(data=request.data, context={'request': request}, instance=ticket)
         serializer.is_valid(raise_exception=True)
 
         TicketService.archive_ticket(
@@ -164,7 +166,8 @@ class UnarchiveTicketView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrFaculty]
 
     def post(self, request, pk):
-        serializer = ArchiveTicketSerializer(data=request.data, context={'request': request})
+        ticket = get_object_or_404(Ticket, pk=pk)
+        serializer = UnArchiveTicketSerializer(data=request.data, context={'request': request}, instance=ticket)
         serializer.is_valid(raise_exception=True)
 
         TicketService.unarchive_ticket(

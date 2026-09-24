@@ -29,7 +29,7 @@ class IsAdminOrTechnician(BasePermission):
 
 class IsAdminOrFaculty(BasePermission):
     def has_permission(self, request, view):
-        return (request.user.role == 'admin' or request.user.role == 'faculty')
+        return (request.user.role == User.UserRole.ADMIN or request.user.role == User.UserRole.FACULTY)
     
 
 class IsStaff(BasePermission):
