@@ -52,12 +52,8 @@ class TicketWriteSerializer(serializers.ModelSerializer):
             current_assigned_to = self.instance.assigned_to
             new_assigned_to = request.user
 
-
             if computer is not None and ticket_type == Ticket.TicketType.REQUEST:
                 raise serializers.ValidationError('Request ticket cannot contain computer data')
-
-            if current_status == Ticket.TicketStatus.ARCHIVED:
-                raise serializers.ValidationError('Archived Tickets cannot be modified')
 
             if current_status == Ticket.TicketStatus.RESOLVED:
                 raise serializers.ValidationError('Completed Tickets cannot be modified')
