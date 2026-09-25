@@ -163,7 +163,7 @@ class TicketService:
         return queryset
 
     @staticmethod
-    def get_all_archived():
+    def get_all_archived(user):
         queryset = (Ticket.objects.select_related(
                         'reported_by',
                         'assigned_to',
@@ -175,6 +175,10 @@ class TicketService:
                         '-created_at',
                         '-id'
                     ))
+
+        if user.role == User.UserRole.FACULTY:
+            queryset = queryset.filter(reported_by_id=user.id)
+            
         return queryset
         
         
@@ -462,12 +466,6 @@ class TicketService:
 
         ticket = Ticket.objects.get(id=pk)
 
-        if ticket.status != Ticket.TicketStatus.OPEN:
-            raise ValidationError({
-                "detail": "Only Open tickets can be reassigned."
-            }) 
-
-
         group_admin_faculty = {
             'tickets_admin',
             f'tickets_user_{ticket.reported_by_id}',
@@ -477,7 +475,6 @@ class TicketService:
 
         ticket.assigned_to_id = technician_id
         ticket.save()
-
 
         AuditLogsService.log(
             request=request,
