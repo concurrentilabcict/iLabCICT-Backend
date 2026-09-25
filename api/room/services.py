@@ -42,7 +42,6 @@ class RoomService:
                     Computer.objects
                     .filter(room_id=room_id)
                     .order_by('id')
-                    .exclude(is_archived=True)
                 )
 
 
@@ -86,6 +85,38 @@ class RoomService:
 
         return room
 
+    @staticmethod
+    def get_archived_computers_in_room(room_id):
+        archived_computers = (
+        Computer.objects
+        .filter(
+            room_id=room_id,
+            is_archived=True
+        )
+        .order_by('id')
+    )
+
+        print(archived_computers)
+
+        return (
+            Room.objects
+            .select_related('assigned_custodian')
+            .prefetch_related(
+                Prefetch(
+                    'computers',
+                    queryset=archived_computers,
+                    to_attr='initial_computers'
+                )
+            )
+            .annotate(
+                total_computers=Count(
+                    'computers',
+                    filter=Q(computers__is_archived=True)
+                )
+            )
+            .filter(id=room_id)
+            .first()
+        )
 
     @staticmethod
     def get_all(status=None,

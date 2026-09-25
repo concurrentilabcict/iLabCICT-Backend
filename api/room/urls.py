@@ -1,6 +1,5 @@
 from django.urls import path
-from api.room.views import RoomListCreateView, RoomDetailView, RoomAllComputersDetailView,RoomWithComputerCodeDetailView, RoomNameWithComputerCodeDetailView,RoomNameAllComputersDetailView
-
+from api.room.views import RoomListCreateView, RoomDetailView, RoomAllComputersDetailView,RoomWithComputerCodeDetailView, RoomNameWithComputerCodeDetailView,RoomNameAllComputersDetailView, GetAllArchivedComputersInRoom
 urlpatterns = [
     # GET all rooms, CREATE one room with filters
     path('', RoomListCreateView.as_view()),
@@ -9,6 +8,7 @@ urlpatterns = [
     path('<int:pk>/', RoomDetailView.as_view()),
 
     path('<int:pk>/computers/', RoomAllComputersDetailView.as_view()),
+    path('<int:pk>/computers/archive/', GetAllArchivedComputersInRoom.as_view()),
     path('<int:pk>/computers/<str:uk>/', RoomWithComputerCodeDetailView.as_view()),
 
     path('<str:room>/computers/', RoomNameAllComputersDetailView.as_view()), #i think this is where i websocket
