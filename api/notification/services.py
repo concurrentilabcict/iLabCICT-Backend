@@ -283,7 +283,6 @@ class NotificationService():
                 'entity_title': entity.title,
                 'message': body
             },
-            status=Notification.NotificationStatus.UNREAD
             )
 
         UserPushTokenService.send_notification_to_users(

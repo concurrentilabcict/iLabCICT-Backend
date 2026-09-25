@@ -18,14 +18,12 @@ class NotificationListView(ListAPIView):
 
     def get(self, request, *args, **kwargs):
         cursor = request.query_params.get('cursor')
-        status = request.query_params.get('status')
 
         try:
             notifications, next_cursor = (
                 NotificationService.get_paginated_notifications(
                     user=request.user,
                     cursor=cursor,
-                    status=status
                 )
             )
         except ValueError:
@@ -41,9 +39,6 @@ class NotificationListView(ListAPIView):
                 'cursor': next_cursor
             }
 
-            if status:
-                params['status'] = status
-
             next_url = (
                 f'{settings.API_BASE_URL}'
                 f'/api/notifications/user/'
@@ -52,19 +47,11 @@ class NotificationListView(ListAPIView):
 
         return Response({
             'results': NotificationSerializer(
-                notifications, many=True
+                notifications, many=True,context={"user": request.user}
             ).data,
 
             'next': next_url
         })
-
-    def get_queryset(self):
-        return NotificationService.get_all(
-            user=self.request.user,
-            type=self.request.query_params.get('type'),
-            status=self.request.query_params.get('status'),
-            date=self.request.query_params.get('date')
-        )
 
 class NotificationDetailView(RetrieveUpdateAPIView):
     serializer_class = NotificationSerializer
