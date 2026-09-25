@@ -3,7 +3,7 @@ from api.room.models import Room
 from api.room.serializers import RoomReadSerializer, RoomWriteSerializer, RoomAndComputerListSerializer
 from api.room.services import RoomService
 from rest_framework.permissions import IsAuthenticated
-from api.permissions import IsAdmin, IsTechnician, IsStaff
+from api.permissions import IsAdmin, IsTechnician, IsStaff, IsAdminOrTechnician
 from api.computer.models import Computer
 from api.computer.serializers import ComputerReadSerializer
 from django.db.models import Count, Q, Prefetch
@@ -104,6 +104,15 @@ class RoomDetailView(RetrieveUpdateDestroyAPIView):
     def perform_update(self, serializer):
         request = self.request
         RoomService.update_room(serializer=serializer, request=request)
+
+
+class GetAllArchivedComputersInRoom(RetrieveAPIView):
+    serializer_class = RoomAndComputerListSerializer
+    permission_classes = [IsAuthenticated, IsAdminOrTechnician]
+
+    def get_queryset(self):
+        room_id = self.kwargs['pk']
+        return RoomService.get_archived_computers_in_room(room_id=room_id)
     
 class RoomAllComputersDetailView(ListAPIView):
     serializer_class = RoomAndComputerListSerializer
