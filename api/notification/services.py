@@ -108,10 +108,8 @@ class NotificationService():
     
     @staticmethod
     def validate_filters(status):
-        allowed_notification_status = Notification.NotificationStatus.values
-
-        if status and status not in allowed_notification_status:
-            raise ValidationError('Invalid notification status')
+        ...
+     
         
         
     @staticmethod
@@ -131,7 +129,6 @@ class NotificationService():
                     'entity_title': entity.title,
                     'message': body  
                 },
-                status=Notification.NotificationStatus.UNREAD
                         )
 
         elif role == User.UserRole.TECHNICIAN:
@@ -146,7 +143,6 @@ class NotificationService():
                     'entity_title': entity.title,
                     'message': body  
                 },
-                status=Notification.NotificationStatus.UNREAD
                         )
 
         if recipient is None:

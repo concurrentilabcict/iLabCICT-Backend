@@ -13,10 +13,6 @@ class Notification(models.Model):
         REQUEST_HISTORY = 'request_history', 'request_history'
         REPAIR_LOG = 'repair_log', 'repair_log'
 
-    class NotificationStatus(models.TextChoices):
-        READ = 'read', 'read'
-        UNREAD = 'unread', 'unread'
-        ARCHIVED = 'archived', 'archived'
 
     class NotificationEventTypes(models.TextChoices):
         MULTICAST_TECHNICIAN = 'multicast-technician', 'multicast-technician'
@@ -30,7 +26,6 @@ class Notification(models.Model):
     event_type = models.CharField(max_length=30, choices=NotificationEventTypes, null=True, blank=True)
     title = models.CharField(max_length=100, null=True, blank=True)
     activity_summary = models.JSONField(default=dict,null=True, blank=True)
-    status = models.CharField(max_length=20, choices=NotificationStatus, null=True, blank=True)
     read_by = models.JSONField(default=list)
     archived_by=models.JSONField(default=list)
     created_at = models.DateTimeField(auto_now_add=True)
