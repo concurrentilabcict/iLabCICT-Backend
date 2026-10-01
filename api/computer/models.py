@@ -18,14 +18,14 @@ class Computer(models.Model):
 
     computer_code = models.CharField(max_length=20, unique=True)
     
-    operating_system = models.CharField(max_length=30)
-    gpu = models.CharField(max_length=30)
-    cpu = models.CharField(max_length=30)
+    operating_system = models.CharField(max_length=120)
+    gpu = models.CharField(max_length=120)
+    cpu = models.CharField(max_length=120)
     ram_size_installed = models.IntegerField()
     disk_size_installed = models.IntegerField()
-    build_version = models.CharField(max_length=30)
-    computer_status = models.CharField(max_length=20, choices=ComputerStatus.choices, default=ComputerStatus.ACTIVE)
-    motherboard = models.CharField(max_length=100)
+    build_version = models.CharField(max_length=120)
+    computer_status = models.CharField(max_length=120, choices=ComputerStatus.choices, default=ComputerStatus.ACTIVE)
+    motherboard = models.CharField(max_length=120)
 
     is_archived = models.BooleanField(default=False)
     computer_number = models.CharField(max_length=20, default=None,  null=True,

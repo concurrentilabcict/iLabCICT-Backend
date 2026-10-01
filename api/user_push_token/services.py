@@ -22,6 +22,7 @@ class UserPushTokenService:
         )
 
         if not tokens:
+            print('im here i have no tokens')
             return False
 
         messages = [

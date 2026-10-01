@@ -13,6 +13,58 @@ from rest_framework.response import Response
 from django.db import connection
 from django.conf import settings
 from urllib.parse import urlencode 
+from rest_framework.views import APIView
+from rest_framework import status 
+from rest_framework.response import Response
+from api.computer.services import ComputerService
+
+class ComputerExcelImportView(APIView):
+    def post(self, request, room_id):
+
+        excel_file = request.FILES.get("file")
+
+        try:
+
+            result = (
+                ComputerService
+                .import_file(
+                    excel_file=excel_file,
+                    room_id=room_id,
+                )
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "message": (
+                        "Computers imported successfully."
+                    ),
+                    "created": result["created"],
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except ValueError as e:
+
+            error = e.args[0]
+
+            if isinstance(error, dict):
+
+                return Response(
+                    {
+                        "success": False,
+                        **error,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            return Response(
+                {
+                    "success": False,
+                    "error": str(error),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 class RoomListCreateView(ListCreateAPIView):
     def get_serializer_class(self):
