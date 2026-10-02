@@ -6,13 +6,13 @@ class Computer(models.Model):
     class PeripheralStatus(models.TextChoices):
         NONE = "none", "none"
         ACTIVE = "active", "active"
-        FIXING = "fixing", "fixing"
-        BROKEN = "broken", "broken"
+        UNSERVICEABLE = 'unserviceable'
+        PENDING = 'pending'
 
     class ComputerStatus(models.TextChoices):
         ACTIVE = "active", "active"
-        FIXING = "fixing", "fixing"
-        BROKEN = "broken", "broken"
+        UNSERVICEABLE = 'unserviceable'
+        PENDING = 'pending'
     
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='computers')
 
