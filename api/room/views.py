@@ -1,6 +1,6 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
 from api.room.models import Room
-from api.room.serializers import RoomReadSerializer, RoomWriteSerializer, RoomAndComputerListSerializer
+from api.room.serializers import RoomReadSerializer, RoomWriteSerializer, RoomAndComputerListSerializer, RoomPCTransferSerializer
 from api.room.services import RoomService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician, IsStaff, IsAdminOrTechnician
@@ -13,6 +13,58 @@ from rest_framework.response import Response
 from django.db import connection
 from django.conf import settings
 from urllib.parse import urlencode 
+from rest_framework.views import APIView
+from rest_framework import status 
+from rest_framework.response import Response
+from api.computer.services import ComputerService
+
+class ComputerExcelImportView(APIView):
+    def post(self, request, room_id):
+
+        excel_file = request.FILES.get("file")
+
+        try:
+
+            result = (
+                ComputerService
+                .import_file(
+                    excel_file=excel_file,
+                    room_id=room_id,
+                )
+            )
+
+            return Response(
+                {
+                    "success": True,
+                    "detail": (
+                        "Computers imported successfully."
+                    ),
+                    "created": result["created"],
+                },
+                status=status.HTTP_201_CREATED,
+            )
+
+        except ValueError as e:
+
+            error = e.args[0]
+
+            if isinstance(error, dict):
+
+                return Response(
+                    {
+                        "success": False,
+                        **error,
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            return Response(
+                {
+                    "success": False,
+                    "error": str(error),
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 class RoomListCreateView(ListCreateAPIView):
     def get_serializer_class(self):
@@ -199,3 +251,29 @@ class RoomNameAllComputersDetailView(RetrieveAPIView):
             .prefetch_related("computers")
             .annotate(total_computer=Count("computers"))
         )
+
+class RoomTransferAllComputersAPIVIew(APIView):
+        
+    def post(self, request, old_room_id):
+        serializer = RoomPCTransferSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        destination_room_id = serializer.validated_data['destination_room_id']
+        
+
+        RoomService.transfer_all_computers(
+            old_room_id=old_room_id,
+            request=request,
+            destination_room_id=destination_room_id
+        )
+
+        return Response(
+            {
+                'detail': 'Computer transfer successfully.'
+            },
+            status=status.HTTP_200_OK
+        )
+
+    
+
+

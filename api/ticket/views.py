@@ -139,9 +139,6 @@ class GetAllArchivedTickets(ListAPIView):
     def get_queryset(self):
         return TicketService.get_all_archived(user=self.request.user)
 
-
-    
-
 class ArchiveTicketView(APIView):
     permission_classes = [IsAuthenticated, IsAdminOrFaculty]
 

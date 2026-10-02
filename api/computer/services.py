@@ -1,5 +1,8 @@
 from django.db.models import Q,Subquery
 from django.db import transaction
+from openpyxl import load_workbook
+from .models import Computer
+from api.room.models import Room
 from api.computer.models import Computer
 from rest_framework.exceptions import ValidationError
 from api.audit_logs.services import AuditLogsService
@@ -7,7 +10,9 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync 
 from api.ticket.services import TicketService
 from django.db.models import Prefetch
-
+from api.common.utils.entity_code import generate_entity_code
+from api.common.utils.local_code import generate_pc_local_code
+from django.utils import timezone
 class ComputerService:
 
     @staticmethod
@@ -438,4 +443,388 @@ class ComputerService:
             Q(monitor_status=Computer.PeripheralStatus.NONE) &
             Q(ups_status=Computer.PeripheralStatus.NONE)
         )   
+
+    REQUIRED_COLUMNS = {
+        "room",
+        "model",
+        "processor",
+        "ram",
+        "storage",
+        "operating_system",
+    }
     
+    REQUIRED_COLUMNS = {
+        "operating_system",
+        "gpu",
+        "cpu",
+        "ram_size_installed",
+        "disk_size_installed",
+        "build_version",
+        "computer_status",
+        "monitor_status",
+        "mouse_status",
+        "keyboard_status",
+        "ups_status",
+        "motherboard",
+    }
+
+    @classmethod
+    def import_file(cls, excel_file, room_id):
+
+        if not excel_file:
+            raise ValueError(
+                "No Excel file was provided."
+            )
+
+        if not excel_file.name.lower().endswith(".xlsx"):
+            raise ValueError(
+                "Only .xlsx files are supported."
+            )
+
+       
+        try:
+            room = Room.objects.get(
+                pk=room_id
+            )
+
+        except Room.DoesNotExist:
+            raise ValueError(
+                f"Room with ID {room_id} does not exist."
+            )
+
+        try:
+            workbook = load_workbook(
+                excel_file,
+                read_only=True,
+                data_only=True,
+            )
+
+            worksheet = workbook.active
+
+        except Exception:
+            raise ValueError(
+                "Unable to read the Excel file."
+            )
+
+        rows = worksheet.iter_rows(
+            values_only=True
+        )
+
+        try:
+            raw_headers = next(rows)
+
+        except StopIteration:
+            raise ValueError(
+                "The Excel file is empty."
+            )
+
+        headers = [
+            str(header).strip().lower()
+            if header is not None
+            else ""
+            for header in raw_headers
+        ]
+
+        # Remove empty headers
+        headers = [
+            header
+            for header in headers
+            if header
+        ]
+
+   
+        missing_columns = (
+            cls.REQUIRED_COLUMNS - set(headers)
+        )
+
+        if missing_columns:
+            raise ValueError(
+                {
+                    "message": "Missing required columns.",
+                    "missing_columns": sorted(
+                        missing_columns
+                    ),
+                }
+            )
+
+   
+        computers = []
+        errors = []
+
+        for row_number, row in enumerate(
+            rows,
+            start=2,
+        ):
+
+           
+            if all(
+                value is None
+                or str(value).strip() == ""
+                for value in row
+            ):
+                continue
+
+            data = dict(
+                zip(headers, row)
+            )
+
+            row_errors = []
+
+
+            operating_system = cls.clean_value(
+                data.get("operating_system")
+            )
+
+            gpu = cls.clean_value(
+                data.get("gpu")
+            )
+
+            cpu = cls.clean_value(
+                data.get("cpu")
+            )
+
+            build_version = cls.clean_value(
+                data.get("build_version")
+            )
+
+            computer_status = cls.clean_value(
+                data.get("computer_status")
+            )
+
+            monitor_status = cls.clean_value(
+                data.get("monitor_status")
+            )
+
+            mouse_status = cls.clean_value(
+                data.get("mouse_status")
+            )
+
+            keyboard_status = cls.clean_value(
+                data.get("keyboard_status")
+            )
+
+            ups_status = cls.clean_value(
+                data.get("ups_status")
+            )
+
+            motherboard = cls.clean_value(
+                data.get("motherboard")
+            )
+
+            ram_size_installed = cls.clean_integer(
+                data.get("ram_size_installed")
+            )
+
+            disk_size_installed = cls.clean_integer(
+                data.get("disk_size_installed")
+            )
+
+
+            required_text_fields = {
+                "operating_system": operating_system,
+                "gpu": gpu,
+                "cpu": cpu,
+                "build_version": build_version,
+                "computer_status": computer_status,
+                "monitor_status": monitor_status,
+                "mouse_status": mouse_status,
+                "keyboard_status": keyboard_status,
+                "ups_status": ups_status,
+                "motherboard": motherboard,
+            }
+
+            for field_name, value in (
+                required_text_fields.items()
+            ):
+                if not value:
+                    row_errors.append(
+                        f"{field_name} is required."
+                    )
+
+            if ram_size_installed is None:
+                row_errors.append(
+                    "ram_size_installed must be an integer."
+                )
+
+            if disk_size_installed is None:
+                row_errors.append(
+                    "disk_size_installed must be an integer."
+                )
+
+            if row_errors:
+                errors.append(
+                    {
+                        "row": row_number,
+                        "errors": row_errors,
+                    }
+                )
+
+                continue
+
+            computer = Computer(
+                room=room,
+
+                # Generated by this import service
+                computer_code=None,
+                computer_number=None,
+
+                operating_system=operating_system,
+                gpu=gpu,
+                cpu=cpu,
+                ram_size_installed=ram_size_installed,
+                disk_size_installed=disk_size_installed,
+                build_version=build_version,
+                computer_status=computer_status,
+                monitor_status=monitor_status,
+                mouse_status=mouse_status,
+                keyboard_status=keyboard_status,
+                ups_status=ups_status,
+                motherboard=motherboard,
+
+                # System/default field
+                is_archived=False,
+            )
+
+            computers.append(computer)
+
+        if errors:
+            raise ValueError(
+                {
+                    "message": (
+                        "Import failed because "
+                        "some rows are invalid."
+                    ),
+                    "errors": errors,
+                }
+            )
+
+        if not computers:
+            raise ValueError(
+                "No valid computer records were found."
+            )
+        try:
+
+            with transaction.atomic():
+
+                cls.generate_computer_numbers(
+                    computers,
+                    room,
+                )
+
+                cls.generate_computer_codes(
+                    computers
+                )
+
+                Computer.objects.bulk_create(
+                    computers
+                )
+
+        except Exception as e:
+
+            raise ValueError(
+                f"Failed to import computers: {str(e)}"
+            )
+
+        return {
+            "created": len(computers),
+        }
+
+
+    @staticmethod
+    def generate_computer_numbers(
+        computers,
+        room,
+    ):
+        """
+        Generate PC-XX numbers for the specified room.
+        """
+
+        existing_numbers = set(
+            Computer.objects
+            .filter(room=room)
+            .values_list(
+                "computer_number",
+                flat=True,
+            )
+        )
+
+        next_number = 1
+
+        for computer in computers:
+
+            while (
+                f"PC-{next_number:02d}"
+                in existing_numbers
+            ):
+                next_number += 1
+
+            computer.computer_number = (
+                f"PC-{next_number:02d}"
+            )
+
+            existing_numbers.add(
+                computer.computer_number
+            )
+
+            next_number += 1
+
+    @staticmethod
+    def generate_computer_codes(computers):
+
+        if not computers:
+            return
+
+        current_year = timezone.now().year
+
+        last_obj = (
+            Computer.objects
+            .filter(
+                computer_code__startswith=f"PC{current_year}"
+            )
+            .order_by("-computer_code")
+            .first()
+        )
+
+        if last_obj:
+            last_number = int(
+                last_obj.computer_code[-5:]
+            )
+        else:
+            last_number = 0
+
+        for index, computer in enumerate(
+            computers,
+            start=1,
+        ):
+            number = last_number + index
+
+            computer.computer_code = (
+                f"PC{current_year}{number:05d}"
+            )
+
+    @staticmethod
+    def clean_value(value):
+
+        if value is None:
+            return None
+
+        value = str(value).strip()
+
+        return value if value else None
+
+    @staticmethod
+    def clean_integer(value):
+
+        if value is None:
+            return None
+
+        if isinstance(value, bool):
+            return None
+
+        try:
+            return int(value)
+
+        except (ValueError, TypeError):
+            return None
+
+

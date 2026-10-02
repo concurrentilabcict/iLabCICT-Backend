@@ -117,6 +117,8 @@ class NotificationService():
         notification = None
         channel_layer = get_channel_layer()
 
+        print(f"new ticket: {entity.id}")
+
         if role == User.UserRole.FACULTY:
             notification = Notification.objects.create(
                 recipient_id_id=recipient.id,
@@ -153,7 +155,7 @@ class NotificationService():
                 body=body,
                 extra_data={'ticket_id': entity.id}
             )
-        else:
+        else:   
             UserPushTokenService.send_notification_to_users(
                 users=recipient,
                 title=title,
