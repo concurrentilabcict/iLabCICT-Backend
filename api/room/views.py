@@ -1,6 +1,6 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView, RetrieveAPIView
 from api.room.models import Room
-from api.room.serializers import RoomReadSerializer, RoomWriteSerializer, RoomAndComputerListSerializer
+from api.room.serializers import RoomReadSerializer, RoomWriteSerializer, RoomAndComputerListSerializer, RoomPCTransferSerializer
 from api.room.services import RoomService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician, IsStaff, IsAdminOrTechnician
@@ -36,7 +36,7 @@ class ComputerExcelImportView(APIView):
             return Response(
                 {
                     "success": True,
-                    "message": (
+                    "detail": (
                         "Computers imported successfully."
                     ),
                     "created": result["created"],
@@ -251,3 +251,29 @@ class RoomNameAllComputersDetailView(RetrieveAPIView):
             .prefetch_related("computers")
             .annotate(total_computer=Count("computers"))
         )
+
+class RoomTransferAllComputersAPIVIew(APIView):
+        
+    def post(self, request, old_room_id):
+        serializer = RoomPCTransferSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        destination_room_id = serializer.validated_data['destination_room_id']
+        
+
+        RoomService.transfer_all_computers(
+            old_room_id=old_room_id,
+            request=request,
+            destination_room_id=destination_room_id
+        )
+
+        return Response(
+            {
+                'detail': 'Computer transfer successfully.'
+            },
+            status=status.HTTP_200_OK
+        )
+
+    
+
+

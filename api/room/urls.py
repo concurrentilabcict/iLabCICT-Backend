@@ -1,16 +1,13 @@
 from django.urls import path
-from api.room.views import RoomListCreateView, RoomDetailView, RoomAllComputersDetailView,RoomWithComputerCodeDetailView, RoomNameWithComputerCodeDetailView,RoomNameAllComputersDetailView, GetAllArchivedComputersInRoom, ComputerExcelImportView
+from api.room.views import RoomListCreateView, RoomDetailView, RoomAllComputersDetailView,RoomWithComputerCodeDetailView, RoomNameWithComputerCodeDetailView,RoomNameAllComputersDetailView, GetAllArchivedComputersInRoom, ComputerExcelImportView, RoomTransferAllComputersAPIVIew
 urlpatterns = [
     # GET all rooms, CREATE one room with filters
     path('', RoomListCreateView.as_view()),
 
     # GET, UPDATE, DELETE one room
     path('<int:pk>/', RoomDetailView.as_view()),
-    path(
-            "<int:room_id>/computers/import/",
-            ComputerExcelImportView.as_view(),
-            name="computer-excel-import",
-        ),
+    path("<int:room_id>/computers/import/",ComputerExcelImportView.as_view()),
+    path("<int:old_room_id>/transfer-computers/", RoomTransferAllComputersAPIVIew.as_view()),
     path('<int:pk>/computers/', RoomAllComputersDetailView.as_view()),
     path('<int:pk>/computers/archive/', GetAllArchivedComputersInRoom.as_view()),
     path('<int:pk>/computers/<str:uk>/', RoomWithComputerCodeDetailView.as_view()),

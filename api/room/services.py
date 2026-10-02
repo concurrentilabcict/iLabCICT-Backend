@@ -6,12 +6,14 @@ from api.ticket.models import Ticket
 from api.audit_logs.services import AuditLogsService 
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
-from api.room.serializers import RoomReadSerializer
+from api.room.serializers import RoomReadSerializer,ComputerListSerializer
 from api.cursor import SingleCursorService
 from api.common.utils.date_checker import is_invalid_date_format
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
+from django.db import transaction
+import time
 
 from django.db.models import Model
 class RoomService:
@@ -336,5 +338,122 @@ class RoomService:
             )
 
         return queryset
+
+
+    @staticmethod
+    @transaction.atomic
+    def transfer_all_computers(
+        old_room_id,
+        destination_room_id,
+        request,
+    ):
+        if old_room_id == destination_room_id:
+            raise ValidationError(
+                "Source room and destination room cannot be the same."
+            )
+
+        if not Room.objects.filter(id=old_room_id).exists():
+            raise ValidationError(
+                "Source room does not exist."
+            )
+
+        if not Room.objects.filter(id=destination_room_id).exists():
+            raise ValidationError(
+                "Destination room does not exist."
+            )
+
+
+        computer_ids = list(
+            Computer.objects.filter(
+                room_id=old_room_id,
+                is_archived=False,
+            ).values_list(
+                "id",
+                flat=True,
+            )
+        )
+
+
+        if not computer_ids:
+            raise ValidationError(
+                "No active computers can be found."
+            )
+
+
+        room_name = (
+            Room.objects
+            .filter(id=destination_room_id)
+            .values_list(
+                "room_name",
+                flat=True,
+            )
+            .first()
+        )
+
+        Computer.objects.filter(
+            room_id=old_room_id,
+            id__in=computer_ids,
+            is_archived=False,
+        ).update(
+            room_id=destination_room_id
+        )
+
+
+        computers = list(
+            Computer.objects.filter(
+                id__in=computer_ids,
+                is_archived=False,
+            )
+        )
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title=(
+                f"{request.user.get_full_name()} "
+                "Transferred Computers"
+            ),
+            action_summary=(
+                f"{len(computer_ids)} computers were "
+                f"transferred to {room_name}."
+            ),
+            metadata={
+                "total_count": len(computer_ids),
+                "computer_ids": computer_ids,
+                "old_room_id": old_room_id,
+                "destination_room_id": destination_room_id,
+            },
+        )
+
+
+        def broadcast():
+            channel_layer = get_channel_layer()
+            computer_serializer = ComputerListSerializer(computers, many=True)
+
+            async_to_sync(channel_layer.group_send)(
+                f'room_{old_room_id}',
+                {
+                    'type': 'computer_transferred_out',
+                    'computer_ids': computer_ids,
+                    'destination_room_id': destination_room_id 
+                }
+
+            )
+
+            async_to_sync(channel_layer.group_send)(
+                f'room_{destination_room_id}',
+                {
+                    'type': 'computer_transferred_in',
+                    'transferred_computers': computer_serializer.data,
+                    'source_room_id': old_room_id
+                }
+            )
+
+        transaction.on_commit(broadcast)
+
+
+
+
+        
 
         

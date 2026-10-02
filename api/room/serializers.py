@@ -52,4 +52,12 @@ class RoomMinimalSerializer(serializers.ModelSerializer):
         model = Room
         fields = ['id', 'room_name', 'building_name', 'floor_number']
 
+class RoomPCTransferSerializer(serializers.ModelSerializer):
+
+    destination_room_id = serializers.IntegerField()
+
+    class Meta:
+        model = Room
+        fields = ['destination_room_id']
+
 

@@ -471,10 +471,6 @@ class ComputerService:
     @classmethod
     def import_file(cls, excel_file, room_id):
 
-        # ---------------------------------------------------------
-        # 1. Validate file
-        # ---------------------------------------------------------
-
         if not excel_file:
             raise ValueError(
                 "No Excel file was provided."
@@ -485,10 +481,7 @@ class ComputerService:
                 "Only .xlsx files are supported."
             )
 
-        # ---------------------------------------------------------
-        # 2. Get room
-        # ---------------------------------------------------------
-
+       
         try:
             room = Room.objects.get(
                 pk=room_id
@@ -498,10 +491,6 @@ class ComputerService:
             raise ValueError(
                 f"Room with ID {room_id} does not exist."
             )
-
-        # ---------------------------------------------------------
-        # 3. Load workbook
-        # ---------------------------------------------------------
 
         try:
             workbook = load_workbook(
@@ -516,10 +505,6 @@ class ComputerService:
             raise ValueError(
                 "Unable to read the Excel file."
             )
-
-        # ---------------------------------------------------------
-        # 4. Read headers
-        # ---------------------------------------------------------
 
         rows = worksheet.iter_rows(
             values_only=True
@@ -547,10 +532,7 @@ class ComputerService:
             if header
         ]
 
-        # ---------------------------------------------------------
-        # 5. Validate headers
-        # ---------------------------------------------------------
-
+   
         missing_columns = (
             cls.REQUIRED_COLUMNS - set(headers)
         )
@@ -565,10 +547,7 @@ class ComputerService:
                 }
             )
 
-        # ---------------------------------------------------------
-        # 6. Parse rows
-        # ---------------------------------------------------------
-
+   
         computers = []
         errors = []
 
@@ -577,7 +556,7 @@ class ComputerService:
             start=2,
         ):
 
-            # Skip completely empty rows
+           
             if all(
                 value is None
                 or str(value).strip() == ""
@@ -591,9 +570,6 @@ class ComputerService:
 
             row_errors = []
 
-            # -----------------------------------------------------
-            # Required text fields
-            # -----------------------------------------------------
 
             operating_system = cls.clean_value(
                 data.get("operating_system")
@@ -635,10 +611,6 @@ class ComputerService:
                 data.get("motherboard")
             )
 
-            # -----------------------------------------------------
-            # Required integer fields
-            # -----------------------------------------------------
-
             ram_size_installed = cls.clean_integer(
                 data.get("ram_size_installed")
             )
@@ -647,9 +619,6 @@ class ComputerService:
                 data.get("disk_size_installed")
             )
 
-            # -----------------------------------------------------
-            # Validate text fields
-            # -----------------------------------------------------
 
             required_text_fields = {
                 "operating_system": operating_system,
@@ -672,10 +641,6 @@ class ComputerService:
                         f"{field_name} is required."
                     )
 
-            # -----------------------------------------------------
-            # Validate integer fields
-            # -----------------------------------------------------
-
             if ram_size_installed is None:
                 row_errors.append(
                     "ram_size_installed must be an integer."
@@ -686,10 +651,6 @@ class ComputerService:
                     "disk_size_installed must be an integer."
                 )
 
-            # -----------------------------------------------------
-            # Row validation failed
-            # -----------------------------------------------------
-
             if row_errors:
                 errors.append(
                     {
@@ -699,10 +660,6 @@ class ComputerService:
                 )
 
                 continue
-
-            # -----------------------------------------------------
-            # Create unsaved Computer
-            # -----------------------------------------------------
 
             computer = Computer(
                 room=room,
@@ -730,10 +687,6 @@ class ComputerService:
 
             computers.append(computer)
 
-        # ---------------------------------------------------------
-        # 7. Stop if validation errors exist
-        # ---------------------------------------------------------
-
         if errors:
             raise ValueError(
                 {
@@ -749,11 +702,6 @@ class ComputerService:
             raise ValueError(
                 "No valid computer records were found."
             )
-
-        # ---------------------------------------------------------
-        # 8. Generate identifiers + bulk insert
-        # ---------------------------------------------------------
-
         try:
 
             with transaction.atomic():
@@ -781,9 +729,6 @@ class ComputerService:
             "created": len(computers),
         }
 
-    # =============================================================
-    # COMPUTER NUMBER GENERATION
-    # =============================================================
 
     @staticmethod
     def generate_computer_numbers(
@@ -823,10 +768,6 @@ class ComputerService:
 
             next_number += 1
 
-    # =============================================================
-    # COMPUTER CODE GENERATION
-    # =============================================================
-
     @staticmethod
     def generate_computer_codes(computers):
 
@@ -860,10 +801,6 @@ class ComputerService:
             computer.computer_code = (
                 f"PC{current_year}{number:05d}"
             )
-
-    # =============================================================
-    # HELPERS
-    # =============================================================
 
     @staticmethod
     def clean_value(value):
