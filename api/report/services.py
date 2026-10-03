@@ -15,11 +15,17 @@ from rest_framework.exceptions import ValidationError, NotFound, APIException
 from api.common.utils.date_checker import is_invalid_date_format
 from api.user.models import User
 from datetime import datetime, time, timedelta
-from django.utils import timezone
+from django.utils import json, timezone
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
 from api.cursor import CursorService
 from django.db.models import Q
+from datetime import date
+import json
+import time
+from calendar import monthrange
+from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 class ReportService:
 
     PAGE_SIZE = 15
@@ -364,16 +370,211 @@ class ReportService:
             )
 
         return queryset
-            
-        
 
-        
-    
-    
+    @staticmethod
+    def generate_assignment_ai_summary(notes):
+        groq_models = [
+            "openai/gpt-oss-120b",
+            "qwen/qwen3.6-27b",
+            "openai/gpt-oss-20b",
+            "qwen/qwen3.8-27b",
+        ]
 
+        summary_prompt = load_prompt(
+            "summarize-assignment.md"
+        )
 
+        client = groq.Groq(
+            api_key=settings.GROQ_API_KEY
+        )
 
+        for model in groq_models:
+            try:
+                completion = client.chat.completions.create(
+                    model=model,
+                    messages=[
+                        {
+                            "role": "system",
+                            "content": summary_prompt,
+                        },
+                        {
+                            "role": "user",
+                            "content": notes,
+                        },
+                    ],
+                    temperature=0.3,
+                    max_completion_tokens=512,
+                )
 
-        
-        
+                return {
+                    "value": completion.choices[0].message.content.strip(),
+                    "status": "successful",
+                }
 
+            except groq.RateLimitError:
+                print(
+                    f"Rate Limit Exceeded on model: {model}"
+                )
+                continue
+
+            except groq.BadRequestError as e:
+                return {
+                    "value": f"Bad Request: {str(e)}",
+                    "status": "unsuccessful",
+                }
+
+        return {
+            "value": "Summary generation failed: Models Exhausted",
+            "status": "unsuccessful",
+        }
+
+    @staticmethod
+    def generate_assignment_report(
+        month_date,
+        technician_id,
+    ):
+        year = timezone.now().year
+        month = month_date
+
+        start_date = timezone.make_aware(
+            datetime(year, month, 1)
+        )
+
+        if month == 12:
+            end_date = timezone.make_aware(
+                datetime(year + 1, 1, 1)
+            )
+        else:
+            end_date = timezone.make_aware(
+                datetime(year, month + 1, 1)
+            )
+
+        repair_logs = (
+            RepairLog.objects
+            .filter(
+                created_at__gte=start_date,
+                created_at__lt=end_date,
+                technician_id=technician_id,
+            )
+            .select_related(
+                "ticket",
+                "ticket__room",
+            )
+            .order_by("created_at")
+        )
+
+        logs_by_date = defaultdict(list)
+
+        for log in repair_logs:
+            date = log.created_at.date()
+            logs_by_date[date].append(log)
+
+        reports = []
+
+        # Build the reports first.
+        for date, logs in logs_by_date.items():
+
+            locations = set()
+            notes = []
+
+            for log in logs:
+
+                if log.ticket and log.ticket.room:
+                    locations.add(
+                        log.ticket.room.room_name
+                    )
+
+                if log.repair_notes:
+                    notes.append(
+                        {
+                            "title": log.title,
+                            "repair_notes": log.repair_notes,
+                        }   
+                    )
+
+            reports.append({
+                "date": date,
+                "locations": sorted(locations),
+                "notes": notes,
+                "is_completed": True,
+            })
+
+        if not reports:
+            return []
+
+        # Generate AI summaries concurrently.
+        start = time.perf_counter()
+
+        def generate_summary(report):
+            combined_notes = "\n".join((
+                    f"Title Issue: {note['title']}\n"
+                    f"Technician Repair Notes: {note['repair_notes']}"
+                    for note in report["notes"]
+                )
+            )
+
+            print(combined_notes)
+
+            return ReportService.generate_assignment_ai_summary(
+                combined_notes
+            )
+
+        with ThreadPoolExecutor(
+            max_workers=min(5, len(reports))
+        ) as executor:
+
+            future_to_report = {
+                executor.submit(
+                    generate_summary,
+                    report,
+                ): report
+                for report in reports
+            }
+
+            for future in as_completed(
+                future_to_report
+            ):
+                report = future_to_report[future]
+
+                try:
+                    summary_result = future.result()
+
+                    if (
+                        summary_result["status"]
+                        == "successful"
+                    ):
+                        report["summary"] = (
+                            summary_result["value"]
+                        )
+                    else:
+                        report["summary"] = (
+                            "Summary generation failed."
+                        )
+
+                except Exception as e:
+                    print(
+                        f"AI summary failed for "
+                        f"{report['date']}: {e}"
+                    )
+
+                    report["summary"] = (
+                        "Summary generation failed."
+                    )
+
+        elapsed = time.perf_counter() - start
+
+        print(
+            f"AI MONTHLY SUMMARY TIME: "
+            f"{elapsed:.2f}s"
+        )
+
+        for report in reports:
+            report.pop("notes", None)
+
+            report["date"] = (
+                report["date"].strftime(
+                    "%m-%d-%Y"
+                )
+            )
+
+        return reports

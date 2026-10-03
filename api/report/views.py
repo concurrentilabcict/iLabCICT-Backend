@@ -1,12 +1,13 @@
 from rest_framework.generics import ListCreateAPIView, RetrieveUpdateDestroyAPIView
 from rest_framework.views import APIView
 from api.report.models import Report
-from api.report.serializers import ReportSerializer
+from api.report.serializers import ReportSerializer, ReportAssingmentSerializer
 from api.report.services import ReportService
 from rest_framework.permissions import IsAuthenticated
 from api.permissions import IsAdmin, IsTechnician
 from rest_framework.response import Response
 from api.permissions import HasSchedulerToken
+from api.user.models import User
 
 class ReportListCreateView(ListCreateAPIView):
     serializer_class = ReportSerializer
@@ -64,6 +65,30 @@ class GenerateReportTest(APIView):
         return Response({
             "detail": "Scheduler executed successfully",
             "message": res
+        })
+
+class GenerateAssignmentReport(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+    
+    def get(self, request):
+        from api.user.serializers import UserMinimalSerializer
+        serializer = ReportAssingmentSerializer(data=request.data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+
+        technician_id = serializer.validated_data['technician_id']
+        month_date = serializer.validated_data['month_date']
+
+
+        technician = User.objects.filter(id=technician_id).first()
+
+        res = ReportService.generate_assignment_report(
+            month_date=month_date,
+            technician_id=technician_id
+        )
+
+        return Response({
+            "technician":  UserMinimalSerializer(technician).data,
+            "assignment_report": res
         })
 
 

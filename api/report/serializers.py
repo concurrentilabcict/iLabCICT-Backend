@@ -13,3 +13,11 @@ class NotificationReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = Report
         fields = ['technician','title']
+
+class ReportAssingmentSerializer(serializers.ModelSerializer):
+
+    technician_id = serializers.IntegerField()
+    month_date = serializers.IntegerField()
+    class Meta:
+        model = Report
+        fields = ['technician_id','month_date']
