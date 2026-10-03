@@ -1,9 +1,10 @@
 from django.urls import path
-from api.report.views import ReportDetailView, ReportListCreateView, GenerateReportTest
+from api.report.views import ReportDetailView, ReportListCreateView, GenerateReportTest, GenerateAssignmentReport
 
 urlpatterns = [
     path('', ReportListCreateView.as_view()),
     path('<int:pk>/', ReportDetailView.as_view()),
-    path('test/', GenerateReportTest.as_view())
+    path('test/', GenerateReportTest.as_view()),
+    path('assignment/', GenerateAssignmentReport.as_view()),
 
 ]
