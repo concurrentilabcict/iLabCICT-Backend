@@ -14,13 +14,13 @@ class TicketComputerSerializer(serializers.ModelSerializer):
         fields= ['id','reported_by', 'assigned_to', 'created_at', 'status', 'title', 'complaint_description']
 
 class TicketReadSerializer(serializers.ModelSerializer):
-    from api.computer.serializers import ComputerMinimalSerializer
+    from api.computer.serializers import ComputerTicketMinimalSerializer
     ticket_code = serializers.CharField(read_only=True)
 
     reported_by = UserMinimalSerializer(read_only=True)
     assigned_to = UserMinimalSerializer(read_only=True)
     room = RoomMinimalSerializer(read_only=True)
-    computer = ComputerMinimalSerializer(read_only=True)
+    computer = ComputerTicketMinimalSerializer(read_only=True)
 
     class Meta:
         model = Ticket

@@ -68,6 +68,13 @@ class ComputerMinimalSerializer(serializers.ModelSerializer):
         model = Computer
         fields = ['id', 'computer_code']
 
+class ComputerTicketMinimalSerializer(serializers.ModelSerializer):
+    room = RoomMinimalSerializer(read_only=True)
+
+    class Meta:
+        model = Computer
+        fields = ['id', 'computer_code', 'computer_number', 'room']
+
 
 class ComputerReadSerializer(serializers.ModelSerializer):
     from api.ticket.serializers import TicketComputerSerializer
