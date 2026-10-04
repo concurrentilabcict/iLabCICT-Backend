@@ -62,6 +62,7 @@ class TicketService:
                 'assigned_to',
                 'room',
                 'computer',
+                'computer__room'
             )
             .annotate(
                 status_priority=Case(
