@@ -1,6 +1,7 @@
 from api.room.models import Room
 from rest_framework.exceptions import ValidationError
-from django.db.models import Count, Q, Prefetch
+from django.db.models import Count, Q, Prefetch, IntegerField
+from django.db.models.functions import Cast, Substr
 from api.computer.models import Computer
 from api.ticket.models import Ticket
 from api.audit_logs.services import AuditLogsService 
@@ -373,11 +374,17 @@ class RoomService:
             )
         )
 
-
         if not computer_ids:
             raise ValidationError(
                 "No active computers can be found."
             )
+
+            
+        RoomService.reassign_computer_numbers(
+            source_room_id=old_room_id,
+            destination_room_id=destination_room_id,
+            request=request
+        )
 
 
         room_name = (
@@ -450,6 +457,91 @@ class RoomService:
             )
 
         transaction.on_commit(broadcast)
+
+
+    def get_used_computers(source_room_id):
+        used_computers = (
+            Computer.objects
+            .filter(
+                room_id=source_room_id,
+                is_archived=False
+            )
+            .annotate(
+                number_int=Cast(
+                    Substr('computer_number', 4), IntegerField()
+                )   
+            )
+            .values_list("number_int", flat=True)
+        )
+
+        return used_computers
+
+
+    def reassign_computer_numbers(source_room_id, destination_room_id, request):
+        used_numbers = set(RoomService.get_used_computers(destination_room_id))
+
+        if not used_numbers:
+            return
+
+        computers_to_reassign = (
+            Computer.objects
+            .filter(
+                room_id=source_room_id,
+                is_archived=False,
+            )
+            .annotate(
+                number_int=Cast(
+                    Substr("computer_number", 4),
+                    IntegerField(),
+                )
+            )
+            .order_by("number_int", "id")
+        )
+
+        reassigned_computers = []
+        next_available_number = 1
+
+        for computer in computers_to_reassign:
+
+            while next_available_number in used_numbers:
+                next_available_number += 1
+
+            old_number = computer.computer_number
+            new_number = f"PC-{next_available_number}"
+
+            computer.computer_number = new_number
+            computer.room_id = destination_room_id
+            
+
+            reassigned_computers.append({
+                "computer_id": computer.id,
+                "old_number": old_number,
+                "new_number": new_number
+            })
+
+            used_numbers.add(next_available_number)
+
+            next_available_number += 1
+
+        Computer.objects.bulk_update(
+            computers_to_reassign,
+            ["computer_number", "room_id"]
+        )
+
+        AuditLogsService.log(
+            request=request,
+            performed_by=request.user,
+            action_title="Reassigned Computer Numbers",
+            action_summary=(
+                f"Reassigned computer numbers for {len(reassigned_computers)} "
+                f"computers from room {source_room_id} to avoid conflicts in room {destination_room_id}."
+            ),
+            metadata={
+                "reassigned_computers": reassigned_computers,
+                "source_room_id": source_room_id,
+                "destination_room_id": destination_room_id
+            }
+        )
 
 
 
