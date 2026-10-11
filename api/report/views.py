@@ -70,7 +70,7 @@ class GenerateReportTest(APIView):
 class GenerateAssignmentReport(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
     
-    def get(self, request):
+    def post(self, request):
         from api.user.serializers import UserMinimalSerializer
         serializer = ReportAssingmentSerializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
