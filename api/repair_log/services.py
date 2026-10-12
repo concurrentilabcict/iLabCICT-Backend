@@ -13,6 +13,9 @@ from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync  
 from api.cursor import CursorService
 from django.db.models import Q
+from datetime import datetime, time
+from django.utils import timezone
+from django.utils.dateparse import parse_date
 class RepairLogService:
 
     PAGE_SIZE = 15
@@ -55,7 +58,8 @@ class RepairLogService:
                                                     'ticket__reported_by',
                                                     'ticket__assigned_to',
                                                     'ticket__room',
-                                                    'ticket__computer')
+                                                    'ticket__computer',
+                                                    'ticket__computer__room')
         
         if user.role == User.UserRole.ADMIN and technician_id:
             queryset = queryset.filter(technician_id=technician_id)
@@ -64,7 +68,15 @@ class RepairLogService:
             queryset = queryset.filter(technician_id=user.id)
         
         if date is not None:
-            queryset = queryset.filter(created_at__date=date)
+            parsed_day = parse_date(str(date))
+            if parsed_day is not None:
+                start = timezone.make_aware(
+                    datetime.combine(parsed_day, time.min)
+                )
+                end = timezone.make_aware(
+                    datetime.combine(parsed_day, time.max)
+                )
+                queryset = queryset.filter(created_at__range=(start, end))
 
         return queryset.order_by('-created_at', '-id')
     
