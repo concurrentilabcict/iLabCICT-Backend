@@ -22,7 +22,7 @@ from api.cursor import CursorService
 from django.db.models import Q
 from datetime import date
 import json
-import time
+import time as time_module
 from calendar import monthrange
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -503,7 +503,7 @@ class ReportService:
             return []
 
         # Generate AI summaries concurrently.
-        start = time.perf_counter()
+        start = time_module.perf_counter()
 
         def generate_summary(report):
             combined_notes = "\n".join((
@@ -561,7 +561,7 @@ class ReportService:
                         "Summary generation failed."
                     )
 
-        elapsed = time.perf_counter() - start
+        elapsed = time_module.perf_counter() - start
 
         print(
             f"AI MONTHLY SUMMARY TIME: "

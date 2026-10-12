@@ -252,4 +252,4 @@ ENVIRONMENT = os.getenv('ENV', 'development')
 if ENVIRONMENT == 'development':
     API_BASE_URL = "http://127.0.0.1:8000"
 else:
-    API_BASE_URL = "https://ilabcict-backend.onrender.com"
+    API_BASE_URL = "https://ilab-cict-backend.onrender.com"
