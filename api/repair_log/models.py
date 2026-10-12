@@ -16,6 +16,13 @@ class RepairLog(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_archived = models.BooleanField(default=False)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['-created_at', '-id']),
+            models.Index(fields=['technician', '-created_at']),
+            models.Index(fields=['ticket', '-created_at']),
+        ]
+
     def save(self, *args, **kwargs):
         if self.repair_log_code:
             return super().save(*args, **kwargs)
