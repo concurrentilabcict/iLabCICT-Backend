@@ -48,6 +48,7 @@ class TicketService:
                     output_field=IntegerField(),
                 )
             ).order_by('status_priority', '-created_at')
+            .exclude(is_archived=True)
         )
 
         return queryset
