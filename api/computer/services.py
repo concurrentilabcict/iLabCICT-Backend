@@ -467,6 +467,7 @@ class ComputerService:
         "ups_status",
         "motherboard",
     }
+#---------------------------------------------old method-----------------------------------------------------------    
 
     @classmethod
     def import_file(cls, excel_file, room_id):
@@ -619,6 +620,14 @@ class ComputerService:
                 data.get("disk_size_installed")
             )
 
+            ram_unit = cls.clean_value(
+                data.get("ram_unit")
+            )
+
+            disk_unit = cls.clean_value(
+                data.get("disk_unit")
+            )
+
 
             required_text_fields = {
                 "operating_system": operating_system,
@@ -672,7 +681,9 @@ class ComputerService:
                 gpu=gpu,
                 cpu=cpu,
                 ram_size_installed=ram_size_installed,
+                ram_unit=ram_unit,
                 disk_size_installed=disk_size_installed,
+                disk_unit=disk_unit,
                 build_version=build_version,
                 computer_status=computer_status,
                 monitor_status=monitor_status,
@@ -681,7 +692,6 @@ class ComputerService:
                 ups_status=ups_status,
                 motherboard=motherboard,
 
-                # System/default field
                 is_archived=False,
             )
 
