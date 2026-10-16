@@ -459,6 +459,8 @@ class ComputerService:
         "cpu",
         "ram_size_installed",
         "disk_size_installed",
+        "ram_unit",
+        "disk_unit",
         "build_version",
         "computer_status",
         "monitor_status",
