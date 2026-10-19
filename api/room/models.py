@@ -4,7 +4,6 @@ class Room(models.Model):
     class RoomStatus(models.TextChoices):
         OPERATIONAL = "operational", "operational"
         MAINTENANCE = "maintenance", "maintenance"
-        DEGRADED = "degraded", "degraded"
         OUT_OF_SERVICE = "out_of_service", "out of service"
 
     class BuildingName(models.TextChoices):
