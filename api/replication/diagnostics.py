@@ -1,0 +1,12 @@
+"""Public/operator event diagnostics must never echo historical exception text."""
+EVENT_ERROR_CODES = frozenset({
+    "INVALID_EVENT", "INVALID_PRIMARY_KEY", "INVALID_ROW_SHAPE", "INSERT_CONFLICT",
+    "BEFORE_IMAGE_CONFLICT", "ROW_COUNT_CONFLICT", "RECEIPT_MISMATCH",
+    "PARTIAL_TRANSACTION_RECEIPTS", "TIME_BUDGET", "TRANSIENT_DATABASE",
+    "FOREIGN_KEY_CONFLICT", "UNIQUE_CONFLICT", "NOT_NULL_CONFLICT", "CHECK_CONFLICT",
+    "DATABASE_PERMISSION", "DATABASE_CONFLICT",
+})
+
+
+def sanitized_event_error(value):
+    return value if value is None or value in EVENT_ERROR_CODES else "LEGACY_ERROR_REDACTED"
