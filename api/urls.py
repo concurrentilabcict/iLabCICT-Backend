@@ -70,4 +70,5 @@ urlpatterns = [
     path('templates/', include('api.printable_template.urls')),
 
     path('audit-logs/', include('api.audit_logs.urls')),
+    path('replication/', include('api.replication.urls')),
 ]

@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'api.apps.ApiConfig',
+    "api.replication",
     'rest_framework',
     "cloudinary",
     "cloudinary_storage",
@@ -147,6 +148,7 @@ WSGI_APPLICATION = 'ilabcict.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 tmpPostgres = urlparse(os.getenv("DATABASE_URL"))
+tmpRecoveryPostgres = urlparse(os.environ["RECOVERY_DATABASE_URL"])
 
 DATABASES = {
     'default': {
@@ -158,7 +160,19 @@ DATABASES = {
         'PORT': 5432,
         'OPTIONS': dict(parse_qsl(tmpPostgres.query)),
         "CONN_MAX_AGE": 300,
-    }
+    },
+
+    'recovery': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': tmpRecoveryPostgres.path.replace('/', ''),
+        'USER': tmpRecoveryPostgres.username,
+        'PASSWORD': tmpRecoveryPostgres.password,
+        'HOST': tmpRecoveryPostgres.hostname,
+        'PORT': 5432,
+        'OPTIONS': dict(parse_qsl(tmpRecoveryPostgres.query)),
+        'CONN_MAX_AGE': 300,
+    },
+
 }
 
 
@@ -249,6 +263,13 @@ EMAIL_API_KEY= os.getenv("EMAIL_API_KEY")
 SCHEDULER_TOKEN = os.getenv("SCHEDULER_TOKEN")
 
 ENVIRONMENT = os.getenv('ENV', 'development')
+
+# Stage A: explicitly disabled until the approved deployment/capture cutover.
+REPLICATION_ENABLED = os.getenv("REPLICATION_ENABLED", "false").lower() == "true"
+REPLICATION_TOKEN = os.getenv("REPLICATION_TOKEN", "")
+REPLICATION_BATCH_SIZE = max(1, min(1000, int(os.getenv("REPLICATION_BATCH_SIZE", "200"))))
+REPLICATION_TIME_BUDGET = max(1, min(20, int(os.getenv("REPLICATION_TIME_BUDGET", "15"))))
+REPLICATION_MAX_ATTEMPTS = max(1, min(20, int(os.getenv("REPLICATION_MAX_ATTEMPTS", "8"))))
 
 if ENVIRONMENT == 'development':
     API_BASE_URL = "http://127.0.0.1:8000"
