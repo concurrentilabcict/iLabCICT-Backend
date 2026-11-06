@@ -3,7 +3,7 @@ from api.user.models import User
 from django.conf import settings
 class IsAdmin(BasePermission):
     def has_permission(self, request, view):
-        return request.user.role == 'admin'
+        return request.user.role == User.UserRole.ADMIN
     
 class IsProfileOwner(BasePermission):
 
@@ -25,7 +25,7 @@ class IsNotificationOwner(BasePermission):
 
 class IsAdminOrTechnician(BasePermission):
     def has_permission(self, request, view):
-        return (request.user.role == 'admin' or request.user.role == 'technician')
+        return (request.user.role == User.UserRole.ADMIN or request.user.role == User.UserRole.TECHNICIAN)
 
 class IsAdminOrFaculty(BasePermission):
     def has_permission(self, request, view):
